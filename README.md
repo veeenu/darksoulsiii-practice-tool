@@ -24,30 +24,30 @@ may be fixed by simply removing the file.
 ```toml
 [mappings]
   # pick values from https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
-	show = "VK_F11"         # show/hide tool window
-	quitout = "P"           # instant quitout
-	save_pos = "VK_F7"      # save position
-	load_pos = "VK_F1"      # load position
+  show = "VK_F11"         # show/hide tool window
+  quitout = "P"           # instant quitout
+  save_pos = "VK_F7"      # save position
+  load_pos = "VK_F1"      # load position
   # on/off toggles
-	inf_stamina = "VK_F2"
-	inf_focus = "VK_F3"
-	inf_consum = "VK_F4"
-	no_damage = "VK_F5"
-	no_death = "VK_F6"
-	deathcam = "VK_F8"
-	one_shot = "VK_F9"
-	no_gravity = "VK_F10"
-	cycle_speed = "4"
-	event_draw = "5"
-	event_disable = "6"
-	ai_disable = "7"
-	rend_chr = "8"
-	rend_map = "9"
-	rend_obj = "0"
+  inf_stamina = "VK_F2"
+  inf_focus = "VK_F3"
+  inf_consum = "VK_F4"
+  no_damage = "VK_F5"
+  no_death = "VK_F6"
+  deathcam = "VK_F8"
+  one_shot = "VK_F9"
+  no_gravity = "VK_F10"
+  cycle_speed = "4"
+  event_draw = "5"
+  event_disable = "6"
+  ai_disable = "7"
+  rend_chr = "8"
+  rend_map = "9"
+  rend_obj = "0"
 [settings]
   # you can ignore this section
-	enabled = "true"
-	debug = "false"
+  enabled = "true"
+  debug = "false"
 ```
 
 ## To-do list and known issues
