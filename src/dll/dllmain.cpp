@@ -68,7 +68,6 @@ LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 HRESULT __fastcall PresentImpl(IDXGISwapChain *pChain, UINT SyncInterval, UINT Flags) {
   if (!initialized) {
     std::cout << "Initializing DirectX" << std::endl;
-    std::cout << (pChain == nullptr) << std::endl;
     if (FAILED(GetDeviceAndCtxFromSwapchain(pChain, &pDevice, &pContext))) {
       std::cout << "GetDeviceAndCtxFromSwapChain failed" << std::endl;
       return presentTrampoline(pChain, SyncInterval, Flags);
