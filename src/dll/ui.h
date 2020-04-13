@@ -57,5 +57,6 @@ class UI {
   public:
     static UI& const Instance();
     void Render();
+    void ReadMemory();
     bool is_keyup(const ImGuiIO& io, int k);
 };

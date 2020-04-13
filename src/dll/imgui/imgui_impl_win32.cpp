@@ -95,6 +95,8 @@ void    ImGui_ImplWin32_Shutdown()
 
 static bool ImGui_ImplWin32_UpdateMouseCursor()
 {
+    return true; // short circuit the function as we don't care about mouse behavior
+    /*
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange)
         return false;
@@ -123,6 +125,7 @@ static bool ImGui_ImplWin32_UpdateMouseCursor()
         ::SetCursor(::LoadCursor(NULL, win32_cursor));
     }
     return true;
+    */
 }
 
 static void ImGui_ImplWin32_UpdateMousePos()

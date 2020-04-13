@@ -1,7 +1,15 @@
 #pragma once
 
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <memoryapi.h>
+#include <psapi.h>
 #include <memory>
 #include <vector>
+#include <optional>
 
 #define P(type, addr) reinterpret_cast<type*>(addr)
 #define POINTER_CHAIN(T, ...) PointerChain<T>(std::vector<uint64_t> { __VA_ARGS__ })
@@ -25,7 +33,7 @@ class PointerChain {
     }
 
     PointerChain(std::vector<uint64_t> _chain) : chain(_chain) {};
-    T* operator() () const {
+    std::optional<T*> operator() () const {
       uint64_t* p = reinterpret_cast<uint64_t*>(chain[0]);
       if ((void*)p == nullptr) return nullptr;
       for (int i = 1; i < chain.size(); i++) {
@@ -77,44 +85,44 @@ class MemoryState {
 
     void save_pos ();
     void load_pos ();
-    float cycle_speed ();
+    std::optional<float> cycle_speed ();
 
-    float get_speed ();
+    std::optional<float> get_speed ();
 
-    bool get_no_damage ();
-    bool get_no_death ();
-    bool get_deathcam ();
-    bool get_inf_stamina ();
-    bool get_inf_focus ();
-    bool get_inf_consum ();
-    bool get_one_shot ();
-    bool get_event_draw ();
-    bool get_event_disable ();
-    bool get_ai_disable ();
-    bool get_no_gravity ();
-    bool get_rend_chr ();
-    bool get_rend_map ();
-    bool get_rend_obj ();
+    std::optional<bool> get_no_damage ();
+    std::optional<bool> get_no_death ();
+    std::optional<bool> get_deathcam ();
+    std::optional<bool> get_inf_stamina ();
+    std::optional<bool> get_inf_focus ();
+    std::optional<bool> get_inf_consum ();
+    std::optional<bool> get_one_shot ();
+    std::optional<bool> get_event_draw ();
+    std::optional<bool> get_event_disable ();
+    std::optional<bool> get_ai_disable ();
+    std::optional<bool> get_no_gravity ();
+    std::optional<bool> get_rend_chr ();
+    std::optional<bool> get_rend_map ();
+    std::optional<bool> get_rend_obj ();
 
-    bool toggle_no_damage ();
-    bool toggle_no_death ();
-    bool toggle_deathcam ();
-    bool toggle_inf_stamina ();
-    bool toggle_inf_focus ();
-    bool toggle_inf_consum ();
-    bool toggle_one_shot ();
-    bool toggle_event_draw ();
-    bool toggle_event_disable ();
-    bool toggle_ai_disable ();
-    bool toggle_no_gravity ();
-    bool toggle_rend_chr ();
-    bool toggle_rend_map ();
-    bool toggle_rend_obj ();
+    std::optional<bool> toggle_no_damage ();
+    std::optional<bool> toggle_no_death ();
+    std::optional<bool> toggle_deathcam ();
+    std::optional<bool> toggle_inf_stamina ();
+    std::optional<bool> toggle_inf_focus ();
+    std::optional<bool> toggle_inf_consum ();
+    std::optional<bool> toggle_one_shot ();
+    std::optional<bool> toggle_event_draw ();
+    std::optional<bool> toggle_event_disable ();
+    std::optional<bool> toggle_ai_disable ();
+    std::optional<bool> toggle_no_gravity ();
+    std::optional<bool> toggle_rend_chr ();
+    std::optional<bool> toggle_rend_map ();
+    std::optional<bool> toggle_rend_obj ();
     void quitout();
 
     const std::string& get_version () const;
 
-    std::tuple<float, float, float, float, float, float> get_position() const;
+    std::optional<std::tuple<float, float, float, float, float, float>> get_position() const;
 };
 
 #undef P

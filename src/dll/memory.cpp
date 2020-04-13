@@ -1,7 +1,7 @@
 #include "memory.h"
 #include <iostream>
 
-template<typename T>
+/*template<typename T>
 inline bool toggle_bit(T* ptr, uint8_t bit = 0) {
 	T mask = (1 << bit);
 	if (*ptr & mask) {
@@ -11,12 +11,60 @@ inline bool toggle_bit(T* ptr, uint8_t bit = 0) {
 		*ptr = (*ptr) | mask;
 		return true;
 	}
+}*/
+
+// Crash-safe version with ReadProcessMemory/WriteProcessMemory
+template<typename T>
+inline std::optional<bool> toggle_bit(std::optional<T*> ptr, uint8_t bit = 0) {  
+	T mask = (1 << bit);
+  T buf;
+  bool ret;
+
+  auto proc = GetCurrentProcess();
+
+  std::cout << "toggle_bit(" << std::hex << (uint64_t)*ptr
+            << ", " << std::hex << (uint64_t)bit << ")" << std::endl;
+
+  if (
+    (!ptr) ||
+    *ptr == nullptr ||
+    !ReadProcessMemory(proc, *ptr, &buf, sizeof(T), nullptr)
+  ) {
+    return {};
+  }
+
+	if (buf & mask) {
+		buf = buf & ~mask;
+		ret = false;
+	} else {
+		buf = buf | mask;
+		ret = true;
+	}
+
+  WriteProcessMemory(
+    proc,
+    *ptr,
+    &buf,
+    sizeof(T),
+    nullptr
+  );
+
+  return ret;
 }
 
 template<typename T>
-inline bool get_bit(T* ptr, uint8_t bit = 0) {
+inline std::optional<bool> get_bit(std::optional<T*> ptr, uint8_t bit = 0) {
 	T mask = (1 << bit);
-	return (*ptr & mask);
+  T buf;
+  if (
+    (!ptr) ||
+    *ptr == nullptr || 
+    !ReadProcessMemory(GetCurrentProcess(), *ptr, &buf, sizeof(T), nullptr)
+  ) {
+    return {};
+  } else {
+    return (buf & mask);
+  }
 }
 
 constexpr BaseAddresses base_addresses_104 {
@@ -139,70 +187,122 @@ MemoryState::MemoryState() {
 }
 
 void MemoryState::save_pos () {
-	stored_x = *(x());
-	stored_y = *(y());
-	stored_z = *(z());
+  std::optional<float*> px, py, pz;
+  if (
+    (px = x()) &&
+    (py = y()) &&
+    (pz = z())
+  ) {
+    auto proc = GetCurrentProcess();
+    ReadProcessMemory(proc, *px, &stored_x, sizeof(stored_x), nullptr);
+    ReadProcessMemory(proc, *py, &stored_y, sizeof(stored_y), nullptr);
+    ReadProcessMemory(proc, *pz, &stored_z, sizeof(stored_z), nullptr);
+    /*stored_x = **px;
+    stored_y = **py;
+    stored_z = **pz;*/
+  }
 }
 
 void MemoryState::load_pos () {
-	*(x()) = stored_x;
-	*(y()) = stored_y;
-	*(z()) = stored_z;
+  std::optional<float*> px, py, pz;
+  if (
+    (px = x()) &&
+    (py = y()) &&
+    (pz = z())
+  ) {
+    auto proc = GetCurrentProcess();
+    WriteProcessMemory(proc, *px, &stored_x, sizeof(stored_x), nullptr);
+    WriteProcessMemory(proc, *py, &stored_y, sizeof(stored_y), nullptr);
+    WriteProcessMemory(proc, *pz, &stored_z, sizeof(stored_z), nullptr);
+    /***px = stored_x;
+    **py = stored_y;
+    **pz = stored_z;*/
+  }
 }
 
-float MemoryState::cycle_speed() {
+std::optional<float> MemoryState::cycle_speed() {
 	cur_speed_idx = (cur_speed_idx + 1) % allowed_speeds.size();
 	float s = allowed_speeds[cur_speed_idx];
-	*speed() = s;
-	return s;
+
+  if (auto speed_ptr = speed()) {
+    **speed_ptr = s;
+    return s;
+  } else {
+    return {};
+  }
 }
 
-float MemoryState::get_speed () { return *speed(); }
+std::optional<float> MemoryState::get_speed () { 
+  if (auto speed_ptr = speed()) { 
+    return **speed_ptr; 
+  } else {
+    return {};
+  }
+}
 
-bool MemoryState::get_no_damage ()     { return get_bit(p_no_damage(), 7); }
-bool MemoryState::get_no_death ()      { return get_bit(p_flags(), 2); }
-bool MemoryState::get_deathcam ()      { return get_bit(p_deathcam()); }
-bool MemoryState::get_inf_stamina ()   { return get_bit(p_flags(), 4); }
-bool MemoryState::get_inf_focus ()     { return get_bit(p_flags(), 5); }
-bool MemoryState::get_inf_consum ()    { return get_bit(p_inf_consum(), 3); }
-bool MemoryState::get_one_shot ()      { return get_bit(p_oneshot()); }
-bool MemoryState::get_event_draw ()    { return get_bit(p_evt_draw()); }
-bool MemoryState::get_event_disable () { return get_bit(p_evt_disable()); }
-bool MemoryState::get_ai_disable ()    { return get_bit(p_ai_disable()); }
-bool MemoryState::get_no_gravity ()    { return get_bit(p_no_grav()); }
-bool MemoryState::get_rend_chr ()      { return get_bit(p_rend_chr()); }
-bool MemoryState::get_rend_map ()      { return get_bit(p_rend_map()); }
-bool MemoryState::get_rend_obj ()      { return get_bit(p_rend_obj()); }
+std::optional<bool> MemoryState::get_no_damage ()     { return get_bit(p_no_damage(), 7); }
+std::optional<bool> MemoryState::get_no_death ()      { return get_bit(p_flags(), 2); }
+std::optional<bool> MemoryState::get_deathcam ()      { return get_bit(p_deathcam()); }
+std::optional<bool> MemoryState::get_inf_stamina ()   { return get_bit(p_flags(), 4); }
+std::optional<bool> MemoryState::get_inf_focus ()     { return get_bit(p_flags(), 5); }
+std::optional<bool> MemoryState::get_inf_consum ()    { return get_bit(p_inf_consum(), 3); }
+std::optional<bool> MemoryState::get_one_shot ()      { return get_bit(p_oneshot()); }
+std::optional<bool> MemoryState::get_event_draw ()    { return get_bit(p_evt_draw()); }
+std::optional<bool> MemoryState::get_event_disable () { return get_bit(p_evt_disable()); }
+std::optional<bool> MemoryState::get_ai_disable ()    { return get_bit(p_ai_disable()); }
+std::optional<bool> MemoryState::get_no_gravity ()    { return get_bit(p_no_grav()); }
+std::optional<bool> MemoryState::get_rend_chr ()      { return get_bit(p_rend_chr()); }
+std::optional<bool> MemoryState::get_rend_map ()      { return get_bit(p_rend_map()); }
+std::optional<bool> MemoryState::get_rend_obj ()      { return get_bit(p_rend_obj()); }
 
-bool MemoryState::toggle_no_damage ()     { return toggle_bit(p_no_damage(), 7); }
-bool MemoryState::toggle_no_death ()      { return toggle_bit(p_flags(), 2); }
-bool MemoryState::toggle_deathcam ()      { return toggle_bit(p_deathcam()); }
-bool MemoryState::toggle_inf_stamina ()   { return toggle_bit(p_flags(), 4); }
-bool MemoryState::toggle_inf_focus ()     { return toggle_bit(p_flags(), 5); }
-bool MemoryState::toggle_inf_consum ()    { return toggle_bit(p_inf_consum(), 3); }
-bool MemoryState::toggle_one_shot ()      { return toggle_bit(p_oneshot()); }
-bool MemoryState::toggle_event_draw ()    { return toggle_bit(p_evt_draw()); }
-bool MemoryState::toggle_event_disable () { return toggle_bit(p_evt_disable()); }
-bool MemoryState::toggle_ai_disable ()    { return toggle_bit(p_ai_disable()); }
-bool MemoryState::toggle_no_gravity ()    { return toggle_bit(p_no_grav()); }
-bool MemoryState::toggle_rend_chr ()      { return toggle_bit(p_rend_chr()); }
-bool MemoryState::toggle_rend_map ()      { return toggle_bit(p_rend_map()); }
-bool MemoryState::toggle_rend_obj ()      { return toggle_bit(p_rend_obj()); }
+std::optional<bool> MemoryState::toggle_no_damage ()     { return toggle_bit(p_no_damage(), 7); }
+std::optional<bool> MemoryState::toggle_no_death ()      { return toggle_bit(p_flags(), 2); }
+std::optional<bool> MemoryState::toggle_deathcam ()      { return toggle_bit(p_deathcam()); }
+std::optional<bool> MemoryState::toggle_inf_stamina ()   { return toggle_bit(p_flags(), 4); }
+std::optional<bool> MemoryState::toggle_inf_focus ()     { return toggle_bit(p_flags(), 5); }
+std::optional<bool> MemoryState::toggle_inf_consum ()    { return toggle_bit(p_inf_consum(), 3); }
+std::optional<bool> MemoryState::toggle_one_shot ()      { return toggle_bit(p_oneshot()); }
+std::optional<bool> MemoryState::toggle_event_draw ()    { return toggle_bit(p_evt_draw()); }
+std::optional<bool> MemoryState::toggle_event_disable () { return toggle_bit(p_evt_disable()); }
+std::optional<bool> MemoryState::toggle_ai_disable ()    { return toggle_bit(p_ai_disable()); }
+std::optional<bool> MemoryState::toggle_no_gravity ()    { return toggle_bit(p_no_grav()); }
+std::optional<bool> MemoryState::toggle_rend_chr ()      { return toggle_bit(p_rend_chr()); }
+std::optional<bool> MemoryState::toggle_rend_map ()      { return toggle_bit(p_rend_map()); }
+std::optional<bool> MemoryState::toggle_rend_obj ()      { return toggle_bit(p_rend_obj()); }
 
 const std::string& MemoryState::get_version () const {
   return version;
 }
 
 void MemoryState::quitout () {
-	*p_quitout() = 1;
+  if (auto ptr = p_quitout()) {
+    **ptr = 1;
+  }
 }
 
-std::tuple<float, float, float, float, float, float> MemoryState::get_position() const {
-	float *px = x(), *py = y(), *pz = z();
-	return std::make_tuple(
-		px == nullptr ? 0.f : *px,
-		py == nullptr ? 0.f : *py,
-		pz == nullptr ? 0.f : *pz,
-		stored_x, stored_y, stored_z
-	);
+std::optional<std::tuple<float, float, float, float, float, float>> MemoryState::get_position() const {
+	std::optional<float*> px; //= x();
+  std::optional<float*> py; //= y();
+  std::optional<float*> pz; //= z();
+
+  if ((px = x()) && (py = y()) && (pz = z())) {
+    float vx, vy, vz;
+    auto proc = GetCurrentProcess();
+    if (
+      ReadProcessMemory(proc, *px, &vx, sizeof(vx), nullptr) &&
+      ReadProcessMemory(proc, *py, &vy, sizeof(vy), nullptr) &&
+      ReadProcessMemory(proc, *pz, &vz, sizeof(vz), nullptr)
+    ) {
+      return std::make_optional(std::make_tuple(
+        vx,
+        vy,
+        vz,
+        stored_x, stored_y, stored_z
+      ));
+    } else {
+      return {};
+    }
+  } else {
+    return {};
+  }
 };
