@@ -134,8 +134,8 @@ void UI::Render() {
 			ImGui::Text(tfm::format("%s", cfg.repr(#CODE)).c_str()); \
 			ImGui::NextColumn(); \
 		}
-		//ImGui::Checkbox(tfm::format(LABEL, cfg.repr(#CODE)).c_str(), &CODE); \
-			CHKBOX("No Damage (%s)", no_damage)
+		//ImGui::Checkbox(tfm::format(LABEL, cfg.repr(#CODE)).c_str(), &CODE);
+			CHKBOX("No Damage", no_damage)
 			CHKBOX("No Death", no_death)
 			CHKBOX("Deathcam", deathcam)
 			CHKBOX("Inf Stamina", inf_stamina)
