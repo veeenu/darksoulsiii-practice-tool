@@ -9,7 +9,7 @@ std::vector<std::string> allowed_nodes {
   "inf_stamina", "inf_focus", "inf_consum",
   "one_shot", "event_draw", "event_disable",
   "ai_disable", "no_gravity", "rend_chr",
-  "rend_map", "rend_obj",
+  "rend_map", "rend_obj", "incr_souls",
   "show", "quitout", "save_pos", "load_pos"
 };
 std::vector<std::string> allowed_settings {

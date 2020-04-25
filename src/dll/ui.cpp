@@ -73,6 +73,11 @@ UI::UI () {
 	}, "cycle_speed", cfg["cycle_speed"]));
 
 	commands.push_back(Command([this]() {
+		// speed = state.cycle_speed();
+		state.incr_souls();
+	}, "incr_souls", cfg["incr_souls"]));
+
+	commands.push_back(Command([this]() {
 		state.save_pos();
 	}, "save_pos", cfg["save_pos"]));
 
@@ -111,44 +116,74 @@ void UI::Render() {
 		;
 
 	if (show_window) {
-    ReadMemory();
+		ReadMemory();
 
 		ImGui::SetNextWindowBgAlpha(0.3f);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0);
+    ImGui::SetNextWindowPos(ImVec2(25., 100.));
+    ImGui::SetNextWindowSize(ImVec2(320., 0.));
 		if (ImGui::Begin("Practice tool", nullptr, window_flags)) {
 
-			ImGui::SetWindowPos(ImVec2(25., 100.));
-#define CHKBOX(LABEL, CODE) ImGui::Checkbox(tfm::format(LABEL, cfg.repr(#CODE)).c_str(), &CODE);
+			ImGui::Columns(2);
+#define CHKBOX(LABEL, CODE) \
+		{ \
+			ImGui::SetColumnWidth(0, 256); \
+			ImGui::SetColumnWidth(1, 64); \
+			ImGui::Checkbox(LABEL, &CODE); \
+			ImGui::NextColumn(); \
+			ImGui::Text(tfm::format("%s", cfg.repr(#CODE)).c_str()); \
+			ImGui::NextColumn(); \
+		}
+		//ImGui::Checkbox(tfm::format(LABEL, cfg.repr(#CODE)).c_str(), &CODE); \
 			CHKBOX("No Damage (%s)", no_damage)
-			CHKBOX("No Death (%s)", no_death)
-			CHKBOX("Deathcam (%s)", deathcam)
-			CHKBOX("Inf Stamina (%s)", inf_stamina)
-			CHKBOX("Inf Focus (%s)", inf_focus)
-			CHKBOX("Inf Consumables (%s)", inf_consum)
-			CHKBOX("One Shot (%s)", one_shot)
-			CHKBOX("Event Draw (%s)", event_draw)
-			CHKBOX("Event Disable (%s)", event_disable)
-			CHKBOX("AI Disable (%s)", ai_disable)
-			CHKBOX("Gravity (%s)", no_gravity)
-			CHKBOX("Render Character (%s)", rend_chr)
-			CHKBOX("Render Map (%s)", rend_map)
-			CHKBOX("Render Objects (%s)", rend_obj)
+			CHKBOX("No Death", no_death)
+			CHKBOX("Deathcam", deathcam)
+			CHKBOX("Inf Stamina", inf_stamina)
+			CHKBOX("Inf Focus", inf_focus)
+			CHKBOX("Inf Consumables", inf_consum)
+			CHKBOX("One Shot", one_shot)
+			CHKBOX("Event Draw", event_draw)
+			CHKBOX("Event Disable", event_disable)
+			CHKBOX("AI Disable", ai_disable)
+			CHKBOX("Gravity", no_gravity)
+			CHKBOX("Render Character", rend_chr)
+			CHKBOX("Render Map", rend_map)
+			CHKBOX("Render Objects", rend_obj)
 #undef CHKBOX
 			if (auto pos = state.get_position()) {
-				ImGui::Text(tfm::format("Position [saved]: \n  x % 12.5f [% 12.5f]\n  y % 12.5f [% 12.5f]\n  z % 12.5f [% 12.5f]\n  (Load %s | Save %s)", 
+				ImGui::Text(tfm::format("Position [saved]: \n  x % 12.5f [% 12.5f]\n  y % 12.5f [% 12.5f]\n  z % 12.5f [% 12.5f]", 
 					std::get<0>(*pos), std::get<3>(*pos),
 					std::get<1>(*pos), std::get<4>(*pos),
-					std::get<2>(*pos), std::get<5>(*pos),
-					cfg.repr("load_pos"), cfg.repr("save_pos")
+					std::get<2>(*pos), std::get<5>(*pos)
 				).c_str());
+        ImGui::NextColumn();
+        ImGui::Text(tfm::format("Load:\n% 5s\nSave:\n% 5s", cfg.repr("load_pos"), cfg.repr("save_pos")).c_str());
+        ImGui::NextColumn();
 			} else {
-				ImGui::Text(tfm::format("Position [saved]: \n  x % 12.5f [% 12.5f]\n  y % 12.5f [% 12.5f]\n  z % 12.5f [% 12.5f]\n  (Load %s | Save %s)", 
-					0., 0., 0., 0., 0., 0.,
-					cfg.repr("load_pos"), cfg.repr("save_pos")
+				ImGui::Text(tfm::format("Position [saved]: \n  x % 12.5f [% 12.5f]\n  y % 12.5f [% 12.5f]\n  z % 12.5f [% 12.5f]", 
+					0., 0., 0., 0., 0., 0.
 				).c_str());
+        ImGui::NextColumn();
+        ImGui::Text(tfm::format("Load:\n% 5s\nSave:\n% 5s", cfg.repr("load_pos"), cfg.repr("save_pos")).c_str());
+        ImGui::NextColumn();
 			}
-			ImGui::Text(tfm::format("Speed: % 3.2f", speed).c_str());
-			ImGui::Text(tfm::format("Version %s | Quitout (%s)", state.get_version(), cfg.repr("quitout")).c_str());
+			ImGui::Text(tfm::format("Speed: [% 10.2f]", speed).c_str());
+      ImGui::NextColumn();
+      ImGui::Text(cfg.repr("cycle_speed").c_str());
+      ImGui::NextColumn();
+			ImGui::Text(tfm::format("Souls: [% 10d]", souls).c_str());
+      ImGui::NextColumn();
+      ImGui::Text(cfg.repr("incr_souls").c_str());
+      ImGui::NextColumn();
+			//ImGui::Text(tfm::format("Version %s | Quitout (%s)", state.get_version(), cfg.repr("quitout")).c_str());
+      ImGui::Text("Version");
+      ImGui::NextColumn();
+      ImGui::Text(state.get_version().c_str());
+      ImGui::NextColumn();
+      ImGui::Text("Quitout");
+      ImGui::NextColumn();
+      ImGui::Text(cfg.repr("quitout").c_str());
+      ImGui::NextColumn();
 		}
 		ImGui::PopStyleVar();
 		ImGui::End();
@@ -177,6 +212,7 @@ void UI::ReadMemory() {
 	READ_ONE(rend_chr)
 	READ_ONE(rend_map)
 	READ_ONE(rend_obj)
+	READ_ONE(souls)
 }
 
 bool UI::is_keyup(const ImGuiIO& io, int k) {

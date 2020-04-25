@@ -67,6 +67,33 @@ inline std::optional<bool> get_bit(std::optional<T*> ptr, uint8_t bit = 0) {
   }
 }
 
+template<typename T>
+inline std::optional<T> read(std::optional<T*> ptr) {
+  T buf;
+  if (
+    (!ptr) ||
+    *ptr == nullptr || 
+    !ReadProcessMemory(GetCurrentProcess(), *ptr, &buf, sizeof(T), nullptr)
+  ) {
+    return {};
+  } else {
+    return buf;
+  }
+}
+
+template<typename T>
+inline std::optional<T> write(std::optional<T*> ptr, T buf) {
+  if (
+    (!ptr) ||
+    *ptr == nullptr || 
+    !WriteProcessMemory(GetCurrentProcess(), *ptr, &buf, sizeof(T), nullptr)
+  ) {
+    return {};
+  } else {
+    return buf;
+  }
+}
+
 constexpr BaseAddresses base_addresses_104 {
 	0x1404BC5FA, // base b
     0x88,      // deathcam
@@ -80,7 +107,8 @@ constexpr BaseAddresses base_addresses_104 {
 		9 + 4,     // no update ai
 	0x140620B1B, // game rend
 	0x1446A9280, // insta qo
-  0x14288C422  // version string
+  0x14288C422, // version string
+  0x144704268  // souls base ptr
 };
 
 constexpr BaseAddresses base_addresses_108 {
@@ -96,7 +124,8 @@ constexpr BaseAddresses base_addresses_108 {
 		9 + 3,     // no update ai
 	0x1406287AB, // game rend
 	0x1447103D8, // insta qo
-  0x1428D3F92  // version string
+  0x1428D3F92, // version string
+  0x1446FEE88  // souls base ptr
 };
 
 constexpr BaseAddresses base_addresses_112 { // TODO
@@ -112,7 +141,8 @@ constexpr BaseAddresses base_addresses_112 { // TODO
 		9 + 4,     // no update ai
 	0x14062C45B, // game rend
 	0x144746988, // insta qo
-  0x1428FD262  // version string
+  0x1428FD262, // version string
+  0x144704268  // souls base ptr
 };
 
 constexpr BaseAddresses base_addresses_115 {
@@ -129,7 +159,8 @@ constexpr BaseAddresses base_addresses_115 {
 	0x14062C58B, // game rend
 	// 0x141069F30, // speed
 	0x14474C2E8, // insta qo
-  0x142900782  // version string
+  0x142900782, // version string
+  0x144704268  // souls base ptr
 };
 
 MemoryState::MemoryState() {
@@ -184,6 +215,8 @@ MemoryState::MemoryState() {
 	p_inf_consum = POINTER_CHAIN(uint8_t, base_b, 0x80, b.offs_no_goods_consume); // 1eea
 	p_no_damage = POINTER_CHAIN(uint8_t, base_b, 0x80, 0x1A09);
 	p_no_grav = POINTER_CHAIN(uint8_t, base_d, 0x60, 0x48);
+
+  p_souls = POINTER_CHAIN(uint32_t, b.base_souls, 0x3d0, 0x74);
 }
 
 void MemoryState::save_pos () {
@@ -269,6 +302,17 @@ std::optional<bool> MemoryState::toggle_no_gravity ()    { return toggle_bit(p_n
 std::optional<bool> MemoryState::toggle_rend_chr ()      { return toggle_bit(p_rend_chr()); }
 std::optional<bool> MemoryState::toggle_rend_map ()      { return toggle_bit(p_rend_map()); }
 std::optional<bool> MemoryState::toggle_rend_obj ()      { return toggle_bit(p_rend_obj()); }
+
+std::optional<uint32_t> MemoryState::get_souls ()        { return read<uint32_t>(p_souls()); }
+std::optional<uint32_t> MemoryState::incr_souls () {
+  auto souls_ptr = p_souls();
+  auto souls = read<uint32_t>(souls_ptr);
+  if (souls) {
+    return write<uint32_t>(souls_ptr, *souls + 10000);
+  } else {
+    return {};
+  }
+}
 
 const std::string& MemoryState::get_version () const {
   return version;

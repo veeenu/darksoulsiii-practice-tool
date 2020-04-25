@@ -59,6 +59,7 @@ typedef struct {
   // uint64_t speed;
   uint64_t instaqo;
   uint64_t version_string_ptr;
+  uint64_t base_souls;
 } BaseAddresses;
 
 class MemoryState {
@@ -74,6 +75,9 @@ class MemoryState {
       p_quitout, p_deathcam, p_evt_draw, p_evt_disable, // bytes
       p_flags, p_inf_consum, p_no_damage, p_no_grav;  // flags
 
+    PointerChain<uint32_t>
+      p_souls;
+
     float stored_x = 0.0f;
     float stored_y = 0.0f;
     float stored_z = 0.0f;
@@ -88,6 +92,9 @@ class MemoryState {
     std::optional<float> cycle_speed ();
 
     std::optional<float> get_speed ();
+
+    std::optional<uint32_t> get_souls ();
+    std::optional<uint32_t> incr_souls ();
 
     std::optional<bool> get_no_damage ();
     std::optional<bool> get_no_death ();

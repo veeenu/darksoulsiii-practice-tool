@@ -13,6 +13,7 @@
   deathcam = "VK_F8"
   one_shot = "VK_F9"
   no_gravity = "VK_F10"
+  incr_souls = "3"
   cycle_speed = "4"
   event_draw = "5"
   event_disable = "6"

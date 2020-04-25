@@ -51,6 +51,8 @@ class UI {
     bool rend_obj = true;
 
     float speed = 0.0f;
+    
+    uint32_t souls = 0;
 
     MemoryState state;
 
