@@ -3,20 +3,20 @@
 
 /*template<typename T>
 inline bool toggle_bit(T* ptr, uint8_t bit = 0) {
-	T mask = (1 << bit);
-	if (*ptr & mask) {
-		*ptr = (*ptr) & ~mask;
-		return false;
-	} else {
-		*ptr = (*ptr) | mask;
-		return true;
-	}
+  T mask = (1 << bit);
+  if (*ptr & mask) {
+    *ptr = (*ptr) & ~mask;
+    return false;
+  } else {
+    *ptr = (*ptr) | mask;
+    return true;
+  }
 }*/
 
 // Crash-safe version with ReadProcessMemory/WriteProcessMemory
 template<typename T>
 inline std::optional<bool> toggle_bit(std::optional<T*> ptr, uint8_t bit = 0) {  
-	T mask = (1 << bit);
+  T mask = (1 << bit);
   T buf;
   bool ret;
 
@@ -33,13 +33,13 @@ inline std::optional<bool> toggle_bit(std::optional<T*> ptr, uint8_t bit = 0) {
     return {};
   }
 
-	if (buf & mask) {
-		buf = buf & ~mask;
-		ret = false;
-	} else {
-		buf = buf | mask;
-		ret = true;
-	}
+  if (buf & mask) {
+    buf = buf & ~mask;
+    ret = false;
+  } else {
+    buf = buf | mask;
+    ret = true;
+  }
 
   WriteProcessMemory(
     proc,
@@ -54,7 +54,7 @@ inline std::optional<bool> toggle_bit(std::optional<T*> ptr, uint8_t bit = 0) {
 
 template<typename T>
 inline std::optional<bool> get_bit(std::optional<T*> ptr, uint8_t bit = 0) {
-	T mask = (1 << bit);
+  T mask = (1 << bit);
   T buf;
   if (
     (!ptr) ||
@@ -95,76 +95,76 @@ inline std::optional<T> write(std::optional<T*> ptr, T buf) {
 }
 
 constexpr BaseAddresses base_addresses_104 {
-	0x1404BC5FA, // base b
+  0x1404BC5FA, // base b
     0x88,      // deathcam
     0x1ECA,    // no goods consume
     0xA38,     // speed
-	0x1404C1DC0, // base d
-	0x1404C527D, // base f
-	0x140830AF1, // xa
-	0x1408C3388, // debug
-		1,         // player exterminate
-		9 + 4,     // no update ai
-	0x140620B1B, // game rend
-	0x1446A9280, // insta qo
+  0x1404C1DC0, // base d
+  0x1404C527D, // base f
+  0x140830AF1, // xa
+  0x1408C3388, // debug
+    1,         // player exterminate
+    9 + 4,     // no update ai
+  0x140620B1B, // game rend
+  0x1446A9280, // insta qo
   0x14288C422, // version string
   0x144704268  // souls base ptr
 };
 
 constexpr BaseAddresses base_addresses_108 {
-	0x1404C0DDA, // base b
+  0x1404C0DDA, // base b
     0x88,      // deathcam
     0x1EDA,    // no goods consume
     0xA38,     // speed
-	0x1404C6580, // base d
-	0x1404C9A4D, // base f
-	0x14083BA91, // xa
-	0x1408D06F8, // debug
-		1,         // player exterminate
-		9 + 3,     // no update ai
-	0x1406287AB, // game rend
-	0x1447103D8, // insta qo
+  0x1404C6580, // base d
+  0x1404C9A4D, // base f
+  0x14083BA91, // xa
+  0x1408D06F8, // debug
+    1,         // player exterminate
+    9 + 3,     // no update ai
+  0x1406287AB, // game rend
+  0x1447103D8, // insta qo
   0x1428D3F92, // version string
   0x1446FEE88  // souls base ptr
 };
 
 constexpr BaseAddresses base_addresses_112 { // TODO
-	0x1404C191A, // base b
+  0x1404C191A, // base b
     0x90,      // deathcam
     0x1EE2,    // no goods consume
     0xA58,     // speed
-	0x1404C7120, // base d
-	0x1404CA5ED, // base f
-	0x140841875, // xa
-	0x1408D7C88, // debug
-		1,         // player exterminate
-		9 + 4,     // no update ai
-	0x14062C45B, // game rend
-	0x144746988, // insta qo
+  0x1404C7120, // base d
+  0x1404CA5ED, // base f
+  0x140841875, // xa
+  0x1408D7C88, // debug
+    1,         // player exterminate
+    9 + 4,     // no update ai
+  0x14062C45B, // game rend
+  0x144746988, // insta qo
   0x1428FD262, // version string
   0x144704268  // souls base ptr
 };
 
 constexpr BaseAddresses base_addresses_115 {
-	0x1404C1A3A, // base b
+  0x1404C1A3A, // base b
     0x90,      // deathcam
     0x1EEA,    // no goods consume
     0xA58,     // speed
-	0x1404C7240, // base d
-	0x1404CA70D, // base f
-	0x140841D05, // xa
-	0x1408D9748, // debug
-		1,         // player exterminate
-		9 + 4,     // no update ai
-	0x14062C58B, // game rend
-	// 0x141069F30, // speed
-	0x14474C2E8, // insta qo
+  0x1404C7240, // base d
+  0x1404CA70D, // base f
+  0x140841D05, // xa
+  0x1408D9748, // debug
+    1,         // player exterminate
+    9 + 4,     // no update ai
+  0x14062C58B, // game rend
+  // 0x141069F30, // speed
+  0x14474C2E8, // insta qo
   0x142900782, // version string
   0x144704268  // souls base ptr
 };
 
 MemoryState::MemoryState() {
-	BaseAddresses b;
+  BaseAddresses b;
 
   // Rudimentary AF
   if (wcsncmp(reinterpret_cast<wchar_t*>(base_addresses_104.version_string_ptr), L"1.04", 4) == 0) {
@@ -188,33 +188,33 @@ MemoryState::MemoryState() {
     version = std::string("W.TF");
   }
 
-	auto base_b = BASE_CHAIN(uint64_t, b.base_b, 3, 7);
-	auto base_d = BASE_CHAIN(uint64_t, b.base_d, 3, 7);
-	auto base_f = BASE_CHAIN(uint64_t, b.base_f, 3, 7);
-	auto debug  = BASE_CHAIN(uint64_t, b.debug,  3, 7);
-	auto grend  = BASE_CHAIN(uint64_t, b.grend,  2, 7);
-	auto xa     = *(uint32_t*)(b.xa + 3);
+  auto base_b = BASE_CHAIN(uint64_t, b.base_b, 3, 7);
+  auto base_d = BASE_CHAIN(uint64_t, b.base_d, 3, 7);
+  auto base_f = BASE_CHAIN(uint64_t, b.base_f, 3, 7);
+  auto debug  = BASE_CHAIN(uint64_t, b.debug,  3, 7);
+  auto grend  = BASE_CHAIN(uint64_t, b.grend,  2, 7);
+  auto xa     = *(uint32_t*)(b.xa + 3);
 
-	x = POINTER_CHAIN(float, base_b, 0x40, 0x28, 0x80);
-	y = POINTER_CHAIN(float, base_b, 0x40, 0x28, 0x88);
-	z = POINTER_CHAIN(float, base_b, 0x40, 0x28, 0x84);
-	speed = POINTER_CHAIN(float, base_b, 0x80, xa, 0x28, b.offs_speed);
-	// speed = reinterpret_cast<float*>(b.speed);
-	
-	p_rend_chr = POINTER_CHAIN(uint8_t, grend + 2);
-	p_rend_map = POINTER_CHAIN(uint8_t, grend + 0);
-	p_rend_obj = POINTER_CHAIN(uint8_t, grend + 1);
-	p_oneshot = POINTER_CHAIN(uint8_t, debug + b.offs_player_exterminate);
-	p_ai_disable = POINTER_CHAIN(uint8_t, debug + b.offs_no_update_ai);
+  x = POINTER_CHAIN(float, base_b, 0x40, 0x28, 0x80);
+  y = POINTER_CHAIN(float, base_b, 0x40, 0x28, 0x88);
+  z = POINTER_CHAIN(float, base_b, 0x40, 0x28, 0x84);
+  speed = POINTER_CHAIN(float, base_b, 0x80, xa, 0x28, b.offs_speed);
+  // speed = reinterpret_cast<float*>(b.speed);
+  
+  p_rend_chr = POINTER_CHAIN(uint8_t, grend + 2);
+  p_rend_map = POINTER_CHAIN(uint8_t, grend + 0);
+  p_rend_obj = POINTER_CHAIN(uint8_t, grend + 1);
+  p_oneshot = POINTER_CHAIN(uint8_t, debug + b.offs_player_exterminate);
+  p_ai_disable = POINTER_CHAIN(uint8_t, debug + b.offs_no_update_ai);
 
-	p_quitout = POINTER_CHAIN(uint8_t, b.instaqo, 0x250);
-	p_deathcam = POINTER_CHAIN(uint8_t, base_b, b.offs_deathcam);
-	p_evt_draw = POINTER_CHAIN(uint8_t, base_f, 0xA8);
-	p_evt_disable = POINTER_CHAIN(uint8_t, base_f, 0xD4);
-	p_flags = POINTER_CHAIN(uint8_t, base_b, 0x80, xa, 0x18, 0x1C0); // inf stam, inf focus, no death
-	p_inf_consum = POINTER_CHAIN(uint8_t, base_b, 0x80, b.offs_no_goods_consume); // 1eea
-	p_no_damage = POINTER_CHAIN(uint8_t, base_b, 0x80, 0x1A09);
-	p_no_grav = POINTER_CHAIN(uint8_t, base_d, 0x60, 0x48);
+  p_quitout = POINTER_CHAIN(uint8_t, b.instaqo, 0x250);
+  p_deathcam = POINTER_CHAIN(uint8_t, base_b, b.offs_deathcam);
+  p_evt_draw = POINTER_CHAIN(uint8_t, base_f, 0xA8);
+  p_evt_disable = POINTER_CHAIN(uint8_t, base_f, 0xD4);
+  p_flags = POINTER_CHAIN(uint8_t, base_b, 0x80, xa, 0x18, 0x1C0); // inf stam, inf focus, no death
+  p_inf_consum = POINTER_CHAIN(uint8_t, base_b, 0x80, b.offs_no_goods_consume); // 1eea
+  p_no_damage = POINTER_CHAIN(uint8_t, base_b, 0x80, 0x1A09);
+  p_no_grav = POINTER_CHAIN(uint8_t, base_d, 0x60, 0x48);
 
   p_souls = POINTER_CHAIN(uint32_t, b.base_souls, 0x3d0, 0x74);
 }
@@ -254,8 +254,8 @@ void MemoryState::load_pos () {
 }
 
 std::optional<float> MemoryState::cycle_speed() {
-	cur_speed_idx = (cur_speed_idx + 1) % allowed_speeds.size();
-	float s = allowed_speeds[cur_speed_idx];
+  cur_speed_idx = (cur_speed_idx + 1) % allowed_speeds.size();
+  float s = allowed_speeds[cur_speed_idx];
 
   if (auto speed_ptr = speed()) {
     **speed_ptr = s;
@@ -325,7 +325,7 @@ void MemoryState::quitout () {
 }
 
 std::optional<std::tuple<float, float, float, float, float, float>> MemoryState::get_position() const {
-	std::optional<float*> px; //= x();
+  std::optional<float*> px; //= x();
   std::optional<float*> py; //= y();
   std::optional<float*> pz; //= z();
 

@@ -301,7 +301,8 @@ void Config::load () {
 DWORD Config::operator[] (std::string i) const {
   auto& r = mappings.find(i);
 
-  // Very bad but can't be arsed
+  // TODO error handling is nonexistent here but not really important for now as
+  // all the lookups are guaranteed having a default
   /* if (r == mappings.end()) {
     throw;
   }*/
