@@ -1,3 +1,4 @@
+#include "logging.h"
 #include "ui.h"
 #include "config.h"
 #include "tinyformat.h"
@@ -19,7 +20,7 @@ const std::string& Command::get_label() const {
 }
 
 void Command::operator() () {
-  std::cout << "Executing command " << label << std::endl;
+  log() << "Executing command " << label << std::endl;
   fn();
 }
 

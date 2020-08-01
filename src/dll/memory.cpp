@@ -1,3 +1,4 @@
+#include "logging.h"
 #include "memory.h"
 #include <iostream>
 
@@ -22,7 +23,7 @@ inline std::optional<bool> toggle_bit(std::optional<T*> ptr, uint8_t bit = 0) {
 
   auto proc = GetCurrentProcess();
 
-  std::cout << "toggle_bit(" << std::hex << (uint64_t)*ptr
+  log() << "toggle_bit(" << std::hex << (uint64_t)*ptr
             << ", " << std::hex << (uint64_t)bit << ")" << std::endl;
 
   if (
@@ -168,23 +169,23 @@ MemoryState::MemoryState() {
 
   // Rudimentary AF
   if (wcsncmp(reinterpret_cast<wchar_t*>(base_addresses_104.version_string_ptr), L"1.04", 4) == 0) {
-    std::cout << "Detected version 1.04" << std::endl;
+    log() << "Detected version 1.04" << std::endl;
     version = std::string("1.04");
     b = base_addresses_104;
   } else if (wcsncmp(reinterpret_cast<wchar_t*>(base_addresses_108.version_string_ptr), L"1.08", 4) == 0) {
-    std::cout << "Detected version 1.08" << std::endl;
+    log() << "Detected version 1.08" << std::endl;
     version = std::string("1.08");
     b = base_addresses_108;
   } else if (wcsncmp(reinterpret_cast<wchar_t*>(base_addresses_112.version_string_ptr), L"1.12", 4) == 0) {
-    std::cout << "Detected version 1.12" << std::endl;
+    log() << "Detected version 1.12" << std::endl;
     version = std::string("1.12");
     b = base_addresses_112;
   } else if (wcsncmp(reinterpret_cast<wchar_t*>(base_addresses_115.version_string_ptr), L"1.15", 4) == 0) {
-    std::cout << "Detected version 1.15" << std::endl;
+    log() << "Detected version 1.15" << std::endl;
     version = std::string("1.15");
     b = base_addresses_115;
   } else {
-    std::cout << "Unrecognized version, stuff will crash, bye!" << std::endl;
+    log() << "Unrecognized version, stuff will crash, bye!" << std::endl;
     version = std::string("W.TF");
   }
 

@@ -12,6 +12,7 @@
 #include "imgui/imgui_impl_win32.h"
 #include "ui.h"
 #include "config.h"
+#include "logging.h"
 
 #ifndef BUILD_CONFIG
 #define BUILD_CONFIG "RelWithDebInfo"
@@ -67,9 +68,9 @@ LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
 HRESULT __fastcall PresentImpl(IDXGISwapChain *pChain, UINT SyncInterval, UINT Flags) {
   if (!initialized) {
-    std::cout << "Initializing DirectX" << std::endl;
+    log() << "Initializing DirectX" << std::endl;
     if (FAILED(GetDeviceAndCtxFromSwapchain(pChain, &pDevice, &pContext))) {
-      std::cout << "GetDeviceAndCtxFromSwapChain failed" << std::endl;
+      log() << "GetDeviceAndCtxFromSwapChain failed" << std::endl;
       return presentTrampoline(pChain, SyncInterval, Flags);
     }
 
@@ -96,7 +97,7 @@ HRESULT __fastcall PresentImpl(IDXGISwapChain *pChain, UINT SyncInterval, UINT F
     pBackBuffer->Release();
 
     initialized = true;
-    std::cout << "DirectX initialized successfully" << std::endl;
+    log() << "DirectX initialized successfully" << std::endl;
   }
 
   ImGui_ImplWin32_NewFrame();
@@ -134,7 +135,7 @@ LPVOID swapchain_present_vtable_lookup() {
   if (FAILED(D3D11CreateDeviceAndSwapChain(
       NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, NULL, &featureLevel, 1,
       D3D11_SDK_VERSION, &swapChainDesc, &pSwapChain, &pDevice, NULL, &pContext))) {
-    std::cout << "D3D11CreateDeviceAndSwapChain failed" << std::endl;
+    log() << "D3D11CreateDeviceAndSwapChain failed" << std::endl;
     return nullptr;
   }
 
@@ -161,12 +162,12 @@ DWORD WINAPI run_thread(LPVOID param) {
 
   auto cfg = Config::Instance();
   auto s_true = std::string("true");
-  std::cout << "Setting: " << cfg.setting("enabled") << std::endl;
+  log() << "Setting: " << cfg.setting("enabled") << std::endl;
   if (cfg.setting("enabled") != s_true) {
     return 0;
   }
 
-  std::cout << "Hooking functions..." << std::endl;
+  log() << "Hooking functions..." << std::endl;
 
   DWORD_PTR hDxgi = (DWORD_PTR)GetModuleHandle(L"dxgi.dll");
 

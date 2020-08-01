@@ -1,3 +1,4 @@
+#include "logging.h"
 #include "config.h"
 #include <fstream>
 #include <iostream>
@@ -22,7 +23,7 @@ std::string get_config_file_name () {
   char szFileName[MAX_PATH]; 
   GetModuleFileNameA(hModule, szFileName, MAX_PATH);
   std::string wf(szFileName);
-  std::cout << wf << std::endl;
+  log() << wf << std::endl;
   uint64_t lastslash = wf.find_last_of('\\');
   std::string dirname(wf.begin(), wf.begin() + lastslash + 1);
   return dirname + std::string("jdsd_dsiii_practice_tool.toml");
@@ -282,19 +283,19 @@ void Config::load () {
     auto& f = hotkey_string_mappings.find(*v);
     if (f != hotkey_string_mappings.end()) {
       mappings[i] = (*f).second;
-      std::cout << "Mapping " << i << " -> " << (*f).first << std::endl;
+      log() << "Mapping " << i << " -> " << (*f).first << std::endl;
     } else {
-      std::cout << "Keycode " << *v << " for command " << i << " not found! Using default" << std::endl;
+      log() << "Keycode " << *v << " for command " << i << " not found! Using default" << std::endl;
     }
   }
 
   for (auto& i : allowed_settings) {
     auto v = settings_node->get_qualified_as<std::string>(i);
     if (!v) continue;
-    std::cout << "Setting " <<  i << " -> " << (*v) << std::endl;
+    log() << "Setting " <<  i << " -> " << (*v) << std::endl;
     settings[i] = *v;
     auto& r = settings.find(i);
-    std::cout << "Check: " << (*r).second << std::endl;
+    log() << "Check: " << (*r).second << std::endl;
   }
 }
 
