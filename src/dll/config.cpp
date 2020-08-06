@@ -11,7 +11,8 @@ std::vector<std::string> allowed_nodes {
   "one_shot", "event_draw", "event_disable",
   "ai_disable", "no_gravity", "rend_chr",
   "rend_map", "rend_obj", "incr_souls",
-  "show", "quitout", "save_pos", "load_pos"
+  "show", "quitout", "save_pos", "load_pos",
+  "cycle_speed"
 };
 std::vector<std::string> allowed_settings {
   "enabled", "debug"
@@ -23,7 +24,7 @@ std::string get_config_file_name () {
   char szFileName[MAX_PATH]; 
   GetModuleFileNameA(hModule, szFileName, MAX_PATH);
   std::string wf(szFileName);
-  log() << wf << std::endl;
+  log() << "Full DLL path name: " << wf << std::endl;
   uint64_t lastslash = wf.find_last_of('\\');
   std::string dirname(wf.begin(), wf.begin() + lastslash + 1);
   return dirname + std::string("jdsd_dsiii_practice_tool.toml");
@@ -277,7 +278,7 @@ void Config::load () {
   auto mappings_node = root->get_table("mappings");
   auto settings_node = root->get_table("settings");
 
-  for (auto& i : allowed_nodes) {
+  /*for (auto& i : allowed_nodes) {
     auto v = mappings_node->get_qualified_as<std::string>(i);
     if (!v) continue;
     auto& f = hotkey_string_mappings.find(*v);
@@ -287,15 +288,30 @@ void Config::load () {
     } else {
       log() << "Keycode " << *v << " for command " << i << " not found! Using default" << std::endl;
     }
+  }*/
+
+  // Should simply emit a log if the mapping/setting is invalid.
+  // Otherwise forgetting to update the allowed_nodes variable
+  // up this file is going to prevent configuring a given mapping
+  for (const auto& i : *mappings_node) {
+    const auto& k = i.first;
+    const auto& v = (*i.second->as<std::string>()).get();
+    auto& f = hotkey_string_mappings.find(v);
+    if (f != hotkey_string_mappings.end()) {
+      mappings[k] = (*f).second;
+      log() << "Mapping " << k << " -> " << (*f).first << std::endl;
+    } else {
+      log() << "Keycode " << v << " for command " << k << " not found! Using default" << std::endl;
+    }
   }
 
   for (auto& i : allowed_settings) {
     auto v = settings_node->get_qualified_as<std::string>(i);
     if (!v) continue;
-    log() << "Setting " <<  i << " -> " << (*v) << std::endl;
+    log() << "Setting \"" <<  i << "\" -> " << (*v) << std::endl;
     settings[i] = *v;
-    auto& r = settings.find(i);
-    log() << "Check: " << (*r).second << std::endl;
+    // auto& r = settings.find(i);
+    // log() << "Check: " << (*r).second << std::endl;
   }
 }
 

@@ -162,7 +162,7 @@ DWORD WINAPI run_thread(LPVOID param) {
 
   auto cfg = Config::Instance();
   auto s_true = std::string("true");
-  log() << "Setting: " << cfg.setting("enabled") << std::endl;
+  log() << "Practice Tool Enabled state: " << cfg.setting("enabled") << std::endl;
   if (cfg.setting("enabled") != s_true) {
     return 0;
   }

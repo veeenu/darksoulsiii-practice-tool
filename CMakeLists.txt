@@ -5,6 +5,8 @@ if (WIN32)
   set (CMAKE_CXX_FLAGS "/Ox /EHsc /Zi /Zo /std:c++17")
 endif (WIN32)
 
+set (CMAKE_CXX_STANDARD 17)
+
 project(jdsd_dsiii_practice_tool C CXX)
 set( CMAKE_VERBOSE_MAKEFILE on )
 
