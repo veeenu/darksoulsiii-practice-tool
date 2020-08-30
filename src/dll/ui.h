@@ -35,6 +35,7 @@ class UI {
 
     bool show_window = true;
 
+    bool all_no_damage = false;
     bool no_damage = false;
     bool no_death = false;
     bool deathcam = false;

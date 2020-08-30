@@ -105,6 +105,7 @@ constexpr BaseAddresses base_addresses_104 {
   0x140830AF1, // xa
   0x1408C3388, // debug
     1,         // player exterminate
+    9,         // all no damage
     9 + 4,     // no update ai
   0x140620B1B, // game rend
   0x1446A9280, // insta qo
@@ -122,6 +123,7 @@ constexpr BaseAddresses base_addresses_108 {
   0x14083BA91, // xa
   0x1408D06F8, // debug
     1,         // player exterminate
+    9,         // all no damage
     9 + 3,     // no update ai
   0x1406287AB, // game rend
   0x1447103D8, // insta qo
@@ -139,6 +141,7 @@ constexpr BaseAddresses base_addresses_112 { // TODO
   0x140841875, // xa
   0x1408D7C88, // debug
     1,         // player exterminate
+    9,         // all no damage
     9 + 4,     // no update ai
   0x14062C45B, // game rend
   0x144746988, // insta qo
@@ -156,6 +159,7 @@ constexpr BaseAddresses base_addresses_115 {
   0x140841D05, // xa
   0x1408D9748, // debug
     1,         // player exterminate
+    9,         // all no damage
     9 + 4,     // no update ai
   0x14062C58B, // game rend
   // 0x141069F30, // speed
@@ -206,6 +210,7 @@ MemoryState::MemoryState() {
   p_rend_map = POINTER_CHAIN(uint8_t, grend + 0);
   p_rend_obj = POINTER_CHAIN(uint8_t, grend + 1);
   p_oneshot = POINTER_CHAIN(uint8_t, debug + b.offs_player_exterminate);
+  p_all_no_damage = POINTER_CHAIN(uint8_t, debug + b.offs_all_no_damage);
   p_ai_disable = POINTER_CHAIN(uint8_t, debug + b.offs_no_update_ai);
 
   p_quitout = POINTER_CHAIN(uint8_t, b.instaqo, 0x250);
@@ -281,6 +286,7 @@ std::optional<bool> MemoryState::get_inf_stamina ()   { return get_bit(p_flags()
 std::optional<bool> MemoryState::get_inf_focus ()     { return get_bit(p_flags(), 5); }
 std::optional<bool> MemoryState::get_inf_consum ()    { return get_bit(p_inf_consum(), 3); }
 std::optional<bool> MemoryState::get_one_shot ()      { return get_bit(p_oneshot()); }
+std::optional<bool> MemoryState::get_all_no_damage () { return get_bit(p_all_no_damage()); }
 std::optional<bool> MemoryState::get_event_draw ()    { return get_bit(p_evt_draw()); }
 std::optional<bool> MemoryState::get_event_disable () { return get_bit(p_evt_disable()); }
 std::optional<bool> MemoryState::get_ai_disable ()    { return get_bit(p_ai_disable()); }
@@ -295,6 +301,7 @@ std::optional<bool> MemoryState::toggle_deathcam ()      { return toggle_bit(p_d
 std::optional<bool> MemoryState::toggle_inf_stamina ()   { return toggle_bit(p_flags(), 4); }
 std::optional<bool> MemoryState::toggle_inf_focus ()     { return toggle_bit(p_flags(), 5); }
 std::optional<bool> MemoryState::toggle_inf_consum ()    { return toggle_bit(p_inf_consum(), 3); }
+std::optional<bool> MemoryState::toggle_all_no_damage () { return toggle_bit(p_all_no_damage()); }
 std::optional<bool> MemoryState::toggle_one_shot ()      { return toggle_bit(p_oneshot()); }
 std::optional<bool> MemoryState::toggle_event_draw ()    { return toggle_bit(p_evt_draw()); }
 std::optional<bool> MemoryState::toggle_event_disable () { return toggle_bit(p_evt_disable()); }

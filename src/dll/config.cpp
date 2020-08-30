@@ -6,7 +6,7 @@
 
 std::unique_ptr<Config> Config::instance;
 std::vector<std::string> allowed_nodes {
-  "no_damage", "no_death", "deathcam",
+  "all_no_damage", "no_damage", "no_death", "deathcam",
   "inf_stamina", "inf_focus", "inf_consum",
   "one_shot", "event_draw", "event_disable",
   "ai_disable", "no_gravity", "rend_chr",
@@ -230,6 +230,7 @@ Config::Config () {
   EMPM(no_death, VK_F6);
   EMPM(deathcam, VK_F8);
   EMPM(one_shot, VK_F9);
+  EMPM(all_no_damage, VK_F12);
   EMPM(no_gravity, VK_F10);
   EMPM(cycle_speed, '4');
   EMPM(event_draw, '5');

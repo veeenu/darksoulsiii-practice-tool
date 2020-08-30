@@ -53,6 +53,7 @@ typedef struct {
   uint64_t xa;
   uint64_t debug;
     uint32_t offs_player_exterminate;
+    uint32_t offs_all_no_damage;
     uint32_t offs_no_update_ai;
   uint64_t grend;
   // uint64_t speed;
@@ -72,7 +73,7 @@ class MemoryState {
     PointerChain<uint8_t>
       p_rend_chr, p_rend_map, p_rend_obj, p_oneshot, p_ai_disable, // no-chain bytes
       p_quitout, p_deathcam, p_evt_draw, p_evt_disable, // bytes
-      p_flags, p_inf_consum, p_no_damage, p_no_grav;  // flags
+      p_flags, p_inf_consum, p_all_no_damage, p_no_damage, p_no_grav;  // flags
 
     PointerChain<uint32_t>
       p_souls;
@@ -102,6 +103,7 @@ class MemoryState {
     std::optional<bool> get_inf_focus ();
     std::optional<bool> get_inf_consum ();
     std::optional<bool> get_one_shot ();
+    std::optional<bool> get_all_no_damage ();
     std::optional<bool> get_event_draw ();
     std::optional<bool> get_event_disable ();
     std::optional<bool> get_ai_disable ();
@@ -117,6 +119,7 @@ class MemoryState {
     std::optional<bool> toggle_inf_focus ();
     std::optional<bool> toggle_inf_consum ();
     std::optional<bool> toggle_one_shot ();
+    std::optional<bool> toggle_all_no_damage ();
     std::optional<bool> toggle_event_draw ();
     std::optional<bool> toggle_event_disable ();
     std::optional<bool> toggle_ai_disable ();

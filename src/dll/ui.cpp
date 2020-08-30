@@ -49,6 +49,7 @@ UI::UI () {
     }, #NAME, cfg[#NAME])           \
   );
 
+  TOGGLE_CMD(all_no_damage)
   TOGGLE_CMD(no_damage)
   TOGGLE_CMD(no_death)
   TOGGLE_CMD(deathcam)
@@ -136,6 +137,7 @@ void UI::Render() {
       ImGui::NextColumn(); \
     }
     //ImGui::Checkbox(tfm::format(LABEL, cfg.repr(#CODE)).c_str(), &CODE);
+      CHKBOX("All No Damage", all_no_damage)
       CHKBOX("No Damage", no_damage)
       CHKBOX("No Death", no_death)
       CHKBOX("Deathcam", deathcam)
@@ -206,6 +208,7 @@ void UI::ReadMemory() {
   READ_ONE(inf_focus)
   READ_ONE(inf_consum)
   READ_ONE(one_shot)
+  READ_ONE(all_no_damage)
   READ_ONE(event_draw)
   READ_ONE(event_disable)
   READ_ONE(ai_disable)
