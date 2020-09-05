@@ -1,3 +1,5 @@
+use hudhook::prelude::*;
+
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -6,19 +8,28 @@ use serde::Deserialize;
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Config {
-  mappings: HashMap<String, i32>,
-  settings: ConfigSettings,
+  pub(crate) mappings: HashMap<String, i32>,
+  pub(crate) settings: ConfigSettings,
 }
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct ConfigSettings {
-  log_level: log::Level,
+  pub(crate) log_level: log::Level,
 }
 
 impl Default for Config {
   fn default() -> Config {
+    use winapi::um::winuser::*;
     Config {
-      mappings: HashMap::new(),
+      mappings: [
+        ("interact", 'I' as u8 as _),
+        ("toggle", VK_SPACE),
+        ("next", VK_DOWN),
+        ("prev", VK_UP),
+      ]
+      .iter()
+      .map(|&(k, v)| (String::from(k), v))
+      .collect(),
       settings: ConfigSettings::default(),
     }
   }
@@ -143,7 +154,7 @@ impl Config {
 // Now playing: Johnny Cash - Hurt
 lazy_static::lazy_static! {
   static ref VK_SYMBOL_MAP: HashMap<String, i32> = {
-    use hudhook::prelude::winapi::um::winuser::*;
+    use winapi::um::winuser::*;
     [
       ("VK_LBUTTON", VK_LBUTTON),
       ("VK_RBUTTON", VK_RBUTTON),
