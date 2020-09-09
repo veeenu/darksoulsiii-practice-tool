@@ -1,5 +1,7 @@
-mod base_addresses;
+mod command_ui;
 mod config;
+mod memory;
+mod palette;
 
 //
 // HudHook imports
@@ -15,7 +17,6 @@ use imgui::{im_str, ImString, StyleVar, WindowFlags};
 // Stdlib imports
 //
 
-use std::collections::HashSet;
 use std::path::PathBuf;
 
 //
@@ -29,7 +30,8 @@ use simplelog::*;
 // Crate imports
 //
 
-use base_addresses::BaseAddresses;
+use command_ui::*;
+use memory::BaseAddresses;
 
 enum PracticeToolState {
   Uninit,
@@ -39,6 +41,7 @@ enum PracticeToolState {
 pub struct DarkSoulsIIIPracticeTool {
   dll_path: PathBuf,
   config: config::Config,
+  commands: Vec<Box<dyn Command>>,
   current_row: usize,
   state: PracticeToolState, // all_no_damage: PointerChain<u8>,
 }
@@ -82,6 +85,7 @@ impl DarkSoulsIIIPracticeTool {
     Box::new(DarkSoulsIIIPracticeTool {
       dll_path,
       config,
+      commands: vec![],
       current_row: 0,
       state: PracticeToolState::Uninit,
     })
@@ -95,6 +99,7 @@ impl DarkSoulsIIIPracticeTool {
       Uninit => match BaseAddresses::detect_version() {
         Some(v) => {
           info!("Matched version: {:?}", v.version);
+          self.commands = v.make_commands();
           Initialized(v)
         }
         None => panic!("Could not detect version!"),
@@ -127,36 +132,17 @@ impl DarkSoulsIIIPracticeTool {
           | WindowFlags::NO_SCROLLBAR
       })
       .build(ui, || {
-        for idx in 0..15 {
-          ui.columns(3, im_str!(""), false);
-          ui.set_column_width(0, 16.);
-          ui.set_column_width(1, size[0] - 144.);
-          ui.set_column_width(2, 128.);
-
-          let is_current_row = idx == self.current_row;
-          let color = if is_current_row {
-            [1., 1., 0., 1.]
-          } else {
-            [1., 1., 1., 1.]
-          };
-
-          ui.text_colored(
-            color,
-            ImString::new(if idx == self.current_row { ">" } else { "" }),
-          );
-          ui.next_column();
-          ui.text_colored(
-            color,
-            &imgui::ImString::new(format!("Prova: {} {} {}", idx, size[0], size[1])),
-          );
-          ui.next_column();
-          ui.text_colored(color, im_str!("VK_OEM_MINUS"));
-          ui.next_column();
+        for (idx, cmd) in self.commands.iter().enumerate() {
+          let active = self.current_row == idx;
+          cmd.display(ui, active, None, size);
+          if active && ui.is_key_released('I' as _) {
+            cmd.interact();
+          }
         }
 
         use winapi::um::winuser::{VK_DOWN, VK_UP};
         if ui.is_key_released(VK_DOWN as _) {
-          self.current_row = usize::min(15, self.current_row + 1);
+          self.current_row = usize::min(self.commands.len() - 1, self.current_row + 1);
           info!("{}", self.current_row);
         } else if ui.is_key_released(VK_UP as _) {
           self.current_row = self.current_row.saturating_sub(1);

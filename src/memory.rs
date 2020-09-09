@@ -1,9 +1,132 @@
-use hudhook::memory::*;
+use crate::palette;
 
+use hudhook::memory::*;
+use hudhook::prelude::*;
+
+use imgui::{im_str, ImString, StyleColor};
 use log::*;
 
 use std::ffi::OsString;
 use std::os::windows::prelude::*;
+
+pub(crate) struct FlagPointer {
+  id: String,
+  pub(crate) label: String,
+  chain: PointerChain<u8>,
+  bit: u8,
+}
+
+impl FlagPointer {
+  pub(crate) fn new(id: &str, label: &str, chain: PointerChain<u8>, bit: u8) -> FlagPointer {
+    FlagPointer {
+      id: String::from(id),
+      label: String::from(label),
+      chain,
+      bit,
+    }
+  }
+
+  pub(crate) fn toggle(&self) {
+    let mask = 1 << self.bit;
+    if let Some(x) = self.chain.read() {
+      self.chain.write(match x & mask {
+        0 => x | mask,
+        _ => x & (!mask),
+      });
+    }
+  }
+
+  pub(crate) fn get(&self) -> Option<bool> {
+    self.chain.read().map(|x| (x & (1 << self.bit)) != 0)
+  }
+}
+
+pub(crate) struct QuitoutPointer {
+  id: String,
+  pub(crate) label: String,
+  ptr: PointerChain<u8>,
+}
+
+impl QuitoutPointer {
+  pub(crate) fn new(id: &str, label: &str, ptr: PointerChain<u8>) -> QuitoutPointer {
+    QuitoutPointer {
+      id: String::from(id),
+      label: String::from(label),
+      ptr,
+    }
+  }
+
+  pub(crate) fn is_valid(&self) -> bool {
+    self.ptr.eval().is_some()
+  }
+
+  pub(crate) fn quitout(&self) {
+    self.ptr.write(1);
+  }
+}
+pub(crate) struct SoulsPointer {
+  id: String,
+  pub(crate) label: String,
+  ptr: PointerChain<u32>,
+}
+
+impl SoulsPointer {
+  pub(crate) fn new(id: String, label: String, ptr: PointerChain<u32>) -> SoulsPointer {
+    SoulsPointer { id, label, ptr }
+  }
+
+  pub(crate) fn incr(&self) {
+    if let Some(cur_souls) = self.ptr.read() {
+      self.ptr.write(cur_souls + 10000);
+    }
+  }
+}
+
+pub(crate) struct PositionPointer {
+  id: String,
+  label: String,
+  x: PointerChain<f32>,
+  y: PointerChain<f32>,
+  z: PointerChain<f32>,
+  saved_x: f32,
+  saved_y: f32,
+  saved_z: f32,
+}
+
+impl PositionPointer {
+  pub(crate) fn new(
+    id: &str,
+    label: &str,
+    x: PointerChain<f32>,
+    y: PointerChain<f32>,
+    z: PointerChain<f32>,
+  ) -> PositionPointer {
+    PositionPointer {
+      id: String::from(id),
+      label: String::from(label),
+      x,
+      y,
+      z,
+      saved_x: 0.,
+      saved_y: 0.,
+      saved_z: 0.,
+    }
+  }
+
+  pub(crate) fn save(&mut self) {
+    if let (Some(x), Some(y), Some(z)) = (self.x.read(), self.y.read(), self.z.read()) {
+      self.saved_x = x;
+      self.saved_y = y;
+      self.saved_z = z;
+    }
+  }
+
+  pub(crate) fn load(&self) {
+    self.x.write(self.saved_x);
+    self.y.write(self.saved_y);
+    self.z.write(self.saved_z);
+  }
+}
 
 pub(crate) struct BaseAddresses {
   // offsets from base_b
@@ -137,5 +260,33 @@ impl BaseAddresses {
     } else {
       None
     }
+  }
+
+  pub(crate) fn make_commands(&self) -> Vec<Box<dyn crate::command_ui::Command>> {
+    vec![
+      Box::new(QuitoutPointer::new(
+        "quitout",
+        "Quitout",
+        PointerChain::new(&[self.instaqo as _, 0x250]),
+      )),
+      Box::new(FlagPointer::new(
+        "rend_chr",
+        "Render Character",
+        PointerChain::new(&[self.grend as isize + 2]),
+        0,
+      )),
+      Box::new(FlagPointer::new(
+        "rend_map",
+        "Render Map",
+        PointerChain::new(&[self.grend as isize + 0]),
+        0,
+      )),
+      Box::new(FlagPointer::new(
+        "rend_obj",
+        "Render Objects",
+        PointerChain::new(&[self.grend as isize + 1]),
+        0,
+      )),
+    ]
   }
 }
