@@ -1,0 +1,12 @@
+#
+# Example configuration file.
+#
+
+[mappings]
+prev = "VK_UP"
+next = "VK_DOWN"
+interact = "VK_SPACE"
+display = "0"
+
+[settings]
+log_level = "debug"

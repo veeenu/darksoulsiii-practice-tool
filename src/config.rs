@@ -22,8 +22,9 @@ impl Default for Config {
     use winapi::um::winuser::*;
     Config {
       mappings: [
-        ("interact", 'I' as u8 as _),
-        ("toggle", VK_SPACE),
+        ("interact", VK_SPACE),
+        ("capture", VK_F1),
+        ("display", VK_F1),
         ("next", VK_DOWN),
         ("prev", VK_UP),
       ]
@@ -115,6 +116,23 @@ impl Config {
 
     Config::from(conf)
   }
+
+  pub(crate) fn is_key_released(&self, ui: &imgui::Ui, key: &str) -> bool {
+    let outcome = self
+      .get_mapping(key)
+      .map(|k| ui.is_key_released(k))
+      .unwrap_or(false);
+    trace!("Is key {} released? {}", key, outcome);
+    outcome
+  }
+
+  pub(crate) fn get_mapping(&self, key: &str) -> Option<u32> {
+    self.mappings.get(key).map(|&k| k as _)
+  }
+}
+
+pub(crate) fn get_symbol(hotkey: i32) -> Option<String> {
+  VK_INV_SYMBOL_MAP.get(&hotkey).map(String::clone)
 }
 
 /*
@@ -333,6 +351,11 @@ lazy_static::lazy_static! {
     .map(|&(k, v)| (String::from(k), v))
     .collect()
   };
+
+  static ref VK_INV_SYMBOL_MAP: HashMap<i32, String> = VK_SYMBOL_MAP
+    .iter()
+    .map(|(k, &v)| (v, k.clone()))
+    .collect();
 }
 
 #[cfg(test)]
