@@ -1,4 +1,4 @@
-use hudhook::prelude::*;
+use hudhook::*;
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -22,11 +22,11 @@ impl Default for Config {
     use winapi::um::winuser::*;
     Config {
       mappings: [
-        ("interact", VK_SPACE),
+        ("interact", 'I' as _),
         ("capture", VK_F1),
         ("display", VK_F1),
-        ("next", VK_DOWN),
-        ("prev", VK_UP),
+        ("next", 'J' as _),
+        ("prev", 'K' as _),
       ]
       .iter()
       .map(|&(k, v)| (String::from(k), v))
@@ -364,7 +364,7 @@ mod tests {
   // Config deserialization needs some in depth testing.
 
   use super::*;
-  use hudhook::prelude::winapi::um::winuser::*;
+  use hudhook::winapi::um::winuser::*;
 
   #[test]
   fn test_config_load() {

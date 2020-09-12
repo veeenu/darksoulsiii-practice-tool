@@ -1,9 +1,5 @@
-use crate::palette;
-
 use hudhook::memory::*;
-use hudhook::prelude::*;
 
-use imgui::{im_str, ImString, StyleColor};
 use log::*;
 
 use std::cell::RefCell;

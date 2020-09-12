@@ -1,12 +1,37 @@
 #
 # Example configuration file.
+# Pick key values from https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+# These four are set by default:
 #
-
 [mappings]
-prev = "VK_UP"
-next = "VK_DOWN"
-interact = "VK_SPACE"
-display = "0"
+interact = "I"     # Toggle current command
+next = "J"         # Go to next command
+prev = "K"         # Go to prev command
+display = "VK_F1"  # Show/hide tool window
+
+# List of available commands to map:
+
+# all_no_damage
+# no_death
+# one_shot
+# inf_stamina
+# inf_focus
+# inf_consumables
+# save_position
+# load_position
+# souls
+# quitout
+# deathcam
+# evt_draw
+# evt_disable
+# ai_disable
+# rend_chr
+# rend_map
+# rend_obj
+# gravity
 
 [settings]
-log_level = "debug"
+# Possible values from most to least verbose:
+# trace, debug, info, warn, error
+# trace and debug will also log to a console window.
+log_level = "info"

@@ -2,7 +2,7 @@ use crate::memory::{
   FlagPointer, PositionPointerLoader, PositionPointerSaver, QuitoutPointer, SoulsPointer,
 };
 
-use hudhook::prelude::*;
+use hudhook::*;
 use imgui::ImString;
 use log::*;
 

@@ -7,9 +7,8 @@ mod palette;
 // HudHook imports
 //
 
-use hudhook::hook;
-use hudhook::memory::{create_thread, PointerChain};
-use hudhook::prelude::*;
+use hudhook::memory::PointerChain;
+use hudhook::*;
 
 use imgui::{im_str, ImString, StyleVar, WindowFlags};
 
@@ -58,8 +57,6 @@ impl DarkSoulsIIIPracticeTool {
     )
     .unwrap();
 
-    debug!("DLL path: {:?}", dll_path);
-
     let mut log_path = dll_path.clone();
     log_path.push("jdsd_dsiii_practice_tool.log");
 
@@ -83,10 +80,14 @@ impl DarkSoulsIIIPracticeTool {
       WriteLogger::new(
         config.settings.log_level.to_level_filter(),
         Config::default(),
-        std::fs::File::create(log_path).unwrap(),
+        std::fs::File::create(&log_path).unwrap(),
       ),
     ])
     .ok();
+
+    debug!("DLL path: {:?}", dll_path);
+    info!("Loading configuration from {:?}", config_path);
+    info!("Logging to {:?}", log_path);
 
     Box::new(DarkSoulsIIIPracticeTool {
       dll_path,
@@ -180,10 +181,11 @@ impl DarkSoulsIIIPracticeTool {
           let valid = cmd.is_valid();
           let style_token = apply_colors(ui, active, valid);
 
-          // === Command column ===
+          // === Cursor column ===
           ui.text(ImString::new(format!("{}", if active { ">" } else { "" })));
           ui.next_column();
 
+          // === Command column ===
           cmd.display(ui);
           if (active && self.config.is_key_released(ui, "interact"))
             || (self.config.is_key_released(ui, cmd.id()))
@@ -268,4 +270,4 @@ impl RenderLoop for DarkSoulsIIIPracticeTool {
   }
 }
 
-hook!(DarkSoulsIIIPracticeTool::new());
+hudhook!(DarkSoulsIIIPracticeTool::new());
