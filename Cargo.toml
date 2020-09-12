@@ -10,7 +10,7 @@ name = "libjdsd_dsiii_practice_tool"
 
 [dependencies]
 # hudhook = { path = "../hudhook" }
-hudhook = "0.1.1"
+hudhook = "0.1.2"
 log = "0.4.8"
 simplelog = "0.8.0"
 log-panics = "2.0.0"
