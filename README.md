@@ -21,53 +21,57 @@ same directory as the tool. The file, if not present, is automatically filled
 with default values. Any errors coming from wrong syntax or undefined fields
 may be fixed by simply removing the file.
 
+Starting from this release, hotkeys are optional and there is a navigable
+interface.
+
 ```toml
 [mappings]
-  # pick values from https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
-  show = "VK_F11"         # show/hide tool window
-  quitout = "P"           # instant quitout
-  save_pos = "VK_F7"      # save position
-  load_pos = "VK_F1"      # load position
-  # on/off toggles
-  inf_stamina = "VK_F2"
-  inf_focus = "VK_F3"
-  inf_consum = "VK_F4"
-  no_damage = "VK_F5"
-  no_death = "VK_F6"
-  deathcam = "VK_F8"
-  one_shot = "VK_F9"
-  no_gravity = "VK_F10"
-  cycle_speed = "4"
-  event_draw = "5"
-  event_disable = "6"
-  ai_disable = "7"
-  rend_chr = "8"
-  rend_map = "9"
-  rend_obj = "0"
+# Pick key values from https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+# These four are set by default:
+
+interact = "I"     # Toggle current command
+next = "J"         # Go to next command
+prev = "K"         # Go to prev command
+display = "VK_F1"  # Show/hide tool window
+
+# List of available commands to map:
+
+# all_no_damage
+# no_death
+# one_shot
+# inf_stamina
+# inf_focus
+# inf_consumables
+# save_position
+# load_position
+# souls
+# quitout
+# deathcam
+# evt_draw
+# evt_disable
+# ai_disable
+# rend_chr
+# rend_map
+# rend_obj
+# gravity
+
 [settings]
-  # you can ignore this section
-  enabled = "true"
-  debug = "false"
+# Possible values from most to least verbose:
+# trace, debug, info, warn, error
+# trace and debug will also log to a console window.
+log_level = "info"
 ```
 
 ## To-do list and known issues
 
-- Validity-check pointers: right now, flipping a value when the pointer is
-  not well defined will lead to a crash.
-- Live-syncing game memory and UI status
+- "Increase souls" pointer for every version but 1.08
 
 ## Building
 
-Development (artifacts in `build/RelWithDebInfo`):
+Production (artifacts in `target/release`):
 
 ```
-$ python build.py
-```
-
-Production (artifacts in `build/Release`):
-
-```
-$ python build.py Release
+$ cargo build --release
 ```
 
 ## Writeup

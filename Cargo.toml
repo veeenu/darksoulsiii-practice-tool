@@ -1,0 +1,19 @@
+[package]
+name = "jdsd_dsiii_practice_tool"
+version = "1.1.0"
+authors = ["Andrea Venuta <venutawebdesign@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+name = "libjdsd_dsiii_practice_tool"
+
+[dependencies]
+# hudhook = { path = "../hudhook" }
+hudhook = "0.1.1"
+log = "0.4.8"
+simplelog = "0.8.0"
+log-panics = "2.0.0"
+lazy_static = "1.4.0"
+toml = "0.5.6"
+serde = { version = "1.0.115", features = ["derive"] }

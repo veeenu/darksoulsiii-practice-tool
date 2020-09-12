@@ -1,4 +1,3 @@
-build
-.vscode
-ignore
+/target
+/ignore
 jdsd_dsiii_practice_tool.zip
