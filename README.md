@@ -128,7 +128,7 @@ gravity = "VK_F10"
 log_level = "info"
 ```
 
-### Q. I found a bug. What do I do?
+### I found a bug. What do I do?
 
 - Set the `log_level = "debug"` option in `jdsd_dsiii_practice_tool.toml`.
 - Reproduce the steps that cause your bug.
