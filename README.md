@@ -131,7 +131,8 @@ log_level = "info"
 ### Q. I found a bug. What do I do?
 
 - Set the `log_level = "debug"` option in `jdsd_dsiii_practice_tool.toml`.
-- Reproduce the steps that cause your bug. - Go
+- Reproduce the steps that cause your bug.
+- Go
   [here](https://github.com/veeenu/darksoulsiii-practice-tool/issues/new)
   and submit a new issue, explaining the problem and attaching the
   `jdsd_dsiii_practice_tool.log` file.
