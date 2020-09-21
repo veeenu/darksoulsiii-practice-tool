@@ -138,13 +138,26 @@ impl DarkSoulsIIIPracticeTool {
     // Rendering code
     let ui = ctx.frame;
 
+    // Always process display toggle
     if self.config.is_key_released(ui, "display") {
       self.capturing = !self.capturing;
     }
 
+    // Always process hotkeys
+    for cmd in &mut self.commands {
+      if self.config.is_key_released(ui, cmd.id()) {
+        cmd.interact();
+      }
+    }
+
+    // Don't do anything else if we're not visible
     if !self.capturing {
       return;
     }
+
+    // let fonts = ui.fonts().fonts();
+    // info!("{}", fonts.len());
+    // let font_token = ui.push_font(fonts[if ctx.display_size[0] > 1920. && fonts.len() > 1 { 1 } else { 0 }]);
 
     let size = [
       f32::floor(ctx.display_size[0] / 3.),
@@ -187,9 +200,7 @@ impl DarkSoulsIIIPracticeTool {
 
           // === Command column ===
           cmd.display(ui);
-          if (active && self.config.is_key_released(ui, "interact"))
-            || (self.config.is_key_released(ui, cmd.id()))
-          {
+          if active && self.config.is_key_released(ui, "interact") {
             cmd.interact();
           }
 
@@ -210,6 +221,7 @@ impl DarkSoulsIIIPracticeTool {
 
         ui.separator();
 
+        // === Help box ===
         let style_token = apply_colors(ui, false, true);
         ui.next_column();
         ui.text(ImString::new(format!(
@@ -238,6 +250,7 @@ impl DarkSoulsIIIPracticeTool {
 
         style_token.pop(&ui);
 
+        // === Process prev/next commands ===
         if self.config.is_key_released(ui, "next") {
           self.current_row = usize::min(self.commands.len() - 1, self.current_row + 1);
           trace!("Current row {}", self.current_row);
@@ -248,6 +261,7 @@ impl DarkSoulsIIIPracticeTool {
       });
 
     stack_token.pop(ui);
+    // font_token.pop(ui);
   }
 }
 
