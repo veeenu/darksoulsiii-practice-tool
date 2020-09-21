@@ -11,7 +11,7 @@ and it can be toggled by pressing `F1`.
 
 You can download the latest release [here](https://github.com/veeenu/darksoulsiii-practice-tool/releases).
 
-If you are in need of help, please read the [FAQ](#troubleshooting-faq) section
+If you are in need of help, please read the [FAQ](#troubleshooting--faq) section
 for potential fixes or ways to get in touch.
 
 ## Settings
