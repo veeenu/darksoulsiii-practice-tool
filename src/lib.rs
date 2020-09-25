@@ -174,7 +174,7 @@ impl DarkSoulsIIIPracticeTool {
 
     imgui::Window::new(im_str!("johndisandonato's Dark Souls III Practice Tool"))
       .position([0., 0.], imgui::Condition::FirstUseEver)
-      .size(size, imgui::Condition::FirstUseEver)
+      .size(size, imgui::Condition::Always)
       .bg_alpha(0.6)
       .flags({
         WindowFlags::NO_DECORATION
