@@ -27,6 +27,8 @@ evt_disable = "6"
 ai_disable = "7"
 rend_chr = "8"
 rend_map = "9"
+rend_mesh_lo = "Y"
+rend_mesh_hi = "U"
 rend_obj = "0"
 gravity = "VK_F10"
 

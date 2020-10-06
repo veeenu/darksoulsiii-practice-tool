@@ -1,6 +1,7 @@
 use hudhook::inject;
 use pkg_version::*;
 use semver::Version;
+use simplelog::*;
 use winapi::shared::windef::*;
 use winapi::um::winuser::*;
 
@@ -55,6 +56,13 @@ fn perform_injection() -> Result<(), String> {
 }
 
 fn main() {
+  CombinedLogger::init(vec![
+    TermLogger::new(
+      LevelFilter::Trace,
+      Config::default(),
+      TerminalMode::Mixed,
+    ),
+  ]).ok();
   let current_version = get_current_version();
 
   match get_latest_version() {

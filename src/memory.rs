@@ -153,6 +153,8 @@ pub(crate) struct BaseAddresses {
   pub offs_no_update_ai: u64,
 
   pub grend: u64,
+  pub mesh_lo: u64,
+  pub mesh_hi: u64,
   pub instaqo: u64,
   pub version_string_ptr: u64,
   pub base_souls: u64,
@@ -173,6 +175,8 @@ const VER104: BaseAddresses = BaseAddresses {
   offs_all_no_damage: 9,           // all no damage
   offs_no_update_ai: 9 + 4,        // no update ai
   grend: 0x140620B1B,              // game rend
+  mesh_lo: 0x1446C3BBC,            // mesh (low hit)
+  mesh_hi: 0x1446C3BBD,            // mesh (high hit)
   instaqo: 0x1446A9280,            // insta qo
   version_string_ptr: 0x14288C422, // version string
   base_souls: 0x144704268,         // souls base ptr
@@ -192,6 +196,8 @@ const VER108: BaseAddresses = BaseAddresses {
   offs_all_no_damage: 9,           // all no damage
   offs_no_update_ai: 9 + 3,        // no update ai
   grend: 0x1406287AB,              // game rend
+  mesh_lo: 0x14472AD4C,            // mesh (low hit)
+  mesh_hi: 0x14472AD4D,            // mesh (high hit)
   instaqo: 0x1447103D8,            // insta qo
   version_string_ptr: 0x1428D3F92, // version string
   base_souls: 0x1446FEE88,         // souls base ptr
@@ -211,6 +217,8 @@ const VER112: BaseAddresses = BaseAddresses {
   offs_all_no_damage: 9,           // all no damage
   offs_no_update_ai: 9 + 4,        // no update ai
   grend: 0x14062C45B,              // game rend
+  mesh_lo: 0x14476130C,            // mesh (low hit)
+  mesh_hi: 0x14476130D,            // mesh (high hit)
   instaqo: 0x144746988,            // insta qo
   version_string_ptr: 0x1428FD262, // version string
   base_souls: 0x144704268,         // souls base ptr
@@ -230,11 +238,21 @@ const VER115: BaseAddresses = BaseAddresses {
   offs_all_no_damage: 9,           // all no damage
   offs_no_update_ai: 9 + 4,        // no update ai
   grend: 0x14062C58B,              // game rend
+  mesh_lo: 0x144766C6C,            // mesh (low hit)
+  mesh_hi: 0x144766C6D,            // mesh (high hit)
   instaqo: 0x14474C2E8,            // insta qo
   version_string_ptr: 0x142900782, // version string
   base_souls: 0x144704268,         // souls base ptr
   version: "1.15",
 };
+
+/**
+ *
+  MESH FLAGS
+  115       112       108       104
+  144766C6C 14476130C 14472AD4C 1446C3BBC
+  144766C6D 14476130D 14472AD4D 1446C3BBC
+ */
 
 fn vercmp(ptr: usize, ver: &str) -> bool {
   let ver_mem = PointerChain::<[u16; 4]>::new(&[ptr]).read();
@@ -404,15 +422,27 @@ impl BaseAddresses {
         0,
       )),
       Box::new(FlagPointer::new(
+        "rend_obj",
+        "Render Objects",
+        PointerChain::new(&[grend + 1]),
+        0,
+      )),
+      Box::new(FlagPointer::new(
         "rend_map",
         "Render Map",
         PointerChain::new(&[grend + 0]),
         0,
       )),
       Box::new(FlagPointer::new(
-        "rend_obj",
-        "Render Objects",
-        PointerChain::new(&[grend + 1]),
+        "rend_mesh_hi",
+        "Render Mesh (high)",
+        PointerChain::new(&[self.mesh_hi as usize]),
+        0,
+      )),
+      Box::new(FlagPointer::new(
+        "rend_mesh_lo",
+        "Render Mesh (low)",
+        PointerChain::new(&[self.mesh_lo as usize]),
         0,
       )),
       Box::new(FlagPointer::new(

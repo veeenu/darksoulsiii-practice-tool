@@ -155,12 +155,18 @@ impl DarkSoulsIIIPracticeTool {
       return;
     }
 
-    // let fonts = ui.fonts().fonts();
-    // info!("{}", fonts.len());
-    // let font_token = ui.push_font(fonts[if ctx.display_size[0] > 1920. && fonts.len() > 1 { 1 } else { 0 }]);
+    let (font_id, col_width, col_height) = {
+      let fonts = ui.fonts().fonts();
+      if ctx.display_size[0] > 1920. && fonts.len() > 1 {
+        (fonts[1], 28., 26.)
+      } else {
+        (fonts[0], 14., 13.)
+      }
+    };
 
     let size = [
-      f32::floor(ctx.display_size[0] / 3.),
+      //f32::floor(ctx.display_size[0] / 3.),
+      f32::floor(col_width * 36.),
       f32::floor(ctx.display_size[1]),
     ];
 
@@ -184,10 +190,13 @@ impl DarkSoulsIIIPracticeTool {
           | WindowFlags::NO_SCROLLBAR
       })
       .build(ui, || {
+        let font_token = ui.push_font(font_id);
+        // let draw_list = ui.get_window_draw_list();
+
         ui.columns(3, im_str!(""), false);
-        ui.set_column_width(0, 16.);
-        ui.set_column_width(1, size[0] - 144.);
-        ui.set_column_width(2, 128.);
+        ui.set_column_width(0, col_width);
+        ui.set_column_width(1, size[0] - col_width * 9.);
+        ui.set_column_width(2, col_width * 8.);
 
         for (idx, cmd) in self.commands.iter_mut().enumerate() {
           let active = self.current_row == idx;
@@ -207,10 +216,15 @@ impl DarkSoulsIIIPracticeTool {
           // === Hotkey column ===
           ui.next_column();
           if let Some(hotkey) = self.config.get_mapping(cmd.id()) {
+            // Placeholder code: draw rect around button shortcut
+            // let pos = ui.cursor_screen_pos();
+            // draw_list.add_rect(
+            //   [pos[0] - 8., pos[1]],
+            //   [pos[0] + col_width * 8. - 16., pos[1] + col_height + 1.], palette::GRAY).build();
             ui.text(ImString::new(format!(
               "{}",
               config::get_symbol(hotkey as _).unwrap_or_else(String::new)
-            )))
+            )));
           } else {
             ui.text(im_str!(""));
           }
@@ -248,7 +262,10 @@ impl DarkSoulsIIIPracticeTool {
         ui.next_column();
         ui.next_column();
 
-        style_token.pop(&ui);
+        // Placeholder for debug info
+        // ui.next_column();
+        // ui.text(ImString::new(format!(
+        // )));
 
         // === Process prev/next commands ===
         if self.config.is_key_released(ui, "next") {
@@ -258,10 +275,12 @@ impl DarkSoulsIIIPracticeTool {
           self.current_row = self.current_row.saturating_sub(1);
           trace!("Current row {}", self.current_row);
         }
+
+        style_token.pop(&ui);
+        font_token.pop(ui);
       });
 
     stack_token.pop(ui);
-    // font_token.pop(ui);
   }
 }
 

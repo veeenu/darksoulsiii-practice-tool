@@ -4,6 +4,10 @@ version = "1.1.1"
 authors = ["Andrea Venuta <venutawebdesign@gmail.com>"]
 edition = "2018"
 
+[[bin]]
+name = "jdsd_dsiii_practice_tool"
+path = "src/main.rs"
+
 [lib]
 crate-type = ["cdylib"]
 name = "libjdsd_dsiii_practice_tool"
