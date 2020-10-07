@@ -136,6 +136,32 @@ impl PositionPointerLoader {
   }
 }
 
+pub(crate) struct CycleSpeedPointer(PointerChain<f32>, usize);
+
+impl CycleSpeedPointer {
+  pub(crate) fn new(pointer: PointerChain<f32>) -> CycleSpeedPointer {
+    CycleSpeedPointer(pointer, 0)
+  }
+
+  pub(crate) fn cycle(&self) -> Option<f32> {
+    let next = match self.0.read() {
+      Some(x) if x <= 0.25 => Some(0.5),
+      Some(x) if x <= 0.5 => Some(1.),
+      Some(x) if x <= 1. => Some(2.),
+      Some(x) if x <= 2. => Some(4.),
+      Some(x) if x <= 4. => Some(8.),
+      Some(_) => Some(0.25),
+      None => None
+    };
+    next.map(|speed| self.0.write(speed));
+    next
+  }
+
+  pub(crate) fn read(&self) -> Option<f32> {
+    self.0.read()
+  }
+}
+
 pub(crate) struct BaseAddresses {
   // offsets from base_b
   pub base_b: u64,
@@ -450,6 +476,9 @@ impl BaseAddresses {
         "Gravity",
         PointerChain::new(&[base_d, 0x60, 0x48]),
         0,
+      )),
+      Box::new(CycleSpeedPointer::new(
+        PointerChain::new(&[base_b, 0x80, xa as _, 0x28, self.offs_speed as _]),
       )),
     ]
   }

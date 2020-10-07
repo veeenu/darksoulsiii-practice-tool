@@ -1,10 +1,9 @@
 use crate::memory::{
-  FlagPointer, PositionPointerLoader, PositionPointerSaver, QuitoutPointer, SoulsPointer,
+  FlagPointer, PositionPointerLoader, PositionPointerSaver, QuitoutPointer, SoulsPointer, CycleSpeedPointer
 };
 
 use hudhook::*;
 use imgui::ImString;
-use log::*;
 
 pub(crate) trait Command {
   fn display(&self, ui: &imgui::Ui);
@@ -123,5 +122,32 @@ impl Command for PositionPointerLoader {
 
   fn is_valid(&self) -> bool {
     true
+  }
+}
+
+impl Command for CycleSpeedPointer {
+  fn display(&self, ui: &imgui::Ui) {
+    if let Some(speed) = self.read() {
+      ui.text(ImString::new(format!(
+        "  Cycle speed [{:3.2}x]",
+        speed
+      )));
+    } else {
+      ui.text(ImString::new(format!(
+        "  Cycle speed [ N/A ]",
+      )));
+    }
+  }
+
+  fn interact(&mut self) {
+    self.cycle();
+  }
+
+  fn id(&self) -> &str {
+    "cycle_speed"
+  }
+
+  fn is_valid(&self) -> bool {
+    self.read().is_some()
   }
 }

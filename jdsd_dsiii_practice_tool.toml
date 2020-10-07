@@ -31,6 +31,7 @@ rend_mesh_lo = "Y"
 rend_mesh_hi = "U"
 rend_obj = "0"
 gravity = "VK_F10"
+cycle_speed = "4"
 
 [settings]
 # log_level - Possible values from most to least verbose:
