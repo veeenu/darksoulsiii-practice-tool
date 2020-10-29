@@ -161,4 +161,4 @@ $ python package.py
 ## Writeup
 
 I wrote a technical post about some inner workings of the mod.
-You can read it [here](http://veeenu.github.io/2019/08/18/sekiro-practice-tool-architecture.html).
+You can read it [here](https://veeenu.github.io/blog/sekiro-practice-tool-architecture/).
