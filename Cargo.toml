@@ -9,7 +9,7 @@ name = "jdsd_dsiii_practice_tool"
 path = "src/main.rs"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 name = "libjdsd_dsiii_practice_tool"
 
 [profile.release]
@@ -27,6 +27,14 @@ serde = { version = "1.0.115", features = ["derive"] }
 serde_json = "1.0.57"
 pkg-version = "1.0.0"
 ureq = { version = "1.4.1", features = ["json"] }
-winapi = { version = "0.3.9", features = ["winuser", "minwindef", "windef"] }
+winapi = { version = "0.3.9", features = ["winuser", "minwindef", "windef", "xinput"] }
 open = "1.4.0"
 semver = "0.11.0"
+libloading = "0.6"
+clap = "2.33.3"
+imgui = "0.6.0"
+imgui-winit-support = "0.6.1"
+glutin = "0.26.0"
+imgui-glium-renderer = "0.6.1"
+glium = "0.29.0"
+clipboard = "0.5"

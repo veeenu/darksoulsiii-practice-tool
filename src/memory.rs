@@ -1,165 +1,31 @@
 use hudhook::memory::*;
 
+use std::ffi::OsString;
+use std::os::windows::ffi::OsStringExt;
+
 use log::*;
 
-use std::cell::RefCell;
-use std::ffi::OsString;
-use std::os::windows::prelude::*;
-use std::rc::Rc;
-
-pub(crate) struct FlagPointer {
-  pub(crate) id: String,
-  pub(crate) label: String,
-  chain: PointerChain<u8>,
-  bit: u8,
-}
-
-impl FlagPointer {
-  pub(crate) fn new(id: &str, label: &str, chain: PointerChain<u8>, bit: u8) -> FlagPointer {
-    info!("Building flag pointer {}", id);
-    FlagPointer {
-      id: String::from(id),
-      label: String::from(label),
-      chain,
-      bit,
-    }
-  }
-
-  pub(crate) fn toggle(&self) {
-    let mask = 1 << self.bit;
-    if let Some(x) = self.chain.read() {
-      self.chain.write(match x & mask {
-        0 => x | mask,
-        _ => x & (!mask),
-      });
-    }
-  }
-
-  pub(crate) fn get(&self) -> Option<bool> {
-    self.chain.read().map(|x| (x & (1 << self.bit)) != 0)
-  }
-}
-
-pub(crate) struct QuitoutPointer(pub(crate) PointerChain<u8>);
-
-impl QuitoutPointer {
-  pub(crate) fn is_valid(&self) -> bool {
-    self.0.eval().is_some()
-  }
-
-  pub(crate) fn quitout(&self) {
-    if let None = self.0.write(1) {
-      error!("Error writing quitout pointer");
-    }
-  }
-}
-pub(crate) struct SoulsPointer(pub(crate) PointerChain<u32>);
-
-impl SoulsPointer {
-  pub(crate) fn incr(&self) {
-    if let Some(cur_souls) = self.0.read() {
-      self.0.write(cur_souls + 10000);
-    }
-  }
-}
-
-pub(crate) struct PositionPointer {
-  x: PointerChain<f32>,
-  y: PointerChain<f32>,
-  z: PointerChain<f32>,
-  pub(crate) saved_x: f32,
-  pub(crate) saved_y: f32,
-  pub(crate) saved_z: f32,
-}
-
-impl PositionPointer {
-  pub(crate) fn new(
-    x: PointerChain<f32>,
-    y: PointerChain<f32>,
-    z: PointerChain<f32>,
-  ) -> PositionPointer {
-    PositionPointer {
-      x,
-      y,
-      z,
-      saved_x: 0.,
-      saved_y: 0.,
-      saved_z: 0.,
-    }
-  }
-
-  fn read(&self) -> Option<(f32, f32, f32)> {
-    if let (Some(x), Some(y), Some(z)) = (self.x.read(), self.y.read(), self.z.read()) {
-      Some((x, y, z))
-    } else {
-      None
-    }
-  }
-
-  fn save(&mut self) {
-    if let Some((x, y, z)) = self.read() {
-      self.saved_x = x;
-      self.saved_y = y;
-      self.saved_z = z;
-    }
-  }
-
-  fn load(&self) {
-    self.x.write(self.saved_x);
-    self.y.write(self.saved_y);
-    self.z.write(self.saved_z);
-  }
-}
-
-pub(crate) struct PositionPointerSaver(Rc<RefCell<PositionPointer>>);
-
-impl PositionPointerSaver {
-  pub(crate) fn save(&mut self) {
-    self.0.borrow_mut().save();
-  }
-
-  pub(crate) fn read(&self) -> Option<(f32, f32, f32)> {
-    self.0.borrow().read()
-  }
-}
-
-pub(crate) struct PositionPointerLoader(Rc<RefCell<PositionPointer>>);
-
-impl PositionPointerLoader {
-  pub(crate) fn get_saved(&self) -> (f32, f32, f32) {
-    let ptr = self.0.borrow();
-    (ptr.saved_x, ptr.saved_y, ptr.saved_z)
-  }
-
-  pub(crate) fn load(&self) {
-    self.0.borrow().load()
-  }
-}
-
-pub(crate) struct CycleSpeedPointer(PointerChain<f32>, usize);
-
-impl CycleSpeedPointer {
-  pub(crate) fn new(pointer: PointerChain<f32>) -> CycleSpeedPointer {
-    CycleSpeedPointer(pointer, 0)
-  }
-
-  pub(crate) fn cycle(&self) -> Option<f32> {
-    let next = match self.0.read() {
-      Some(x) if x <= 0.25 => Some(0.5),
-      Some(x) if x <= 0.5 => Some(1.),
-      Some(x) if x <= 1. => Some(2.),
-      Some(x) if x <= 2. => Some(4.),
-      Some(x) if x <= 4. => Some(8.),
-      Some(_) => Some(0.25),
-      None => None
-    };
-    next.map(|speed| self.0.write(speed));
-    next
-  }
-
-  pub(crate) fn read(&self) -> Option<f32> {
-    self.0.read()
-  }
+pub(crate) struct PointerChains {
+  pub(crate) all_no_damage: (PointerChain<u8>, u8),
+  pub(crate) no_death: (PointerChain<u8>, u8),
+  pub(crate) one_shot: (PointerChain<u8>, u8),
+  pub(crate) inf_stamina: (PointerChain<u8>, u8),
+  pub(crate) inf_focus: (PointerChain<u8>, u8),
+  pub(crate) inf_consumables: (PointerChain<u8>, u8),
+  pub(crate) deathcam: (PointerChain<u8>, u8),
+  pub(crate) evt_draw: (PointerChain<u8>, u8),
+  pub(crate) evt_disable: (PointerChain<u8>, u8),
+  pub(crate) ai_disable: (PointerChain<u8>, u8),
+  pub(crate) rend_chr: (PointerChain<u8>, u8),
+  pub(crate) rend_obj: (PointerChain<u8>, u8),
+  pub(crate) rend_map: (PointerChain<u8>, u8),
+  pub(crate) rend_mesh_hi: (PointerChain<u8>, u8),
+  pub(crate) rend_mesh_lo: (PointerChain<u8>, u8),
+  pub(crate) gravity: (PointerChain<u8>, u8),
+  pub(crate) speed: PointerChain<f32>,
+  pub(crate) position: (PointerChain<f32>, PointerChain<f32>, PointerChain<f32>),
+  pub(crate) souls: PointerChain<u32>,
+  pub(crate) quitout: PointerChain<u8>,
 }
 
 pub(crate) struct BaseAddresses {
@@ -273,12 +139,12 @@ const VER115: BaseAddresses = BaseAddresses {
 };
 
 /**
- *
-  MESH FLAGS
-  115       112       108       104
-  144766C6C 14476130C 14472AD4C 1446C3BBC
-  144766C6D 14476130D 14472AD4D 1446C3BBC
- */
+*
+MESH FLAGS
+115       112       108       104
+144766C6C 14476130C 14472AD4C 1446C3BBC
+144766C6D 14476130D 14472AD4D 1446C3BBC
+*/
 
 fn vercmp(ptr: usize, ver: &str) -> bool {
   let ver_mem = PointerChain::<[u16; 4]>::new(&[ptr]).read();
@@ -316,170 +182,212 @@ impl BaseAddresses {
     }
   }
 
-  pub(crate) fn make_commands(&self) -> Vec<Box<dyn crate::command_ui::Command>> {
+  // pub(crate) fn make_commands(&self) -> Vec<Box<dyn crate::command_ui::Command>> {
+  pub(crate) fn make_commands(&self) -> Option<PointerChains> {
     // SAFETY TODO
     let base_b = match base_chain(self.base_b, 3, 7) {
       Some(b) => b,
       None => {
         error!("Could not read base_b!");
-        return vec![];
+        return None;
       }
     };
     let base_d = match base_chain(self.base_d, 3, 7) {
       Some(b) => b,
       None => {
         error!("Could not read base_d!");
-        return vec![];
+        return None;
       }
     };
     let base_f = match base_chain(self.base_f, 3, 7) {
       Some(b) => b,
       None => {
         error!("Could not read base_f!");
-        return vec![];
+        return None;
       }
     };
     let debug = match base_chain(self.debug, 3, 7) {
       Some(b) => b,
       None => {
         error!("Could not read debug!");
-        return vec![];
+        return None;
       }
     };
     let grend = match base_chain(self.grend, 2, 7) {
       Some(b) => b,
       None => {
         error!("Could not read grend!");
-        return vec![];
+        return None;
       }
     };
     let xa = match PointerChain::<u32>::new(&[self.xa as usize + 3]).read() {
       Some(b) => b,
       None => {
         error!("Could not read xa!");
-        return vec![];
+        return None;
       }
     };
 
-    let x = PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x80]);
+    /*let x = PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x80]);
     let y = PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x88]);
     let z = PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x84]);
 
     let position_pointer = Rc::new(RefCell::new(PositionPointer::new(x, y, z)));
     let save_position = Box::new(PositionPointerSaver(Rc::clone(&position_pointer)));
-    let load_position = Box::new(PositionPointerLoader(Rc::clone(&position_pointer)));
+    let load_position = Box::new(PositionPointerLoader(Rc::clone(&position_pointer)));*/
 
-    vec![
-      Box::new(FlagPointer::new(
-        "all_no_damage",
-        "All No Damage",
+    Some(PointerChains {
+      all_no_damage: (
         PointerChain::new(&[debug + self.offs_all_no_damage as usize]),
         0,
-      )),
-      Box::new(FlagPointer::new(
-        "no_death",
-        "No Death",
-        PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]),
-        2,
-      )),
-      Box::new(FlagPointer::new(
-        "one_shot",
-        "One Shot",
+      ),
+      no_death: (PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]), 2),
+      one_shot: (
         PointerChain::new(&[debug + self.offs_player_exterminate as usize]),
         0,
-      )),
-      Box::new(FlagPointer::new(
-        "inf_stamina",
-        "Inf Stamina",
-        PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]),
-        4,
-      )),
-      Box::new(FlagPointer::new(
-        "inf_focus",
-        "Inf Focus",
-        PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]),
-        5,
-      )),
-      Box::new(FlagPointer::new(
-        "inf_consumables",
-        "Inf Consumables",
+      ),
+      inf_stamina: (PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]), 4),
+      inf_focus: (PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]), 5),
+      inf_consumables: (
         PointerChain::new(&[base_b, 0x80, self.offs_no_goods_consume as _]),
         3,
-      )),
-      save_position,
-      load_position,
-      Box::new(SoulsPointer(PointerChain::new(&[
-        self.base_souls as _,
-        0x3d0,
-        0x74,
-      ]))),
-      Box::new(QuitoutPointer(PointerChain::new(&[
-        self.instaqo as _,
-        0x250,
-      ]))),
-      Box::new(FlagPointer::new(
-        "deathcam",
-        "Deathcam",
-        PointerChain::new(&[base_b, self.offs_deathcam as usize]),
-        0,
-      )),
-      Box::new(FlagPointer::new(
-        "evt_draw",
-        "Event Draw",
-        PointerChain::new(&[base_f, 0xa8]),
-        0,
-      )),
-      Box::new(FlagPointer::new(
-        "evt_disable",
-        "Event Disable",
-        PointerChain::new(&[base_f, 0xd4]),
-        0,
-      )),
-      Box::new(FlagPointer::new(
-        "ai_disable",
-        "AI Disable",
+      ),
+      deathcam: (PointerChain::new(&[base_b, self.offs_deathcam as usize]), 0),
+      evt_draw: (PointerChain::new(&[base_f, 0xa8]), 0),
+      evt_disable: (PointerChain::new(&[base_f, 0xd4]), 0),
+      ai_disable: (
         PointerChain::new(&[debug + self.offs_no_update_ai as usize]),
         0,
-      )),
-      Box::new(FlagPointer::new(
-        "rend_chr",
-        "Render Character",
-        PointerChain::new(&[grend + 2]),
-        0,
-      )),
-      Box::new(FlagPointer::new(
-        "rend_obj",
-        "Render Objects",
-        PointerChain::new(&[grend + 1]),
-        0,
-      )),
-      Box::new(FlagPointer::new(
+      ),
+      rend_chr: (PointerChain::new(&[grend + 2]), 0),
+      rend_obj: (PointerChain::new(&[grend + 1]), 0),
+      rend_map: (PointerChain::new(&[grend + 0]), 0),
+      rend_mesh_hi: (PointerChain::new(&[self.mesh_hi as usize]), 0),
+      rend_mesh_lo: (PointerChain::new(&[self.mesh_lo as usize]), 0),
+      gravity: (PointerChain::new(&[base_d, 0x60, 0x48]), 0),
+      speed: PointerChain::new(&[base_b, 0x80, xa as _, 0x28, self.offs_speed as _]),
+      position: (
+        PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x80]),
+        PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x88]),
+        PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x84]),
+      ),
+      souls: PointerChain::new(&[self.base_souls as _, 0x3d0, 0x74]),
+      quitout: PointerChain::new(&[self.instaqo as _, 0x250]),
+    })
+
+    /*
+       vec![
+       Box::new(FlagPointer::new(
+       "all_no_damage",
+       "All No Damage",
+       PointerChain::new(&[debug + self.offs_all_no_damage as usize]),
+       0,
+       )),
+       Box::new(FlagPointer::new(
+       "no_death",
+       "No Death",
+       PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]),
+       2,
+       )),
+       Box::new(FlagPointer::new(
+       "one_shot",
+       "One Shot",
+       PointerChain::new(&[debug + self.offs_player_exterminate as usize]),
+       0,
+       )),
+       Box::new(FlagPointer::new(
+       "inf_stamina",
+       "Inf Stamina",
+       PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]),
+       4,
+       )),
+       Box::new(FlagPointer::new(
+       "inf_focus",
+       "Inf Focus",
+       PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]),
+       5,
+       )),
+       Box::new(FlagPointer::new(
+       "inf_consumables",
+       "Inf Consumables",
+       PointerChain::new(&[base_b, 0x80, self.offs_no_goods_consume as _]),
+       3,
+       )),
+       Box::new(FlagPointer::new(
+       "deathcam",
+       "Deathcam",
+       PointerChain::new(&[base_b, self.offs_deathcam as usize]),
+       0,
+       )),
+       Box::new(FlagPointer::new(
+       "evt_draw",
+       "Event Draw",
+       PointerChain::new(&[base_f, 0xa8]),
+       0,
+       )),
+       Box::new(FlagPointer::new(
+       "evt_disable",
+       "Event Disable",
+       PointerChain::new(&[base_f, 0xd4]),
+       0,
+       )),
+       Box::new(FlagPointer::new(
+       "ai_disable",
+       "AI Disable",
+       PointerChain::new(&[debug + self.offs_no_update_ai as usize]),
+       0,
+       )),
+       Box::new(FlagPointer::new(
+       "rend_chr",
+       "Render Character",
+       PointerChain::new(&[grend + 2]),
+       0,
+       )),
+       Box::new(FlagPointer::new(
+       "rend_obj",
+       "Render Objects",
+    PointerChain::new(&[grend + 1]),
+    0,
+    )),
+    Box::new(FlagPointer::new(
         "rend_map",
         "Render Map",
         PointerChain::new(&[grend + 0]),
         0,
-      )),
-      Box::new(FlagPointer::new(
+    )),
+    Box::new(FlagPointer::new(
         "rend_mesh_hi",
         "Render Mesh (high)",
         PointerChain::new(&[self.mesh_hi as usize]),
         0,
-      )),
-      Box::new(FlagPointer::new(
+    )),
+    Box::new(FlagPointer::new(
         "rend_mesh_lo",
         "Render Mesh (low)",
         PointerChain::new(&[self.mesh_lo as usize]),
         0,
-      )),
-      Box::new(FlagPointer::new(
+    )),
+    Box::new(FlagPointer::new(
         "gravity",
         "Gravity",
         PointerChain::new(&[base_d, 0x60, 0x48]),
         0,
-      )),
-      Box::new(CycleSpeedPointer::new(
+    )),
+    Box::new(CycleSpeedPointer::new(
         PointerChain::new(&[base_b, 0x80, xa as _, 0x28, self.offs_speed as _]),
-      )),
+    )),
+    save_position,
+    load_position,
+    Box::new(SoulsPointer(PointerChain::new(&[
+          self.base_souls as _,
+          0x3d0,
+          0x74,
+    ]))),
+    Box::new(QuitoutPointer(PointerChain::new(&[
+          self.instaqo as _,
+          0x250,
+    ]))),
     ]
+      */
   }
 }

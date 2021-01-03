@@ -38,3 +38,8 @@ cycle_speed = "4"
 # trace, debug, info, warn, error
 # trace and debug will also log to a console window.
 log_level = "info"
+
+[[command]]
+cmd = "quitout"
+hotkey = "P"
+

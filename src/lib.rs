@@ -1,16 +1,16 @@
-mod command_ui;
-mod config;
+mod commands;
+pub mod config;
 mod memory;
 mod palette;
+pub mod utils;
 
 //
 // HudHook imports
 //
 
-use hudhook::memory::PointerChain;
 use hudhook::*;
 
-use imgui::{im_str, ImString, StyleVar, WindowFlags};
+use imgui::{im_str, StyleVar, WindowFlags};
 
 //
 // Stdlib imports
@@ -29,7 +29,7 @@ use simplelog::*;
 // Crate imports
 //
 
-use command_ui::*;
+use commands::*;
 use memory::BaseAddresses;
 
 enum PracticeToolState {
@@ -43,7 +43,7 @@ pub struct DarkSoulsIIIPracticeTool {
   commands: Vec<Box<dyn Command>>,
   current_row: usize,
   capturing: bool,
-  state: PracticeToolState, // all_no_damage: PointerChain<u8>,
+  state: PracticeToolState,
 }
 
 impl DarkSoulsIIIPracticeTool {
@@ -63,7 +63,13 @@ impl DarkSoulsIIIPracticeTool {
     let mut config_path = dll_path.clone();
     config_path.push("jdsd_dsiii_practice_tool.toml");
 
-    let config = config::Config::load_from_file(&config_path);
+    let config = match config::Config::load_from_file(&config_path) {
+      Ok(config) => config,
+      Err(e) => {
+        error!("{}", e);
+        config::Config::default()
+      }
+    };
 
     if config.settings.log_level > log::Level::Info {
       unsafe {
@@ -86,7 +92,7 @@ impl DarkSoulsIIIPracticeTool {
     .ok();
 
     debug!("DLL path: {:?}", dll_path);
-    info!("Loading configuration from {:?}", config_path);
+    info!("Loading configuration from {:?}: {:#?}", config_path, config);
     info!("Logging to {:?}", log_path);
 
     Box::new(DarkSoulsIIIPracticeTool {
@@ -107,7 +113,15 @@ impl DarkSoulsIIIPracticeTool {
       Uninit => match BaseAddresses::detect_version() {
         Some(v) => {
           info!("Matched version: {:?}", v.version);
-          self.commands = v.make_commands();
+          // self.commands = v.make_commands().map(;
+          if let Some(pointer_chains) = v.make_commands() {
+            self.commands = self
+              .config
+              .command
+              .iter()
+              .filter_map(|cmd| cmd.try_to_command(&pointer_chains))
+              .collect();
+          }
           Initialized(v)
         }
         None => panic!("Could not detect version!"),
@@ -116,7 +130,7 @@ impl DarkSoulsIIIPracticeTool {
     }
   }
 
-  fn render_inner<'a>(&mut self, ctx: RenderContext<'a>) {
+  fn render_inner<'b>(&mut self, ctx: RenderContext<'b>) {
     // Utility function for applying colors
     use imgui::{ColorStackToken, StyleColor};
     fn apply_colors(ui: &imgui::Ui, active: bool, valid: bool) -> ColorStackToken {
@@ -139,25 +153,28 @@ impl DarkSoulsIIIPracticeTool {
     let ui = ctx.frame;
 
     // Always process display toggle
-    if self.config.is_key_released(ui, "display") {
+    //if self.config.is_key_released(ui, "display") {
+    if ui.is_key_released(self.config.settings.display as _) {
       self.capturing = !self.capturing;
     }
 
+    let interacting = ui.is_key_released(self.config.settings.interact as _);
     // Always process hotkeys
-    for cmd in &mut self.commands {
-      if self.config.is_key_released(ui, cmd.id()) {
-        cmd.interact();
-      }
+    for (idx, cmd) in self.commands.iter_mut().enumerate() {
+      let active = self.current_row == idx && self.capturing;
+      cmd.interact(ui, active, interacting);
     }
 
     // Don't do anything else if we're not visible
     if !self.capturing {
+      ui.set_mouse_cursor(None);
       return;
     }
+    ui.set_mouse_cursor(Some(imgui::MouseCursor::Arrow));
 
     let (font_id, col_width, col_height) = {
       let fonts = ui.fonts().fonts();
-      if ctx.display_size[0] > 1920. && fonts.len() > 1 {
+      if false && ctx.display_size[0] > 1920. && fonts.len() > 1 {
         (fonts[1], 28., 26.)
       } else {
         (fonts[0], 14., 13.)
@@ -193,10 +210,10 @@ impl DarkSoulsIIIPracticeTool {
         let font_token = ui.push_font(font_id);
         // let draw_list = ui.get_window_draw_list();
 
-        ui.columns(3, im_str!(""), false);
-        ui.set_column_width(0, col_width);
-        ui.set_column_width(1, size[0] - col_width * 9.);
-        ui.set_column_width(2, col_width * 8.);
+        // ui.columns(2, im_str!(""), false);
+        // ui.set_column_width(0, col_width);
+        // ui.set_column_width(0, size[0] - col_width * 9.);
+        // ui.set_column_width(1, col_width * 9.);
 
         for (idx, cmd) in self.commands.iter_mut().enumerate() {
           let active = self.current_row == idx;
@@ -204,31 +221,34 @@ impl DarkSoulsIIIPracticeTool {
           let style_token = apply_colors(ui, active, valid);
 
           // === Cursor column ===
-          ui.text(ImString::new(format!("{}", if active { ">" } else { "" })));
-          ui.next_column();
+          //ui.text(ImString::new(format!("{}", if active { ">" } else { "" })));
+          //ui.next_column();
 
           // === Command column ===
           cmd.display(ui);
-          if active && self.config.is_key_released(ui, "interact") {
-            cmd.interact();
-          }
+          // let has_interacted_g = active && ui.is_key_released(self.config.settings.interact as _);
+          // let has_interacted = cmd.display(ui);
+          // if (active && self.config.is_key_released(ui, "interact")) || has_interacted {
+          // if has_interacted_g || has_interacted {
+          //   cmd.interact();
+          // }
 
           // === Hotkey column ===
-          ui.next_column();
-          if let Some(hotkey) = self.config.get_mapping(cmd.id()) {
-            // Placeholder code: draw rect around button shortcut
-            // let pos = ui.cursor_screen_pos();
-            // draw_list.add_rect(
-            //   [pos[0] - 8., pos[1]],
-            //   [pos[0] + col_width * 8. - 16., pos[1] + col_height + 1.], palette::GRAY).build();
-            ui.text(ImString::new(format!(
-              "{}",
-              config::get_symbol(hotkey as _).unwrap_or_else(String::new)
-            )));
+          // ui.next_column();
+          /*if let Some(hotkey) = self.config.get_mapping(cmd.id()) {
+              // Placeholder code: draw rect around button shortcut
+              // let pos = ui.cursor_screen_pos();
+              // draw_list.add_rect(
+              //   [pos[0] - 8., pos[1]],
+              //   [pos[0] + col_width * 8. - 16., pos[1] + col_height + 1.], palette::GRAY).build();
+              ui.text(ImString::new(format!(
+                  "{}",
+                  config::get_symbol(hotkey as _).unwrap_or_else(String::new)
+              )));
           } else {
-            ui.text(im_str!(""));
-          }
-          ui.next_column();
+              ui.text(im_str!(""));
+          }*/
+          // ui.next_column();
 
           style_token.pop(&ui);
         }
@@ -237,30 +257,27 @@ impl DarkSoulsIIIPracticeTool {
 
         // === Help box ===
         let style_token = apply_colors(ui, false, true);
-        ui.next_column();
-        ui.text(ImString::new(format!(
-          "  Execute command: {}",
-          config::get_symbol(self.config.get_mapping("interact").unwrap() as _).unwrap()
+        /*ui.text(ImString::new(format!(
+            "Execute command: {}",
+            config::get_symbol(self.config.get_mapping("interact").unwrap() as _).unwrap()
         )));
         ui.next_column();
         ui.next_column();
 
-        ui.next_column();
         ui.text(ImString::new(format!(
-          "  Show / Hide    : {}",
-          config::get_symbol(self.config.get_mapping("display").unwrap() as _).unwrap(),
+            "Show / Hide    : {}",
+            config::get_symbol(self.config.get_mapping("display").unwrap() as _).unwrap(),
         )));
         ui.next_column();
         ui.next_column();
 
-        ui.next_column();
         ui.text(ImString::new(format!(
-          "  Previous / Next: {} / {}",
-          config::get_symbol(self.config.get_mapping("prev").unwrap() as _).unwrap(),
-          config::get_symbol(self.config.get_mapping("next").unwrap() as _).unwrap(),
+            "Previous / Next: {} / {}",
+            config::get_symbol(self.config.get_mapping("prev").unwrap() as _).unwrap(),
+            config::get_symbol(self.config.get_mapping("next").unwrap() as _).unwrap(),
         )));
         ui.next_column();
-        ui.next_column();
+        ui.next_column();*/
 
         // Placeholder for debug info
         // ui.next_column();
@@ -268,10 +285,12 @@ impl DarkSoulsIIIPracticeTool {
         // )));
 
         // === Process prev/next commands ===
-        if self.config.is_key_released(ui, "next") {
+        // if self.config.is_key_released(ui, "next") {
+        if ui.is_key_released(self.config.settings.next as _) {
           self.current_row = usize::min(self.commands.len() - 1, self.current_row + 1);
           trace!("Current row {}", self.current_row);
-        } else if self.config.is_key_released(ui, "prev") {
+        // } else if self.config.is_key_released(ui, "prev") {
+        } else if ui.is_key_released(self.config.settings.prev as _) {
           self.current_row = self.current_row.saturating_sub(1);
           trace!("Current row {}", self.current_row);
         }
