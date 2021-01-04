@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use log::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use winapi::um::winuser::*;
 
 pub use crate::commands::CommandSettings;
@@ -48,71 +48,19 @@ impl Default for ConfigSettings {
 }
 
 impl Config {
+  pub fn save_to_file(&self, path: &std::path::Path) -> Result<(), String> {
+    let toml = toml::to_string(&LocalConfig::from(self))
+      .map_err(|e| format!("Could not serialize config: {}", e))?;
+    std::fs::write(path, toml).map_err(|e| format!("Could not save config: {}.", e))
+  }
+
   pub fn load_from_file(path: &std::path::Path) -> Result<Config, String> {
     std::fs::read_to_string(path)
       .map_err(|e| format!("Could not load config: {:?}. Using default.", e))
       .and_then(|s| Config::load(&s))
-    /*let file_contents = match std::fs::read_to_string(path) {
-      Ok(file_contents) => Config::load(file_contents),
-      Err(e) => Err(format!("Could not load config: {:?}. Using default.", e))
-    };
-
-    Config::load(&file_contents)*/
   }
 
   pub(crate) fn load(config_toml: &str) -> Result<Config, String> {
-    #[derive(Debug, Deserialize)]
-    struct LocalConfig {
-      settings: LocalConfigSettings,
-      command: Vec<CommandSettings>,
-    }
-    #[derive(Debug, Deserialize)]
-    struct LocalConfigSettings {
-      log_level: String,
-      interact: Option<String>,
-      capture: Option<String>,
-      display: Option<String>,
-      next: Option<String>,
-      prev: Option<String>,
-    }
-
-    impl From<LocalConfig> for Config {
-      fn from(local_conf: LocalConfig) -> Config {
-        Config {
-          settings: ConfigSettings::from(local_conf.settings),
-          command: local_conf.command,
-        }
-      }
-    }
-
-    impl From<LocalConfigSettings> for ConfigSettings {
-      fn from(local_conf_settings: LocalConfigSettings) -> ConfigSettings {
-        let log_level = match log::Level::from_str(&local_conf_settings.log_level) {
-          Ok(log_level) => log_level,
-          Err(e) => {
-            error!("Could not parse log level: {:?}. Using default.", e);
-            log::Level::Info
-          }
-        };
-
-        fn symmap_or(item: Option<String>, default: i32) -> i32 {
-          *item
-            .map(|k| VK_SYMBOL_MAP.get(&k))
-            .unwrap_or(Some(&default))
-            .unwrap_or(&default)
-        }
-
-        ConfigSettings {
-          log_level,
-          interact: symmap_or(local_conf_settings.interact, VK_SPACE),
-          capture: symmap_or(local_conf_settings.capture, VK_F1),
-          display: symmap_or(local_conf_settings.display, '0' as _),
-          next: symmap_or(local_conf_settings.next, VK_DOWN),
-          prev: symmap_or(local_conf_settings.prev, VK_UP),
-        }
-      }
-    }
-
     match toml::from_str::<LocalConfig>(&config_toml) {
       Ok(conf) => Ok(Config::from(conf)),
       Err(e) => Err(format!("Could not parse config: {}. Using default.", e)),
@@ -139,6 +87,95 @@ pub(crate) fn get_symbol(hotkey: i32) -> Option<String> {
 
 pub(crate) fn get_keycode(hotkey: &str) -> Option<i32> {
   VK_SYMBOL_MAP.get(hotkey).map(|k| *k)
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct LocalConfig {
+  settings: LocalConfigSettings,
+  command: Vec<CommandSettings>,
+}
+#[derive(Debug, Deserialize, Serialize)]
+struct LocalConfigSettings {
+  log_level: String,
+  interact: Option<String>,
+  capture: Option<String>,
+  display: Option<String>,
+  next: Option<String>,
+  prev: Option<String>,
+}
+
+impl From<LocalConfig> for Config {
+  fn from(local_conf: LocalConfig) -> Config {
+    Config {
+      settings: ConfigSettings::from(local_conf.settings),
+      command: local_conf.command,
+    }
+  }
+}
+
+impl From<&Config> for LocalConfig {
+  fn from(conf: &Config) -> LocalConfig {
+    LocalConfig {
+      settings: LocalConfigSettings::from(&conf.settings),
+      command: conf.command.clone(),
+    }
+  }
+}
+
+impl From<LocalConfigSettings> for ConfigSettings {
+  fn from(local_conf_settings: LocalConfigSettings) -> ConfigSettings {
+    let log_level = match log::Level::from_str(&local_conf_settings.log_level) {
+      Ok(log_level) => log_level,
+      Err(e) => {
+        error!("Could not parse log level: {:?}. Using default.", e);
+        log::Level::Info
+      }
+    };
+
+    fn symmap_or(item: Option<String>, default: i32) -> i32 {
+      *item
+        .map(|k| VK_SYMBOL_MAP.get(&k))
+        .unwrap_or(Some(&default))
+        .unwrap_or(&default)
+    }
+
+    ConfigSettings {
+      log_level,
+      interact: symmap_or(local_conf_settings.interact, VK_SPACE),
+      capture: symmap_or(local_conf_settings.capture, VK_F1),
+      display: symmap_or(local_conf_settings.display, '0' as _),
+      next: symmap_or(local_conf_settings.next, VK_DOWN),
+      prev: symmap_or(local_conf_settings.prev, VK_UP),
+    }
+  }
+}
+
+impl From<&ConfigSettings> for LocalConfigSettings {
+  fn from(conf_settings: &ConfigSettings) -> LocalConfigSettings {
+    /*let log_level = match log::Level::from_str(&local_conf_settings.log_level) {
+      Ok(log_level) => log_level,
+      Err(e) => {
+        error!("Could not parse log level: {:?}. Using default.", e);
+        log::Level::Info
+      }
+    };*/
+
+    fn symmap_or(item: i32, default: String) -> String {
+      VK_INV_SYMBOL_MAP
+        .get(&item)
+        .cloned()
+        .unwrap_or_else(|| default)
+    }
+
+    LocalConfigSettings {
+      log_level: format!("{}", conf_settings.log_level),
+      interact: Some(symmap_or(conf_settings.interact, String::from("VK_SPACE"))),
+      capture: Some(symmap_or(conf_settings.capture, String::from("VK_F1"))),
+      display: Some(symmap_or(conf_settings.display, String::from("0"))),
+      next: Some(symmap_or(conf_settings.next, String::from("VK_DOWN"))),
+      prev: Some(symmap_or(conf_settings.prev, String::from("VK_UP"))),
+    }
+  }
 }
 
 /*

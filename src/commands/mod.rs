@@ -8,7 +8,7 @@ use hudhook::memory::*;
 use hudhook::*;
 
 use log::*;
-use serde::{self, Deserialize};
+use serde::{self, Deserialize, Serialize};
 
 use crate::config::get_keycode;
 use crate::memory::PointerChains;
@@ -22,7 +22,7 @@ pub use speed::*;
 const BUTTON_WIDTH: f32 = 128.;
 const BUTTON_HEIGHT: f32 = 18.;
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(tag = "cmd")]
 pub enum CommandSettings {
   #[serde(rename = "toggle")]
@@ -42,6 +42,19 @@ pub enum CommandSettings {
   SpawnItem { item: String, hotkey: String },
 }
 
+impl std::fmt::Display for CommandSettings {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      CommandSettings::Toggle { .. } => write!(f, "Toggle"),
+      CommandSettings::Quitout { .. } => write!(f, "Quitout"),
+      CommandSettings::Position { .. } => write!(f, "Position"),
+      CommandSettings::Souls { .. } => write!(f, "Souls"),
+      CommandSettings::CycleSpeed { .. } => write!(f, "Cycle Speed"),
+      CommandSettings::SpawnItem { .. } => write!(f, "Spawn Item"),
+    }
+  }
+}
+
 pub(crate) trait Command {
   fn display(&self, ui: &imgui::Ui) -> bool;
   fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool);
@@ -53,7 +66,10 @@ impl CommandSettings {
     info!("{:#?}", self);
     match self {
       CommandSettings::SpawnItem { item, hotkey } => None, // unimplemented!(),
-      CommandSettings::Position { hotkey_save, hotkey_load } => Some(Box::new(PositionPointer::new(
+      CommandSettings::Position {
+        hotkey_save,
+        hotkey_load,
+      } => Some(Box::new(PositionPointer::new(
         pc.position.0.clone(),
         pc.position.1.clone(),
         pc.position.2.clone(),
@@ -64,9 +80,10 @@ impl CommandSettings {
         pc.quitout.clone(),
         get_keycode(hotkey),
       ))),
-      CommandSettings::Souls { quantity, hotkey } => {
-        Some(Box::new(SoulsPointer::new(pc.souls.clone(), get_keycode(hotkey))))
-      }
+      CommandSettings::Souls { quantity, hotkey } => Some(Box::new(SoulsPointer::new(
+        pc.souls.clone(),
+        get_keycode(hotkey),
+      ))),
       CommandSettings::CycleSpeed { values, hotkey } => Some(Box::new(CycleSpeedPointer::new(
         pc.speed.clone(),
         get_keycode(hotkey),

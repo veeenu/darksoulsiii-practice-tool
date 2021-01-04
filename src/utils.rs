@@ -49,7 +49,7 @@ pub fn init(title: &str) -> System {
   let context = glutin::ContextBuilder::new().with_vsync(true);
   let builder = WindowBuilder::new()
     .with_title(title.to_owned())
-    .with_inner_size(glutin::dpi::LogicalSize::new(640., 480.));
+    .with_inner_size(glutin::dpi::LogicalSize::new(320., 480.));
   let display = Display::new(builder, context, &event_loop).expect("Failed to initialize display");
 
   let mut imgui = Context::create();
@@ -71,12 +71,6 @@ pub fn init(title: &str) -> System {
   let hidpi_factor = platform.hidpi_factor();
   let font_size = (13.0 * hidpi_factor) as f32;
   imgui.fonts().add_font(&[
-    FontSource::DefaultFontData {
-      config: Some(FontConfig {
-        size_pixels: font_size,
-        ..FontConfig::default()
-      }),
-    },
     FontSource::DefaultFontData {
       config: Some(FontConfig {
         size_pixels: font_size,
@@ -164,15 +158,15 @@ impl System {
   }
 }
 
-pub fn imgui_loop<F: FnMut(&mut bool, &mut Ui, &Display) + 'static>(run_ui: F) {
-  let system = init(file!());
+pub fn imgui_loop<F: FnMut(&mut bool, &mut Ui, &Display) + 'static>(title: &str, run_ui: F) {
+  let system = init(title);
   system.main_loop(run_ui)
 }
 
 #[test]
 fn test_entry_point() {
   let system = init(file!());
-  system.main_loop(move |_, ui| {
+  system.main_loop(file!(), move |_, ui| {
     Window::new(im_str!("Hello world"))
       .size([300.0, 110.0], Condition::FirstUseEver)
       .build(ui, || {
