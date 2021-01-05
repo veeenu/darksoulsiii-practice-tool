@@ -4,7 +4,6 @@ mod quitout;
 mod souls;
 mod speed;
 
-use hudhook::memory::*;
 use hudhook::*;
 
 use log::*;
@@ -13,11 +12,11 @@ use serde::{self, Deserialize, Serialize};
 use crate::config::get_keycode;
 use crate::memory::PointerChains;
 
-pub use flag::*;
-pub use position::*;
-pub use quitout::*;
-pub use souls::*;
-pub use speed::*;
+pub(crate) use flag::*;
+pub(crate) use position::*;
+pub(crate) use quitout::*;
+pub(crate) use souls::*;
+pub(crate) use speed::*;
 
 const BUTTON_WIDTH: f32 = 128.;
 const BUTTON_HEIGHT: f32 = 18.;

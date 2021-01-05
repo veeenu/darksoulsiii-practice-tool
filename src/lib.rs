@@ -92,7 +92,10 @@ impl DarkSoulsIIIPracticeTool {
     .ok();
 
     debug!("DLL path: {:?}", dll_path);
-    info!("Loading configuration from {:?}: {:#?}", config_path, config);
+    info!(
+      "Loading configuration from {:?}: {:#?}",
+      config_path, config
+    );
     info!("Logging to {:?}", log_path);
 
     Box::new(DarkSoulsIIIPracticeTool {
@@ -130,22 +133,18 @@ impl DarkSoulsIIIPracticeTool {
     }
   }
 
-  fn render_inner<'b>(&mut self, ctx: RenderContext<'b>) {
+  fn render_inner(&mut self, ctx: RenderContext<'_>) {
     // Utility function for applying colors
     use imgui::{ColorStackToken, StyleColor};
     fn apply_colors(ui: &imgui::Ui, active: bool, valid: bool) -> ColorStackToken {
-      if active {
-        if valid {
-          ui.push_style_colors(&[(StyleColor::Text, palette::ORANGE)])
-        } else {
-          ui.push_style_colors(&[(StyleColor::Text, palette::DARK_ORANGE)])
-        }
+      if active && valid {
+        ui.push_style_colors(&[(StyleColor::Text, palette::ORANGE)])
+      } else if active && !valid {
+        ui.push_style_colors(&[(StyleColor::Text, palette::DARK_ORANGE)])
+      } else if valid {
+        ui.push_style_colors(&[(StyleColor::Text, palette::GRAY)])
       } else {
-        if valid {
-          ui.push_style_colors(&[(StyleColor::Text, palette::GRAY)])
-        } else {
-          ui.push_style_colors(&[(StyleColor::Text, palette::DARK_GRAY)])
-        }
+        ui.push_style_colors(&[(StyleColor::Text, palette::DARK_GRAY)])
       }
     }
 
@@ -172,20 +171,17 @@ impl DarkSoulsIIIPracticeTool {
     }
     ui.set_mouse_cursor(Some(imgui::MouseCursor::Arrow));
 
-    let (font_id, col_width, col_height) = {
+    let (font_id, col_width, _col_height) = {
       let fonts = ui.fonts().fonts();
-      if false && ctx.display_size[0] > 1920. && fonts.len() > 1 {
-        (fonts[1], 28., 26.)
-      } else {
-        (fonts[0], 14., 13.)
-      }
+      (fonts[0], 14., 13.)
+      // if ctx.display_size[0] > 1920. && fonts.len() > 1 {
+      //   (fonts[1], 28., 26.)
+      // } else {
+      //   (fonts[0], 14., 13.)
+      // }
     };
 
-    let size = [
-      //f32::floor(ctx.display_size[0] / 3.),
-      f32::floor(col_width * 36.),
-      f32::floor(ctx.display_size[1]),
-    ];
+    let size = [f32::floor(col_width * 36.), f32::floor(ctx.display_size[1])];
 
     let stack_token = ui.push_style_vars({
       &[
@@ -304,7 +300,7 @@ impl DarkSoulsIIIPracticeTool {
 }
 
 impl RenderLoop for DarkSoulsIIIPracticeTool {
-  fn render<'a>(&mut self, ctx: RenderContext<'a>) {
+  fn render(&mut self, ctx: RenderContext<'_>) {
     use PracticeToolState::*;
 
     match self.state {

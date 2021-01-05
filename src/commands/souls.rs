@@ -3,15 +3,15 @@ use hudhook::*;
 
 use imgui::ImString;
 
-use super::{BUTTON_WIDTH, BUTTON_HEIGHT, Command};
+use super::{Command, BUTTON_HEIGHT, BUTTON_WIDTH};
 
-pub(crate) struct SoulsPointer{
+pub(crate) struct SoulsPointer {
   pointer: PointerChain<u32>,
-  hotkey: Option<i32>
+  hotkey: Option<i32>,
 }
 
 impl SoulsPointer {
-  pub(crate) fn new( pointer: PointerChain<u32>, hotkey: Option<i32>) -> SoulsPointer {
+  pub(crate) fn new(pointer: PointerChain<u32>, hotkey: Option<i32>) -> SoulsPointer {
     SoulsPointer { pointer, hotkey }
   }
 

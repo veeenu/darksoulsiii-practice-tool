@@ -261,7 +261,7 @@ impl BaseAddresses {
       ),
       rend_chr: (PointerChain::new(&[grend + 2]), 0),
       rend_obj: (PointerChain::new(&[grend + 1]), 0),
-      rend_map: (PointerChain::new(&[grend + 0]), 0),
+      rend_map: (PointerChain::new(&[grend]), 0),
       rend_mesh_hi: (PointerChain::new(&[self.mesh_hi as usize]), 0),
       rend_mesh_lo: (PointerChain::new(&[self.mesh_lo as usize]), 0),
       gravity: (PointerChain::new(&[base_d, 0x60, 0x48]), 0),

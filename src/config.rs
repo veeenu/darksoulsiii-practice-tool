@@ -66,27 +66,14 @@ impl Config {
       Err(e) => Err(format!("Could not parse config: {}. Using default.", e)),
     }
   }
-
-  /*pub(crate) fn is_key_released(&self, ui: &imgui::Ui, key: &str) -> bool {
-    let outcome = self
-      .get_mapping(key)
-      .map(|k| ui.is_key_released(k))
-      .unwrap_or(false);
-    trace!("Is key {} released? {}", key, outcome);
-    outcome
-  }
-
-  pub(crate) fn get_mapping(&self, key: &str) -> Option<u32> {
-    self.mappings.get(key).map(|&k| k as _)
-  }*/
 }
 
-pub(crate) fn get_symbol(hotkey: i32) -> Option<String> {
-  VK_INV_SYMBOL_MAP.get(&hotkey).map(String::clone)
-}
+// pub(crate) fn get_symbol(hotkey: i32) -> Option<String> {
+//   VK_INV_SYMBOL_MAP.get(&hotkey).map(String::clone)
+// }
 
 pub(crate) fn get_keycode(hotkey: &str) -> Option<i32> {
-  VK_SYMBOL_MAP.get(hotkey).map(|k| *k)
+  VK_SYMBOL_MAP.get(hotkey).copied()
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -161,10 +148,7 @@ impl From<&ConfigSettings> for LocalConfigSettings {
     };*/
 
     fn symmap_or(item: i32, default: String) -> String {
-      VK_INV_SYMBOL_MAP
-        .get(&item)
-        .cloned()
-        .unwrap_or_else(|| default)
+      VK_INV_SYMBOL_MAP.get(&item).cloned().unwrap_or(default)
     }
 
     LocalConfigSettings {

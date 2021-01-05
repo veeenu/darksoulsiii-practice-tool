@@ -2,15 +2,14 @@ use libjdsd_dsiii_practice_tool::config::*;
 use libjdsd_dsiii_practice_tool::utils::imgui_loop;
 
 use std::borrow::Cow;
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
-use std::slice::IterMut;
 
 use clap::{App, Arg};
 use imgui::*;
 use pkg_version::*;
 
-const TITLE: &'static str = "Practice Tool Config Editor";
+const TITLE: &str = "Practice Tool Config Editor";
 
 fn show_error(s: String) {
   let s = imgui::ImString::new(s);
@@ -64,11 +63,25 @@ fn editor(config: Config, path: String) {
   .collect::<Vec<_>>();
 
   let command_factories = [
-    || CommandSettings::Toggle { flag: String::from("all_no_damage"), hotkey: String::from("VK_F1") },
-    || CommandSettings::Quitout { hotkey: String::from("P") },
-    || CommandSettings::Position { hotkey_save: String::from("N"), hotkey_load: String::from("M") },
-    || CommandSettings::Souls { quantity: 0, hotkey: String::from("VK_F1") },
-    || CommandSettings::CycleSpeed { values: vec![], hotkey: String::from("VK_F1") },
+    || CommandSettings::Toggle {
+      flag: String::from("all_no_damage"),
+      hotkey: String::from("VK_F1"),
+    },
+    || CommandSettings::Quitout {
+      hotkey: String::from("P"),
+    },
+    || CommandSettings::Position {
+      hotkey_save: String::from("N"),
+      hotkey_load: String::from("M"),
+    },
+    || CommandSettings::Souls {
+      quantity: 0,
+      hotkey: String::from("VK_F1"),
+    },
+    || CommandSettings::CycleSpeed {
+      values: vec![],
+      hotkey: String::from("VK_F1"),
+    },
   ];
 
   let mut cur_cmd = 0usize;
@@ -127,9 +140,10 @@ fn editor(config: Config, path: String) {
         let hotkey_combo = |ui: &Ui, label: &ImStr, cur_value: i32| -> Option<i32> {
           let combo = ComboBox::new(label);
           let mut hk = vkeycodes.iter().position(|v| cur_value == *v).unwrap_or(0);
-          if combo.build_simple(ui, &mut hk, &vkeycodes, &|i| {
+          let combo_changed = combo.build_simple(ui, &mut hk, &vkeycodes, &|i| {
             vkstrings.get(i).unwrap().clone()
-          }) {
+          });
+          if combo_changed {
             Some(vkeycodes[hk])
           } else {
             None
@@ -270,17 +284,17 @@ fn editor(config: Config, path: String) {
       });
 
     /*Window::new(im_str!("window2"))
-      .position([x, y], Condition::Always)
-      .size([width, height], Condition::Always)
-      .flags({
-        WindowFlags::NO_DECORATION
-          | WindowFlags::NO_COLLAPSE
-          | WindowFlags::NO_RESIZE
-          | WindowFlags::NO_MOVE
-      })
-      .build(ui, || {
-        ui.text(ImString::new(format!("{:#?}", editor.borrow())));
-      });*/
+    .position([x, y], Condition::Always)
+    .size([width, height], Condition::Always)
+    .flags({
+      WindowFlags::NO_DECORATION
+        | WindowFlags::NO_COLLAPSE
+        | WindowFlags::NO_RESIZE
+        | WindowFlags::NO_MOVE
+    })
+    .build(ui, || {
+      ui.text(ImString::new(format!("{:#?}", editor.borrow())));
+    });*/
 
     stack_token.pop(ui);
   });
@@ -396,12 +410,14 @@ fn main() {
     )
     .get_matches();
 
-  let fname = String::from(matches
-    .value_of("file")
-    .unwrap_or("jdsd_dsiii_practice_tool.toml"));
+  let fname = String::from(
+    matches
+      .value_of("file")
+      .unwrap_or("jdsd_dsiii_practice_tool.toml"),
+  );
   let conf = Config::load_from_file(&std::path::Path::new(&fname));
 
-  let text = match conf {
+  match conf {
     Ok(conf) => editor(conf, fname),
     Err(e) => show_error(e),
   };

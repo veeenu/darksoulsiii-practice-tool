@@ -1,7 +1,6 @@
 use hudhook::memory::PointerChain;
 use hudhook::*;
 
-use imgui;
 use log::*;
 
 use super::{Command, BUTTON_HEIGHT, BUTTON_WIDTH};
@@ -12,7 +11,7 @@ pub(crate) struct QuitoutPointer {
 }
 
 impl QuitoutPointer {
-  pub(crate) fn new( pointer: PointerChain<u8>, hotkey: Option<i32>) -> QuitoutPointer {
+  pub(crate) fn new(pointer: PointerChain<u8>, hotkey: Option<i32>) -> QuitoutPointer {
     QuitoutPointer { pointer, hotkey }
   }
 
@@ -21,7 +20,7 @@ impl QuitoutPointer {
   }
 
   pub(crate) fn quitout(&self) {
-    if let None = self.pointer.write(1) {
+    if self.pointer.write(1).is_none() {
       error!("Error writing quitout pointer");
     }
   }
