@@ -7,6 +7,11 @@ next = "VK_DOWN"
 prev = "VK_UP"
 
 [[command]]
+cmd = "item_spawn"
+item_id = 305419896
+hotkey = "O"
+
+[[command]]
 cmd = "toggle"
 flag = "all_no_damage"
 hotkey = "1"

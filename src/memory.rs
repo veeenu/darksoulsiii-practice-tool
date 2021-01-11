@@ -25,6 +25,7 @@ pub(crate) struct PointerChains {
   pub(crate) speed: PointerChain<f32>,
   pub(crate) position: (PointerChain<f32>, PointerChain<f32>, PointerChain<f32>),
   pub(crate) souls: PointerChain<u32>,
+  pub(crate) item_spawn: (u64, u64, u64),
   pub(crate) quitout: PointerChain<u8>,
 }
 
@@ -50,6 +51,7 @@ pub(crate) struct BaseAddresses {
   pub instaqo: u64,
   pub version_string_ptr: u64,
   pub base_souls: u64,
+  pub item_spawn: (u64, u64, u64),
 
   pub version: &'static str,
 }
@@ -72,6 +74,7 @@ const VER104: BaseAddresses = BaseAddresses {
   instaqo: 0x1446A9280,            // insta qo
   version_string_ptr: 0x14288C422, // version string
   base_souls: 0x144704268,         // souls base ptr
+  item_spawn: (0x1407abc00, 0x1446af280, 0),
   version: "1.04",
 };
 
@@ -93,6 +96,7 @@ const VER108: BaseAddresses = BaseAddresses {
   instaqo: 0x1447103D8,            // insta qo
   version_string_ptr: 0x1428D3F92, // version string
   base_souls: 0x1446FEE88,         // souls base ptr
+  item_spawn: (0x1407B6230, 0x1447163f0, 0x14472cf58),
   version: "1.08",
 };
 
@@ -114,6 +118,7 @@ const VER112: BaseAddresses = BaseAddresses {
   instaqo: 0x144746988,            // insta qo
   version_string_ptr: 0x1428FD262, // version string
   base_souls: 0x144704268,         // souls base ptr
+  item_spawn: (0x1407BB750, 0x14474c9a0, 0x144763518),
   version: "1.12",
 };
 
@@ -135,6 +140,7 @@ const VER115: BaseAddresses = BaseAddresses {
   instaqo: 0x14474C2E8,            // insta qo
   version_string_ptr: 0x142900782, // version string
   base_souls: 0x144704268,         // souls base ptr
+  item_spawn: (0x1407BBA70, 0x144752300, 0x144768E78),
   version: "1.15",
 };
 
@@ -235,6 +241,11 @@ impl BaseAddresses {
     let position_pointer = Rc::new(RefCell::new(PositionPointer::new(x, y, z)));
     let save_position = Box::new(PositionPointerSaver(Rc::clone(&position_pointer)));
     let load_position = Box::new(PositionPointerLoader(Rc::clone(&position_pointer)));*/
+    let item_spawn = (
+      self.item_spawn.0,
+      self.item_spawn.1,
+      self.item_spawn.2,
+    );
 
     Some(PointerChains {
       all_no_damage: (
@@ -272,6 +283,7 @@ impl BaseAddresses {
         PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x84]),
       ),
       souls: PointerChain::new(&[self.base_souls as _, 0x3d0, 0x74]),
+      item_spawn,
       quitout: PointerChain::new(&[self.instaqo as _, 0x250]),
     })
 

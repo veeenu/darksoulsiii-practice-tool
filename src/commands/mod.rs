@@ -1,4 +1,5 @@
 mod flag;
+mod item_spawn;
 mod position;
 mod quitout;
 mod souls;
@@ -13,6 +14,7 @@ use crate::config::get_keycode;
 use crate::memory::PointerChains;
 
 pub(crate) use flag::*;
+pub(crate) use item_spawn::*;
 pub(crate) use position::*;
 pub(crate) use quitout::*;
 pub(crate) use souls::*;
@@ -37,8 +39,8 @@ pub enum CommandSettings {
   Souls { quantity: i32, hotkey: String },
   #[serde(rename = "cycle_speed")]
   CycleSpeed { values: Vec<f32>, hotkey: String },
-  #[serde(rename = "spawn_item")]
-  SpawnItem { item: String, hotkey: String },
+  #[serde(rename = "item_spawn")]
+  SpawnItem { item_id: i64, hotkey: String },
 }
 
 impl std::fmt::Display for CommandSettings {
@@ -64,7 +66,17 @@ impl CommandSettings {
   pub(crate) fn try_to_command(&self, pc: &PointerChains) -> Option<Box<dyn Command>> {
     info!("{:#?}", self);
     match self {
-      CommandSettings::SpawnItem { item, hotkey } => None, // unimplemented!(),
+      CommandSettings::SpawnItem { item_id, hotkey } => Some(Box::new(ItemSpawn::new(
+        "Item Spawn",
+        *item_id as _,
+        0,
+        1,
+        0xffffffff,
+        pc.item_spawn.0,
+        pc.item_spawn.1 as _,
+        pc.item_spawn.2 as _,
+        get_keycode(hotkey),
+      ))),
       CommandSettings::Position {
         hotkey_save,
         hotkey_load,
