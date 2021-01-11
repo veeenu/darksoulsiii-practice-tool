@@ -5,6 +5,7 @@ use imgui::ImString;
 use log::*;
 
 use super::Command;
+use crate::config::get_symbol;
 
 pub(crate) struct FlagPointer {
   label: String,
@@ -22,7 +23,7 @@ impl FlagPointer {
   ) -> FlagPointer {
     info!("Building flag pointer {}", label);
     FlagPointer {
-      label: String::from(label),
+      label: format!("{} ({})", label, hotkey.and_then(get_symbol).unwrap_or_else(|| "".to_string())),
       chain,
       bit,
       hotkey,

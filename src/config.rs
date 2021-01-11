@@ -68,9 +68,9 @@ impl Config {
   }
 }
 
-// pub(crate) fn get_symbol(hotkey: i32) -> Option<String> {
-//   VK_INV_SYMBOL_MAP.get(&hotkey).map(String::clone)
-// }
+pub(crate) fn get_symbol(hotkey: i32) -> Option<String> {
+  VK_INV_SYMBOL_MAP.get(&hotkey).map(String::clone)
+}
 
 pub(crate) fn get_keycode(hotkey: &str) -> Option<i32> {
   VK_SYMBOL_MAP.get(hotkey).copied()

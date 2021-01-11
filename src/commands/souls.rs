@@ -4,20 +4,26 @@ use hudhook::*;
 use imgui::ImString;
 
 use super::{Command, BUTTON_HEIGHT, BUTTON_WIDTH};
+use crate::config::get_symbol;
 
 pub(crate) struct SoulsPointer {
   pointer: PointerChain<u32>,
+  quantity: i32,
   hotkey: Option<i32>,
+  label: imgui::ImString,
 }
 
 impl SoulsPointer {
-  pub(crate) fn new(pointer: PointerChain<u32>, hotkey: Option<i32>) -> SoulsPointer {
-    SoulsPointer { pointer, hotkey }
+  pub(crate) fn new(pointer: PointerChain<u32>, quantity: i32, hotkey: Option<i32>) -> SoulsPointer {
+    let label = imgui::ImString::new(format!("Add souls ({})", hotkey.and_then(get_symbol).unwrap_or("".to_string())));
+    SoulsPointer { pointer, quantity, hotkey, label }
   }
 
   pub(crate) fn incr(&self) {
     if let Some(cur_souls) = self.pointer.read() {
-      self.pointer.write(cur_souls + 10000);
+      let cur_souls = cur_souls as i32;
+      let new_souls = cur_souls + self.quantity;
+      self.pointer.write(new_souls as _);
     }
   }
 }
@@ -25,7 +31,7 @@ impl SoulsPointer {
 impl Command for SoulsPointer {
   fn display(&self, ui: &imgui::Ui) -> bool {
     let clicked = ui.button(
-      &ImString::new("Increase souls"),
+      &self.label,
       [BUTTON_WIDTH, BUTTON_HEIGHT],
     );
     ui.same_line(0.);

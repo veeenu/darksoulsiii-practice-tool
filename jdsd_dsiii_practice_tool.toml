@@ -1,26 +1,66 @@
 [settings]
 log_level = "INFO"
-interact = "VK_SPACE"
+interact = "I"
 capture = "VK_F1"
 display = "0"
 next = "VK_DOWN"
 prev = "VK_UP"
 
 [[command]]
-cmd = "quitout"
-hotkey = "P"
+cmd = "toggle"
+flag = "all_no_damage"
+hotkey = "1"
 
 [[command]]
 cmd = "toggle"
-flag = "all_no_damage"
-hotkey = "VK_TAB"
+flag = "inf_stamina"
+hotkey = "2"
+
+[[command]]
+cmd = "toggle"
+flag = "inf_focus"
+hotkey = "3"
+
+[[command]]
+cmd = "toggle"
+flag = "inf_consumables"
+hotkey = "4"
+
+[[command]]
+cmd = "toggle"
+flag = "deathcam"
+hotkey = "5"
 
 [[command]]
 cmd = "toggle"
 flag = "no_death"
-hotkey = "VK_F1"
+hotkey = "6"
+
+[[command]]
+cmd = "toggle"
+flag = "one_shot"
+hotkey = "7"
 
 [[command]]
 cmd = "position"
-hotkey_save = "N"
-hotkey_load = "M"
+hotkey_save = "H"
+hotkey_load = "K"
+
+[[command]]
+cmd = "position"
+hotkey_save = "J"
+hotkey_load = "L"
+
+[[command]]
+cmd = "cycle_speed"
+values = []
+hotkey = "8"
+
+[[command]]
+cmd = "souls"
+quantity = 10000
+hotkey = "9"
+
+[[command]]
+cmd = "quitout"
+hotkey = "P"

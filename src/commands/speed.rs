@@ -4,15 +4,18 @@ use hudhook::*;
 use imgui::ImString;
 
 use super::{Command, BUTTON_HEIGHT, BUTTON_WIDTH};
+use crate::config::get_symbol;
 
 pub(crate) struct CycleSpeedPointer {
   pointer: PointerChain<f32>,
   hotkey: Option<i32>,
+  label: imgui::ImString,
 }
 
 impl CycleSpeedPointer {
   pub(crate) fn new(pointer: PointerChain<f32>, hotkey: Option<i32>) -> CycleSpeedPointer {
-    CycleSpeedPointer { pointer, hotkey }
+    let label = imgui::ImString::new(format!("Speed ({})", hotkey.and_then(get_symbol).unwrap_or("".to_string())));
+    CycleSpeedPointer { pointer, hotkey, label }
   }
 
   pub(crate) fn cycle(&self) -> Option<f32> {
@@ -36,7 +39,7 @@ impl CycleSpeedPointer {
 
 impl Command for CycleSpeedPointer {
   fn display(&self, ui: &imgui::Ui) -> bool {
-    let clicked = ui.button(&ImString::new("Cycle speed"), [BUTTON_WIDTH, BUTTON_HEIGHT]);
+    let clicked = ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT]);
     ui.same_line(0.);
     if let Some(speed) = self.read() {
       ui.text(ImString::new(format!("[{:3.2}x]", speed)));

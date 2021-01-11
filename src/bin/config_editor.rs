@@ -151,20 +151,23 @@ fn editor(config: Config, path: String) {
         };
 
         {
-          if let Some(a) = hotkey_combo(ui, im_str!("Interact"), editor.borrow().settings.interact)
-          {
+          let a = hotkey_combo(ui, im_str!("Interact"), editor.borrow().settings.interact);
+          if let Some(a) = a {
             editor.set_interact(a);
           }
 
-          if let Some(a) = hotkey_combo(ui, im_str!("Next"), editor.borrow().settings.next) {
+          let a = hotkey_combo(ui, im_str!("Next"), editor.borrow().settings.next);
+          if let Some(a) = a {
             editor.set_next(a);
           }
 
-          if let Some(a) = hotkey_combo(ui, im_str!("Prev"), editor.borrow().settings.prev) {
+          let a = hotkey_combo(ui, im_str!("Prev"), editor.borrow().settings.prev);
+          if let Some(a) = a {
             editor.set_prev(a);
           }
 
-          if let Some(a) = hotkey_combo(ui, im_str!("Display"), editor.borrow().settings.display) {
+          let a = hotkey_combo(ui, im_str!("Display"), editor.borrow().settings.display);
+          if let Some(a) = a {
             editor.set_display(a);
           }
         }
@@ -177,7 +180,7 @@ fn editor(config: Config, path: String) {
           ididx += 1;
 
           ui.separator();
-          ui.columns(4, im_str!(""), false);
+          ui.columns(4, im_str!("##col0"), false);
 
           ui.set_column_width(0, f32::max(0., width - 28. * 3. - 3.));
           ui.set_column_width(1, 28.);
@@ -201,20 +204,72 @@ fn editor(config: Config, path: String) {
             editor.remove_command(idx);
           }
 
-          ui.columns(1, im_str!(""), false);
+          ui.columns(1, im_str!("##col1"), false);
 
           match cmd {
             CommandSettings::Toggle { flag, hotkey } => {
+              ui.next_column();
+              ui.columns(2, im_str!("##col_toggle"), false);
+              ui.set_column_width(0, width * 0.5);
+              ui.set_column_width(1, width * 0.5);
+
               // Flag
+              let iwt = ui.push_item_width(-1.);
               {
-                let combo = ComboBox::new(im_str!("Flag"));
+                let combo = ComboBox::new(im_str!("##Flag"));
                 let mut cur_flag = flags.iter().position(|v| flag == v.to_str()).unwrap_or(0);
                 if combo.build_simple(ui, &mut cur_flag, &flags, &|i| i.clone()) {
                   *flag = flags[cur_flag].to_string();
                 }
               }
+              iwt.pop(ui);
+              ui.next_column();
 
               // Hotkey
+              let iwt = ui.push_item_width(-1.);
+              if let Some(a) = hotkey_combo(
+                ui,
+                im_str!("##Hotkey"),
+                *VK_SYMBOL_MAP.get(hotkey).unwrap_or(&0),
+              ) {
+                *hotkey = vkstrings[&a].to_string();
+              }
+
+              iwt.pop(ui);
+              ui.columns(1, im_str!("##col1"), false);
+            }
+            CommandSettings::Position {
+              hotkey_save,
+              hotkey_load,
+            } => {
+              ui.next_column();
+              ui.columns(2, im_str!("##col_position"), false);
+              ui.set_column_width(0, width * 0.5);
+              ui.set_column_width(1, width * 0.5);
+
+              if let Some(a) = hotkey_combo(
+                ui,
+                im_str!("Save"),
+                *VK_SYMBOL_MAP.get(hotkey_save).unwrap_or(&0),
+              ) {
+                *hotkey_save = vkstrings[&a].to_string();
+              }
+
+              ui.next_column();
+
+              if let Some(a) = hotkey_combo(
+                ui,
+                im_str!("Load"),
+                *VK_SYMBOL_MAP.get(hotkey_load).unwrap_or(&0),
+              ) {
+                *hotkey_load = vkstrings[&a].to_string();
+              }
+
+              ui.columns(1, im_str!("##col1"), false);
+            }
+            CommandSettings::Souls { quantity, hotkey  } => {
+              ui.input_int(im_str!("Quantity"), quantity).build();
+
               if let Some(a) = hotkey_combo(
                 ui,
                 im_str!("Hotkey"),
@@ -223,26 +278,16 @@ fn editor(config: Config, path: String) {
                 *hotkey = vkstrings[&a].to_string();
               }
             }
-            CommandSettings::Position {
-              hotkey_save,
-              hotkey_load,
-            } => {
+            CommandSettings::CycleSpeed { values: _, hotkey } => {
               if let Some(a) = hotkey_combo(
                 ui,
-                im_str!("Save hotkey"),
-                *VK_SYMBOL_MAP.get(hotkey_save).unwrap_or(&0),
+                im_str!("Hotkey"),
+                *VK_SYMBOL_MAP.get(hotkey).unwrap_or(&0),
               ) {
-                *hotkey_save = vkstrings[&a].to_string();
-              }
-
-              if let Some(a) = hotkey_combo(
-                ui,
-                im_str!("Load hotkey"),
-                *VK_SYMBOL_MAP.get(hotkey_load).unwrap_or(&0),
-              ) {
-                *hotkey_save = vkstrings[&a].to_string();
+                *hotkey = vkstrings[&a].to_string();
               }
             }
+            CommandSettings::SpawnItem { .. } => {},
             CommandSettings::Quitout { hotkey } => {
               if let Some(a) = hotkey_combo(
                 ui,
@@ -252,7 +297,6 @@ fn editor(config: Config, path: String) {
                 *hotkey = vkstrings[&a].to_string();
               }
             }
-            _ => {}
           }
 
           idtok.pop(ui);

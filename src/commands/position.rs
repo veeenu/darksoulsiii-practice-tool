@@ -4,6 +4,7 @@ use hudhook::*;
 use imgui::ImString;
 
 use super::Command;
+use crate::config::get_symbol;
 
 pub(crate) struct PositionPointer {
   x: PointerChain<f32>,
@@ -14,6 +15,8 @@ pub(crate) struct PositionPointer {
   saved_z: f32,
   hotkey_load: Option<i32>,
   hotkey_save: Option<i32>,
+  load_label: String,
+  save_label: String,
 }
 
 impl PositionPointer {
@@ -24,6 +27,8 @@ impl PositionPointer {
     hotkey_load: Option<i32>,
     hotkey_save: Option<i32>,
   ) -> PositionPointer {
+    let save_label = format!("Save ({})", hotkey_save.and_then(get_symbol).unwrap_or_else(|| "".to_string()));
+    let load_label = format!("Load ({})", hotkey_load.and_then(get_symbol).unwrap_or_else(|| "".to_string()));
     PositionPointer {
       x,
       y,
@@ -33,6 +38,8 @@ impl PositionPointer {
       saved_z: 0.,
       hotkey_load,
       hotkey_save,
+      load_label,
+      save_label,
     }
   }
 
@@ -65,8 +72,9 @@ impl Command for PositionPointer {
     let (cx, cy, cz) = self.read().unwrap_or((0.0, 0.0, 0.0));
 
     ui.text(ImString::new(format!(
-      "Position [{:9.2}  {:9.2} {:9.2}] <- [{:9.2}  {:9.2} {:9.2}]",
-      cx, cy, cz, sx, sy, sz
+      "Position [{:9.2}  {:9.2} {:9.2}] {}\n         [{:9.2}  {:9.2} {:9.2}] {}",
+      cx, cy, cz, self.save_label, 
+      sx, sy, sz, self.load_label
     )));
 
     false
@@ -84,6 +92,7 @@ impl Command for PositionPointer {
       .hotkey_save
       .map(|k| ui.is_key_released(k as _))
       .unwrap_or(false)
+      || (is_active && is_interacting)
     {
       self.save();
     }

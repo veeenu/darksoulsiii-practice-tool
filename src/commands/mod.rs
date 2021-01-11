@@ -34,9 +34,9 @@ pub enum CommandSettings {
     hotkey_load: String,
   },
   #[serde(rename = "souls")]
-  Souls { quantity: i64, hotkey: String },
+  Souls { quantity: i32, hotkey: String },
   #[serde(rename = "cycle_speed")]
-  CycleSpeed { values: Vec<f64>, hotkey: String },
+  CycleSpeed { values: Vec<f32>, hotkey: String },
   #[serde(rename = "spawn_item")]
   SpawnItem { item: String, hotkey: String },
 }
@@ -81,6 +81,7 @@ impl CommandSettings {
       ))),
       CommandSettings::Souls { quantity, hotkey } => Some(Box::new(SoulsPointer::new(
         pc.souls.clone(),
+        *quantity,
         get_keycode(hotkey),
       ))),
       CommandSettings::CycleSpeed { values, hotkey } => Some(Box::new(CycleSpeedPointer::new(
