@@ -40,7 +40,7 @@ pub enum CommandSettings {
   #[serde(rename = "cycle_speed")]
   CycleSpeed { values: Vec<f32>, hotkey: String },
   #[serde(rename = "item_spawn")]
-  SpawnItem { item_id: i64, hotkey: String },
+  SpawnItem { item_id: i64, hotkey_spawn: String, hotkey_focus: String },
 }
 
 impl std::fmt::Display for CommandSettings {
@@ -66,7 +66,7 @@ impl CommandSettings {
   pub(crate) fn try_to_command(&self, pc: &PointerChains) -> Option<Box<dyn Command>> {
     info!("{:#?}", self);
     match self {
-      CommandSettings::SpawnItem { item_id, hotkey } => Some(Box::new(ItemSpawn::new(
+      CommandSettings::SpawnItem { item_id, hotkey_spawn, hotkey_focus } => Some(Box::new(ItemSpawn::new(
         "Item Spawn",
         *item_id as _,
         0,
@@ -75,7 +75,8 @@ impl CommandSettings {
         pc.item_spawn.0,
         pc.item_spawn.1 as _,
         pc.item_spawn.2 as _,
-        get_keycode(hotkey),
+        get_keycode(hotkey_spawn),
+        get_keycode(hotkey_focus),
       ))),
       CommandSettings::Position {
         hotkey_save,

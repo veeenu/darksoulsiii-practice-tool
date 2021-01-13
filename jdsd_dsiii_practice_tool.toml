@@ -1,15 +1,16 @@
 [settings]
-log_level = "INFO"
-interact = "I"
-capture = "VK_F1"
+log_level = "DEBUG"
 display = "0"
-next = "VK_DOWN"
-prev = "VK_UP"
+down = "VK_DOWN"
+up = "VK_UP"
+left = "VK_LEFT"
+right = "VK_RIGHT"
 
 [[command]]
 cmd = "item_spawn"
 item_id = 305419896
-hotkey = "O"
+hotkey_spawn = "O"
+hotkey_focus = "I"
 
 [[command]]
 cmd = "toggle"

@@ -151,19 +151,24 @@ fn editor(config: Config, path: String) {
         };
 
         {
-          let a = hotkey_combo(ui, im_str!("Interact"), editor.borrow().settings.interact);
+          let a = hotkey_combo(ui, im_str!("Down"), editor.borrow().settings.down);
           if let Some(a) = a {
-            editor.set_interact(a);
+            editor.set_down(a);
           }
 
-          let a = hotkey_combo(ui, im_str!("Next"), editor.borrow().settings.next);
+          let a = hotkey_combo(ui, im_str!("Up"), editor.borrow().settings.up);
           if let Some(a) = a {
-            editor.set_next(a);
+            editor.set_up(a);
           }
 
-          let a = hotkey_combo(ui, im_str!("Prev"), editor.borrow().settings.prev);
+          let a = hotkey_combo(ui, im_str!("Left"), editor.borrow().settings.left);
           if let Some(a) = a {
-            editor.set_prev(a);
+            editor.set_left(a);
+          }
+
+          let a = hotkey_combo(ui, im_str!("Right"), editor.borrow().settings.right);
+          if let Some(a) = a {
+            editor.set_right(a);
           }
 
           let a = hotkey_combo(ui, im_str!("Display"), editor.borrow().settings.display);
@@ -374,16 +379,20 @@ impl Editor {
     self.0.borrow_mut().settings.log_level = level;
   }
 
-  fn set_interact(&self, hk: i32) {
-    self.0.borrow_mut().settings.interact = hk;
+  fn set_down(&self, hk: i32) {
+    self.0.borrow_mut().settings.down = hk;
   }
 
-  fn set_next(&self, hk: i32) {
-    self.0.borrow_mut().settings.next = hk;
+  fn set_up(&self, hk: i32) {
+    self.0.borrow_mut().settings.up = hk;
   }
 
-  fn set_prev(&self, hk: i32) {
-    self.0.borrow_mut().settings.prev = hk;
+  fn set_left(&self, hk: i32) {
+    self.0.borrow_mut().settings.left = hk;
+  }
+
+  fn set_right(&self, hk: i32) {
+    self.0.borrow_mut().settings.right = hk;
   }
 
   fn set_display(&self, hk: i32) {

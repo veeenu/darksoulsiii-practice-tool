@@ -156,11 +156,11 @@ impl DarkSoulsIIIPracticeTool {
       self.capturing = !self.capturing;
     }
 
-    let interacting = ui.is_key_released(self.config.settings.interact as _);
+    // let interacting = ui.is_key_released(self.config.settings.interact as _);
     // Always process hotkeys
     for (idx, cmd) in self.commands.iter_mut().enumerate() {
       let active = self.current_row == idx && self.capturing;
-      cmd.interact(ui, active, interacting);
+      cmd.interact(ui, false, false);
     }
 
     /*let (font_id, _col_width, _col_height) = {
@@ -170,7 +170,6 @@ impl DarkSoulsIIIPracticeTool {
 
     // Don't do anything else if we're not visible
     if !self.capturing {
-      //ui.set_mouse_cursor(None);
       let stack_token = ui.push_style_vars({
         &[
           StyleVar::WindowRounding(0.),
@@ -196,9 +195,6 @@ impl DarkSoulsIIIPracticeTool {
       stack_token.pop(ui);
       return;
     }
-    // ui.set_mouse_cursor(Some(imgui::MouseCursor::Arrow));
-
-    // let size = [f32::floor(col_width * 36.), f32::floor(ctx.display_size[1])];
 
     let stack_token = ui.push_style_vars({
       &[
@@ -219,12 +215,10 @@ impl DarkSoulsIIIPracticeTool {
           | WindowFlags::NO_SCROLLBAR
       })
       .build(ui, || {
-        // let font_token = ui.push_font(font_id);
-
         for (idx, cmd) in self.commands.iter_mut().enumerate() {
-          let active = self.current_row == idx;
+          // let active = self.current_row == idx;
           let valid = cmd.is_valid();
-          let style_token = apply_colors(ui, active, valid);
+          let style_token = apply_colors(ui, false, valid);
 
           cmd.display(ui);
           style_token.pop(&ui);
@@ -239,9 +233,11 @@ impl DarkSoulsIIIPracticeTool {
         )));
 
         ui.text(imgui::ImString::new(format!(
-          "Previous / Next: {} / {}",
-          config::get_symbol(self.config.settings.prev as _).unwrap(),
-          config::get_symbol(self.config.settings.next as _).unwrap(),
+          "Down {} / Up {} / Left {} / Right {}",
+          config::get_symbol(self.config.settings.down as _).unwrap(),
+          config::get_symbol(self.config.settings.up as _).unwrap(),
+          config::get_symbol(self.config.settings.left as _).unwrap(),
+          config::get_symbol(self.config.settings.right as _).unwrap(),
         )));
 
         // Placeholder for debug info
@@ -251,13 +247,13 @@ impl DarkSoulsIIIPracticeTool {
 
         // === Process prev/next commands ===
         // if self.config.is_key_released(ui, "next") {
-        if ui.is_key_released(self.config.settings.next as _) {
-          self.current_row = usize::min(self.commands.len() - 1, self.current_row + 1);
-          trace!("Current row {}", self.current_row);
-        } else if ui.is_key_released(self.config.settings.prev as _) {
-          self.current_row = self.current_row.saturating_sub(1);
-          trace!("Current row {}", self.current_row);
-        }
+        // if ui.is_key_released(self.config.settings.next as _) {
+        //   self.current_row = usize::min(self.commands.len() - 1, self.current_row + 1);
+        //   trace!("Current row {}", self.current_row);
+        // } else if ui.is_key_released(self.config.settings.prev as _) {
+        //   self.current_row = self.current_row.saturating_sub(1);
+        //   trace!("Current row {}", self.current_row);
+        // }
 
         // style_token.pop(&ui);
         // font_token.pop(ui);

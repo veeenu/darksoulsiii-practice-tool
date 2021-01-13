@@ -18,11 +18,11 @@ pub struct Config {
 #[derive(Debug, PartialEq)]
 pub struct ConfigSettings {
   pub log_level: log::Level,
-  pub interact: i32,
-  pub capture: i32,
   pub display: i32,
-  pub next: i32,
-  pub prev: i32,
+  pub down: i32,
+  pub up: i32,
+  pub left: i32,
+  pub right: i32,
 }
 
 impl Default for Config {
@@ -38,11 +38,11 @@ impl Default for ConfigSettings {
   fn default() -> ConfigSettings {
     ConfigSettings {
       log_level: log::Level::Debug,
-      interact: VK_SPACE,
-      capture: VK_F1,
       display: '0' as _,
-      next: VK_DOWN,
-      prev: VK_UP,
+      down: VK_DOWN,
+      up: VK_UP,
+      left: VK_LEFT,
+      right: VK_RIGHT,
     }
   }
 }
@@ -84,11 +84,11 @@ struct LocalConfig {
 #[derive(Debug, Deserialize, Serialize)]
 struct LocalConfigSettings {
   log_level: String,
-  interact: Option<String>,
-  capture: Option<String>,
   display: Option<String>,
-  next: Option<String>,
-  prev: Option<String>,
+  down: Option<String>,
+  up: Option<String>,
+  left: Option<String>,
+  right: Option<String>,
 }
 
 impl From<LocalConfig> for Config {
@@ -128,11 +128,11 @@ impl From<LocalConfigSettings> for ConfigSettings {
 
     ConfigSettings {
       log_level,
-      interact: symmap_or(local_conf_settings.interact, VK_SPACE),
-      capture: symmap_or(local_conf_settings.capture, VK_F1),
       display: symmap_or(local_conf_settings.display, '0' as _),
-      next: symmap_or(local_conf_settings.next, VK_DOWN),
-      prev: symmap_or(local_conf_settings.prev, VK_UP),
+      down: symmap_or(local_conf_settings.down, VK_DOWN),
+      up: symmap_or(local_conf_settings.up, VK_UP),
+      left: symmap_or(local_conf_settings.left, VK_LEFT),
+      right: symmap_or(local_conf_settings.right, VK_RIGHT),
     }
   }
 }
@@ -153,11 +153,13 @@ impl From<&ConfigSettings> for LocalConfigSettings {
 
     LocalConfigSettings {
       log_level: format!("{}", conf_settings.log_level),
-      interact: Some(symmap_or(conf_settings.interact, String::from("VK_SPACE"))),
-      capture: Some(symmap_or(conf_settings.capture, String::from("VK_F1"))),
+      // interact: Some(symmap_or(conf_settings.interact, String::from("VK_SPACE"))),
+      // capture: Some(symmap_or(conf_settings.capture, String::from("VK_F1"))),
       display: Some(symmap_or(conf_settings.display, String::from("0"))),
-      next: Some(symmap_or(conf_settings.next, String::from("VK_DOWN"))),
-      prev: Some(symmap_or(conf_settings.prev, String::from("VK_UP"))),
+      down: Some(symmap_or(conf_settings.down, String::from("VK_DOWN"))),
+      up: Some(symmap_or(conf_settings.up, String::from("VK_UP"))),
+      left: Some(symmap_or(conf_settings.left, String::from("VK_LEFT"))),
+      right: Some(symmap_or(conf_settings.right, String::from("VK_RIGHT"))),
     }
   }
 }
