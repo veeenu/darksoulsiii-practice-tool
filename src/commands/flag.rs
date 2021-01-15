@@ -23,7 +23,13 @@ impl FlagPointer {
   ) -> FlagPointer {
     info!("Building flag pointer {}", label);
     FlagPointer {
-      label: format!("{} ({})", label, hotkey.and_then(get_symbol).unwrap_or_else(|| "".to_string())),
+      label: format!(
+        "{} ({})",
+        label,
+        hotkey
+          .and_then(get_symbol)
+          .unwrap_or_else(|| "".to_string())
+      ),
       chain,
       bit,
       hotkey,
@@ -46,7 +52,7 @@ impl FlagPointer {
 }
 
 impl Command for FlagPointer {
-  fn display(&self, ui: &imgui::Ui) -> bool {
+  fn display(&mut self, ui: &imgui::Ui) -> bool {
     let mut value = self.get().unwrap_or(false);
 
     ui.checkbox(&ImString::new(&self.label), &mut value);

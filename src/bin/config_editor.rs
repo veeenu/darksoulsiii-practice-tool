@@ -175,6 +175,11 @@ fn editor(config: Config, path: String) {
           if let Some(a) = a {
             editor.set_display(a);
           }
+
+          let a = hotkey_combo(ui, im_str!("Focus"), editor.borrow().settings.focus);
+          if let Some(a) = a {
+            editor.set_focus(a);
+          }
         }
 
         ui.dummy([0., 19.]);
@@ -272,7 +277,7 @@ fn editor(config: Config, path: String) {
 
               ui.columns(1, im_str!("##col1"), false);
             }
-            CommandSettings::Souls { quantity, hotkey  } => {
+            CommandSettings::Souls { quantity, hotkey } => {
               ui.input_int(im_str!("Quantity"), quantity).build();
 
               if let Some(a) = hotkey_combo(
@@ -292,7 +297,7 @@ fn editor(config: Config, path: String) {
                 *hotkey = vkstrings[&a].to_string();
               }
             }
-            CommandSettings::SpawnItem { .. } => {},
+            CommandSettings::SpawnItem { .. } => {}
             CommandSettings::Quitout { hotkey } => {
               if let Some(a) = hotkey_combo(
                 ui,
@@ -397,6 +402,10 @@ impl Editor {
 
   fn set_display(&self, hk: i32) {
     self.0.borrow_mut().settings.display = hk;
+  }
+
+  fn set_focus(&self, hk: i32) {
+    self.0.borrow_mut().settings.focus = hk;
   }
 
   fn add_command(&self, cs: CommandSettings) {

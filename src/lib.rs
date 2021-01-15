@@ -9,8 +9,7 @@ pub mod utils;
 //
 
 use hudhook::*;
-
-use imgui::{im_str, StyleVar, WindowFlags};
+use imgui::*;
 
 //
 // Stdlib imports
@@ -30,7 +29,7 @@ use simplelog::*;
 //
 
 use commands::*;
-use memory::BaseAddresses;
+use memory::{BaseAddresses, PointerChains};
 
 enum PracticeToolState {
   Uninit,
@@ -38,11 +37,12 @@ enum PracticeToolState {
 }
 
 pub struct DarkSoulsIIIPracticeTool {
-  dll_path: PathBuf,
+  // dll_path: PathBuf,
   config: config::Config,
   commands: Vec<Box<dyn Command>>,
-  current_row: usize,
+  pointer_chains: Option<PointerChains>,
   capturing: bool,
+  focus: (bool, Option<u8>),
   state: PracticeToolState,
 }
 
@@ -99,11 +99,12 @@ impl DarkSoulsIIIPracticeTool {
     info!("Logging to {:?}", log_path);
 
     Box::new(DarkSoulsIIIPracticeTool {
-      dll_path,
+      // dll_path,
       config,
       commands: vec![],
-      current_row: 0,
+      pointer_chains: None,
       capturing: false,
+      focus: (false, None),
       state: PracticeToolState::Uninit,
     })
   }
@@ -116,7 +117,6 @@ impl DarkSoulsIIIPracticeTool {
       Uninit => match BaseAddresses::detect_version() {
         Some(v) => {
           info!("Matched version: {:?}", v.version);
-          // self.commands = v.make_commands().map(;
           if let Some(pointer_chains) = v.make_commands() {
             self.commands = self
               .config
@@ -124,6 +124,7 @@ impl DarkSoulsIIIPracticeTool {
               .iter()
               .filter_map(|cmd| cmd.try_to_command(&pointer_chains))
               .collect();
+            self.pointer_chains = Some(pointer_chains);
           }
           Initialized(v)
         }
@@ -156,10 +157,15 @@ impl DarkSoulsIIIPracticeTool {
       self.capturing = !self.capturing;
     }
 
+    if ui.is_key_released(self.config.settings.focus as _) {
+      self.focus();
+    }
+
     // let interacting = ui.is_key_released(self.config.settings.interact as _);
     // Always process hotkeys
-    for (idx, cmd) in self.commands.iter_mut().enumerate() {
-      let active = self.current_row == idx && self.capturing;
+    // for (idx, cmd) in self.commands.iter_mut().enumerate() {
+      // let active = self.current_row == idx && self.capturing;
+    for cmd in self.commands.iter_mut() {
       cmd.interact(ui, false, false);
     }
 
@@ -179,7 +185,7 @@ impl DarkSoulsIIIPracticeTool {
       });
 
       imgui::Window::new(im_str!("##msg_window"))
-        .position([16., 16.], imgui::Condition::FirstUseEver)
+        .position([16., 16.], imgui::Condition::Always)
         .bg_alpha(0.0)
         .flags({
           WindowFlags::NO_DECORATION
@@ -189,7 +195,9 @@ impl DarkSoulsIIIPracticeTool {
             | WindowFlags::NO_SCROLLBAR
         })
         .build(ui, || {
-          ui.text(im_str!("johndisandonato's Dark Souls III Practice Tool is active"));
+          ui.text(im_str!(
+            "johndisandonato's Dark Souls III Practice Tool is active"
+          ));
         });
 
       stack_token.pop(ui);
@@ -205,8 +213,8 @@ impl DarkSoulsIIIPracticeTool {
     });
 
     imgui::Window::new(im_str!("johndisandonato's Dark Souls III Practice Tool"))
-      .position([32., 32.], imgui::Condition::FirstUseEver)
-      .bg_alpha(0.6)
+      .position([32., 32.], imgui::Condition::Always)
+      .bg_alpha(if self.focus.0 { 0.95 } else { 0.6 })
       .flags({
         WindowFlags::NO_DECORATION
           | WindowFlags::NO_COLLAPSE
@@ -215,8 +223,7 @@ impl DarkSoulsIIIPracticeTool {
           | WindowFlags::NO_SCROLLBAR
       })
       .build(ui, || {
-        for (idx, cmd) in self.commands.iter_mut().enumerate() {
-          // let active = self.current_row == idx;
+        for cmd in self.commands.iter_mut() {
           let valid = cmd.is_valid();
           let style_token = apply_colors(ui, false, valid);
 
@@ -228,38 +235,33 @@ impl DarkSoulsIIIPracticeTool {
 
         // === Help box ===
         ui.text(imgui::ImString::new(format!(
-          "Show / Hide    : {}",
+          concat!(
+            "Show / Hide    : {}\n",
+            "Focus / Blur   : {}\n",
+            "Down / Up      : {} / {}\n",
+            "Left / Right   : {} / {}\n",
+          ),
           config::get_symbol(self.config.settings.display as _).unwrap(),
-        )));
-
-        ui.text(imgui::ImString::new(format!(
-          "Down {} / Up {} / Left {} / Right {}",
+          config::get_symbol(self.config.settings.focus as _).unwrap(),
           config::get_symbol(self.config.settings.down as _).unwrap(),
           config::get_symbol(self.config.settings.up as _).unwrap(),
           config::get_symbol(self.config.settings.left as _).unwrap(),
           config::get_symbol(self.config.settings.right as _).unwrap(),
         )));
-
-        // Placeholder for debug info
-        // ui.next_column();
-        // ui.text(ImString::new(format!(
-        // )));
-
-        // === Process prev/next commands ===
-        // if self.config.is_key_released(ui, "next") {
-        // if ui.is_key_released(self.config.settings.next as _) {
-        //   self.current_row = usize::min(self.commands.len() - 1, self.current_row + 1);
-        //   trace!("Current row {}", self.current_row);
-        // } else if ui.is_key_released(self.config.settings.prev as _) {
-        //   self.current_row = self.current_row.saturating_sub(1);
-        //   trace!("Current row {}", self.current_row);
-        // }
-
-        // style_token.pop(&ui);
-        // font_token.pop(ui);
       });
 
     stack_token.pop(ui);
+  }
+
+  fn focus(&mut self) {
+    let r = self.pointer_chains.as_ref();
+    if !self.focus.0 {
+      self.focus = (true, r.and_then(|c| c.mouse_enable.read()));
+      r.and_then(|c| c.mouse_enable.write(2));
+    } else if let Some(v) = self.focus.1 {
+      self.focus = (false, None);
+      r.and_then(|c| c.mouse_enable.write(v));
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 mod flag;
+mod item_ids;
 mod item_spawn;
 mod position;
 mod quitout;
@@ -40,7 +41,10 @@ pub enum CommandSettings {
   #[serde(rename = "cycle_speed")]
   CycleSpeed { values: Vec<f32>, hotkey: String },
   #[serde(rename = "item_spawn")]
-  SpawnItem { item_id: i64, hotkey_spawn: String, hotkey_focus: String },
+  SpawnItem {
+    item_id: i64,
+    hotkey: String,
+  },
 }
 
 impl std::fmt::Display for CommandSettings {
@@ -57,7 +61,7 @@ impl std::fmt::Display for CommandSettings {
 }
 
 pub(crate) trait Command {
-  fn display(&self, ui: &imgui::Ui) -> bool;
+  fn display(&mut self, ui: &imgui::Ui) -> bool;
   fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool);
   fn is_valid(&self) -> bool;
 }
@@ -66,17 +70,18 @@ impl CommandSettings {
   pub(crate) fn try_to_command(&self, pc: &PointerChains) -> Option<Box<dyn Command>> {
     info!("{:#?}", self);
     match self {
-      CommandSettings::SpawnItem { item_id, hotkey_spawn, hotkey_focus } => Some(Box::new(ItemSpawn::new(
+      CommandSettings::SpawnItem {
+        item_id,
+        hotkey,
+      } => Some(Box::new(ItemSpawn::new(
         "Item Spawn",
         *item_id as _,
-        0,
         1,
         0xffffffff,
         pc.item_spawn.0,
         pc.item_spawn.1 as _,
         pc.item_spawn.2 as _,
-        get_keycode(hotkey_spawn),
-        get_keycode(hotkey_focus),
+        get_keycode(hotkey),
       ))),
       CommandSettings::Position {
         hotkey_save,

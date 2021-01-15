@@ -27,6 +27,7 @@ pub(crate) struct PointerChains {
   pub(crate) souls: PointerChain<u32>,
   pub(crate) item_spawn: (u64, u64, u64),
   pub(crate) quitout: PointerChain<u8>,
+  pub(crate) mouse_enable: PointerChain<u8>,
 }
 
 pub(crate) struct BaseAddresses {
@@ -52,6 +53,7 @@ pub(crate) struct BaseAddresses {
   pub version_string_ptr: u64,
   pub base_souls: u64,
   pub item_spawn: (u64, u64, u64),
+  pub mouse_enable: (u64, u64),
 
   pub version: &'static str,
 }
@@ -75,6 +77,7 @@ const VER104: BaseAddresses = BaseAddresses {
   version_string_ptr: 0x14288C422, // version string
   base_souls: 0x144704268,         // souls base ptr
   item_spawn: (0x1407abc00, 0x1446af280, 0),
+  mouse_enable: (0x1446A9280, 0x54),
   version: "1.04",
 };
 
@@ -97,6 +100,7 @@ const VER108: BaseAddresses = BaseAddresses {
   version_string_ptr: 0x1428D3F92, // version string
   base_souls: 0x1446FEE88,         // souls base ptr
   item_spawn: (0x1407B6230, 0x1447163f0, 0x14472cf58),
+  mouse_enable: (0x1447103D8, 0x54),
   version: "1.08",
 };
 
@@ -119,6 +123,7 @@ const VER112: BaseAddresses = BaseAddresses {
   version_string_ptr: 0x1428FD262, // version string
   base_souls: 0x144704268,         // souls base ptr
   item_spawn: (0x1407BB750, 0x14474c9a0, 0x144763518),
+  mouse_enable: (0x144746988, 0x54),
   version: "1.12",
 };
 
@@ -141,6 +146,7 @@ const VER115: BaseAddresses = BaseAddresses {
   version_string_ptr: 0x142900782, // version string
   base_souls: 0x144704268,         // souls base ptr
   item_spawn: (0x1407BBA70, 0x144752300, 0x144768E78),
+  mouse_enable: (0x14474C2E8, 0x54),
   version: "1.15",
 };
 
@@ -234,18 +240,7 @@ impl BaseAddresses {
       }
     };
 
-    /*let x = PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x80]);
-    let y = PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x88]);
-    let z = PointerChain::<f32>::new(&[base_b, 0x40, 0x28, 0x84]);
-
-    let position_pointer = Rc::new(RefCell::new(PositionPointer::new(x, y, z)));
-    let save_position = Box::new(PositionPointerSaver(Rc::clone(&position_pointer)));
-    let load_position = Box::new(PositionPointerLoader(Rc::clone(&position_pointer)));*/
-    let item_spawn = (
-      self.item_spawn.0,
-      self.item_spawn.1,
-      self.item_spawn.2,
-    );
+    let item_spawn = (self.item_spawn.0, self.item_spawn.1, self.item_spawn.2);
 
     Some(PointerChains {
       all_no_damage: (
@@ -284,122 +279,9 @@ impl BaseAddresses {
       ),
       souls: PointerChain::new(&[self.base_souls as _, 0x3d0, 0x74]),
       item_spawn,
+      mouse_enable: PointerChain::new(&[self.mouse_enable.0 as _, self.mouse_enable.1 as _]),
       quitout: PointerChain::new(&[self.instaqo as _, 0x250]),
     })
 
-    /*
-       vec![
-       Box::new(FlagPointer::new(
-       "all_no_damage",
-       "All No Damage",
-       PointerChain::new(&[debug + self.offs_all_no_damage as usize]),
-       0,
-       )),
-       Box::new(FlagPointer::new(
-       "no_death",
-       "No Death",
-       PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]),
-       2,
-       )),
-       Box::new(FlagPointer::new(
-       "one_shot",
-       "One Shot",
-       PointerChain::new(&[debug + self.offs_player_exterminate as usize]),
-       0,
-       )),
-       Box::new(FlagPointer::new(
-       "inf_stamina",
-       "Inf Stamina",
-       PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]),
-       4,
-       )),
-       Box::new(FlagPointer::new(
-       "inf_focus",
-       "Inf Focus",
-       PointerChain::new(&[base_b, 0x80, xa as _, 0x18, 0x1c0]),
-       5,
-       )),
-       Box::new(FlagPointer::new(
-       "inf_consumables",
-       "Inf Consumables",
-       PointerChain::new(&[base_b, 0x80, self.offs_no_goods_consume as _]),
-       3,
-       )),
-       Box::new(FlagPointer::new(
-       "deathcam",
-       "Deathcam",
-       PointerChain::new(&[base_b, self.offs_deathcam as usize]),
-       0,
-       )),
-       Box::new(FlagPointer::new(
-       "evt_draw",
-       "Event Draw",
-       PointerChain::new(&[base_f, 0xa8]),
-       0,
-       )),
-       Box::new(FlagPointer::new(
-       "evt_disable",
-       "Event Disable",
-       PointerChain::new(&[base_f, 0xd4]),
-       0,
-       )),
-       Box::new(FlagPointer::new(
-       "ai_disable",
-       "AI Disable",
-       PointerChain::new(&[debug + self.offs_no_update_ai as usize]),
-       0,
-       )),
-       Box::new(FlagPointer::new(
-       "rend_chr",
-       "Render Character",
-       PointerChain::new(&[grend + 2]),
-       0,
-       )),
-       Box::new(FlagPointer::new(
-       "rend_obj",
-       "Render Objects",
-    PointerChain::new(&[grend + 1]),
-    0,
-    )),
-    Box::new(FlagPointer::new(
-        "rend_map",
-        "Render Map",
-        PointerChain::new(&[grend + 0]),
-        0,
-    )),
-    Box::new(FlagPointer::new(
-        "rend_mesh_hi",
-        "Render Mesh (high)",
-        PointerChain::new(&[self.mesh_hi as usize]),
-        0,
-    )),
-    Box::new(FlagPointer::new(
-        "rend_mesh_lo",
-        "Render Mesh (low)",
-        PointerChain::new(&[self.mesh_lo as usize]),
-        0,
-    )),
-    Box::new(FlagPointer::new(
-        "gravity",
-        "Gravity",
-        PointerChain::new(&[base_d, 0x60, 0x48]),
-        0,
-    )),
-    Box::new(CycleSpeedPointer::new(
-        PointerChain::new(&[base_b, 0x80, xa as _, 0x28, self.offs_speed as _]),
-    )),
-    save_position,
-    load_position,
-    Box::new(SoulsPointer(PointerChain::new(&[
-          self.base_souls as _,
-          0x3d0,
-          0x74,
-    ]))),
-    Box::new(QuitoutPointer(PointerChain::new(&[
-          self.instaqo as _,
-          0x250,
-    ]))),
-    ]
-      */
   }
 }

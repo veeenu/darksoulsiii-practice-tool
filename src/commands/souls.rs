@@ -14,9 +14,21 @@ pub(crate) struct SoulsPointer {
 }
 
 impl SoulsPointer {
-  pub(crate) fn new(pointer: PointerChain<u32>, quantity: i32, hotkey: Option<i32>) -> SoulsPointer {
-    let label = imgui::ImString::new(format!("Add souls ({})", hotkey.and_then(get_symbol).unwrap_or("".to_string())));
-    SoulsPointer { pointer, quantity, hotkey, label }
+  pub(crate) fn new(
+    pointer: PointerChain<u32>,
+    quantity: i32,
+    hotkey: Option<i32>,
+  ) -> SoulsPointer {
+    let label = imgui::ImString::new(format!(
+      "Add souls ({})",
+      hotkey.and_then(get_symbol).unwrap_or("".to_string())
+    ));
+    SoulsPointer {
+      pointer,
+      quantity,
+      hotkey,
+      label,
+    }
   }
 
   pub(crate) fn incr(&self) {
@@ -29,11 +41,8 @@ impl SoulsPointer {
 }
 
 impl Command for SoulsPointer {
-  fn display(&self, ui: &imgui::Ui) -> bool {
-    let clicked = ui.button(
-      &self.label,
-      [BUTTON_WIDTH, BUTTON_HEIGHT],
-    );
+  fn display(&mut self, ui: &imgui::Ui) -> bool {
+    let clicked = ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT]);
     ui.same_line(0.);
     if let Some(souls) = self.pointer.read() {
       ui.text(ImString::new(format!("[{}]", souls)));

@@ -1,6 +1,7 @@
 [settings]
 log_level = "DEBUG"
 display = "0"
+focus = "O"
 down = "VK_DOWN"
 up = "VK_UP"
 left = "VK_LEFT"
@@ -9,8 +10,7 @@ right = "VK_RIGHT"
 [[command]]
 cmd = "item_spawn"
 item_id = 305419896
-hotkey_spawn = "O"
-hotkey_focus = "I"
+hotkey = "I"
 
 [[command]]
 cmd = "toggle"

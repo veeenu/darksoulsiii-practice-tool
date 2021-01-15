@@ -14,8 +14,15 @@ pub(crate) struct CycleSpeedPointer {
 
 impl CycleSpeedPointer {
   pub(crate) fn new(pointer: PointerChain<f32>, hotkey: Option<i32>) -> CycleSpeedPointer {
-    let label = imgui::ImString::new(format!("Speed ({})", hotkey.and_then(get_symbol).unwrap_or("".to_string())));
-    CycleSpeedPointer { pointer, hotkey, label }
+    let label = imgui::ImString::new(format!(
+      "Speed ({})",
+      hotkey.and_then(get_symbol).unwrap_or("".to_string())
+    ));
+    CycleSpeedPointer {
+      pointer,
+      hotkey,
+      label,
+    }
   }
 
   pub(crate) fn cycle(&self) -> Option<f32> {
@@ -38,7 +45,7 @@ impl CycleSpeedPointer {
 }
 
 impl Command for CycleSpeedPointer {
-  fn display(&self, ui: &imgui::Ui) -> bool {
+  fn display(&mut self, ui: &imgui::Ui) -> bool {
     let clicked = ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT]);
     ui.same_line(0.);
     if let Some(speed) = self.read() {

@@ -1,54 +1,54 @@
 use hudhook::*;
 
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 use winapi::um::errhandlingapi;
 use winapi::um::memoryapi;
-use winapi::um::synchapi;
 use winapi::um::processthreadsapi;
+use winapi::um::synchapi;
 
-use dynasmrt::{dynasm, DynasmApi, DynasmLabelApi};
-use imgui::ImString;
+use dynasmrt::{dynasm, DynasmApi};
+use imgui::*;
 use log::*;
 
 use super::{Command, BUTTON_HEIGHT, BUTTON_WIDTH};
 use crate::config::get_symbol;
+use super::item_ids::ITEM_IDS;
+
+static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 pub(crate) struct ItemSpawn {
   label: imgui::ImString,
+  instance_id: usize,
   hotkey_spawn: Option<i32>,
-  hotkey_focus: Option<i32>,
   item_id: u32,
-  upgrade: u32,
   qty: u32,
   durability: u32,
   addrs: (u64, u64, u64),
+
+  item_id_idx: usize,
 }
 
 impl ItemSpawn {
   pub(crate) fn new(
     label: &str,
     item_id: u32,
-    upgrade: u32,
     qty: u32,
     durability: u32,
     function_ptr: u64,
     unk_addr1: u64,
     unk_addr2: u64,
     hotkey_spawn: Option<i32>,
-    hotkey_focus: Option<i32>,
   ) -> ItemSpawn {
-    let upgrade = 0u32;
-    let qty = 1u32;
-    let durability: u32 = 0xffffffff;
-
     ItemSpawn {
       label: imgui::ImString::new(label.to_string()),
+      instance_id: ID_COUNTER.fetch_add(1, Ordering::Relaxed),
       hotkey_spawn,
-      hotkey_focus,
-      item_id: 0x4c4c08,
-      upgrade: 6,
-      qty: 1,
+      item_id,
+      qty,
       durability,
       addrs: (function_ptr, unk_addr1, unk_addr2),
+      item_id_idx: ITEM_IDS.iter().position(|(id, name)| id == &Some(item_id)).unwrap_or(0),
     }
   }
 
@@ -65,7 +65,7 @@ impl ItemSpawn {
     ; lea r8d, [rsp + 0x20]
     ; lea rdx, [rsp + 0x30]
     ; mov eax, DWORD self.qty as _
-    ; mov ebx, DWORD (self.item_id + self.upgrade) as _
+    ; mov ebx, DWORD self.item_id as _
     ; mov esi, DWORD self.durability as _
     ; mov DWORD [rsp + 0x30], 1u32 as _
     ; mov [rsp + 0x3c], esi
@@ -87,12 +87,14 @@ impl ItemSpawn {
     std::thread::spawn(move || {
       let buf = ops.finalize().unwrap();
       let bufp: &[u8] = &buf;
-      debug!("Buffer: {}", (0..105).into_iter().map(|i| format!("{:02x}", bufp[i])).collect::<Vec<_>>().join(" "));
-      // for i in 0..105 {
-      //   let ptr = buf.ptr(dynasmrt::AssemblyOffset(i));
-      //   print!("{:02x} ", unsafe { *ptr });
-      // }
-      // println!("");
+      debug!(
+        "Buffer: {}",
+        (0..105)
+          .into_iter()
+          .map(|i| format!("{:02x}", bufp[i]))
+          .collect::<Vec<_>>()
+          .join(" ")
+      );
       let hproc = unsafe { processthreadsapi::GetCurrentProcess() };
       let addr = unsafe {
         memoryapi::VirtualAllocEx(
@@ -149,9 +151,7 @@ impl ItemSpawn {
         return;
       }
 
-      unsafe {
-        synchapi::WaitForSingleObject(thread, 0xffffffff)
-      };
+      unsafe { synchapi::WaitForSingleObject(thread, 0xffffffff) };
 
       let ret = unsafe { memoryapi::VirtualFreeEx(hproc, addr, 0, 0x8000) };
 
@@ -166,8 +166,32 @@ impl ItemSpawn {
 }
 
 impl Command for ItemSpawn {
-  fn display(&self, ui: &imgui::Ui) -> bool {
-    ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT])
+  fn display(&mut self, ui: &imgui::Ui) -> bool {
+    if ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT]) {
+      self.spawn();
+    }
+    let id_tok = ui.push_id(self.instance_id as i32);
+
+    let preview = &ITEM_IDS.get(self.item_id_idx).unwrap_or(&ITEM_IDS[0]).1;
+    let combo = ComboBox::new(im_str!("##item_spawn")).preview_value(preview);
+    combo.build(ui, || {
+      for (idx, (item, label)) in ITEM_IDS.iter().enumerate() {
+        let selected = idx == self.item_id_idx;
+        if Selectable::new(&label).selected(selected).build(ui) {
+          self.item_id_idx = idx;
+          if let Some(item) = item {
+            self.item_id = *item;
+          }
+        }
+      }
+    });
+
+    let slider = Slider::new(im_str!("Qty##slider")).range(0u32..=99u32);
+    slider.build(ui, &mut self.qty);
+
+    id_tok.pop(ui);
+
+    false
   }
 
   fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool) {
@@ -175,6 +199,7 @@ impl Command for ItemSpawn {
       .hotkey_spawn
       .map(|k| ui.is_key_released(k as _))
       .unwrap_or(false)
+      || is_interacting
     {
       self.spawn()
     }

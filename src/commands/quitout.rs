@@ -14,8 +14,15 @@ pub(crate) struct QuitoutPointer {
 
 impl QuitoutPointer {
   pub(crate) fn new(pointer: PointerChain<u8>, hotkey: Option<i32>) -> QuitoutPointer {
-    let label = imgui::ImString::new(format!("Quitout ({})", hotkey.and_then(get_symbol).unwrap_or("".to_string())));
-    QuitoutPointer { pointer, hotkey, label }
+    let label = imgui::ImString::new(format!(
+      "Quitout ({})",
+      hotkey.and_then(get_symbol).unwrap_or("".to_string())
+    ));
+    QuitoutPointer {
+      pointer,
+      hotkey,
+      label,
+    }
   }
 
   pub(crate) fn is_valid(&self) -> bool {
@@ -30,11 +37,8 @@ impl QuitoutPointer {
 }
 
 impl Command for QuitoutPointer {
-  fn display(&self, ui: &imgui::Ui) -> bool {
-    ui.button(
-      &self.label,
-      [BUTTON_WIDTH, BUTTON_HEIGHT],
-    )
+  fn display(&mut self, ui: &imgui::Ui) -> bool {
+    ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT])
   }
 
   fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool) {

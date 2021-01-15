@@ -27,8 +27,18 @@ impl PositionPointer {
     hotkey_load: Option<i32>,
     hotkey_save: Option<i32>,
   ) -> PositionPointer {
-    let save_label = format!("Save ({})", hotkey_save.and_then(get_symbol).unwrap_or_else(|| "".to_string()));
-    let load_label = format!("Load ({})", hotkey_load.and_then(get_symbol).unwrap_or_else(|| "".to_string()));
+    let save_label = format!(
+      "Save ({})",
+      hotkey_save
+        .and_then(get_symbol)
+        .unwrap_or_else(|| "".to_string())
+    );
+    let load_label = format!(
+      "Load ({})",
+      hotkey_load
+        .and_then(get_symbol)
+        .unwrap_or_else(|| "".to_string())
+    );
     PositionPointer {
       x,
       y,
@@ -67,14 +77,13 @@ impl PositionPointer {
 }
 
 impl Command for PositionPointer {
-  fn display(&self, ui: &imgui::Ui) -> bool {
+  fn display(&mut self, ui: &imgui::Ui) -> bool {
     let (sx, sy, sz) = (self.saved_x, self.saved_y, self.saved_z);
     let (cx, cy, cz) = self.read().unwrap_or((0.0, 0.0, 0.0));
 
     ui.text(ImString::new(format!(
       "Position [{:9.2}  {:9.2} {:9.2}] {}\n         [{:9.2}  {:9.2} {:9.2}] {}",
-      cx, cy, cz, self.save_label, 
-      sx, sy, sz, self.load_label
+      cx, cy, cz, self.save_label, sx, sy, sz, self.load_label
     )));
 
     false
