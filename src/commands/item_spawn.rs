@@ -173,7 +173,9 @@ impl Command for ItemSpawn {
     let id_tok = ui.push_id(self.instance_id as i32);
 
     let preview = &ITEM_IDS.get(self.item_id_idx).unwrap_or(&ITEM_IDS[0]).1;
-    let combo = ComboBox::new(im_str!("##item_spawn")).preview_value(preview);
+    let combo = ComboBox::new(im_str!("##item_spawn"))
+      .preview_value(preview)
+      .height(ComboBoxHeight::Large);
     combo.build(ui, || {
       for (idx, (item, label)) in ITEM_IDS.iter().enumerate() {
         let selected = idx == self.item_id_idx;
@@ -186,7 +188,7 @@ impl Command for ItemSpawn {
       }
     });
 
-    let slider = Slider::new(im_str!("Qty##slider")).range(0u32..=99u32);
+    let slider = Slider::new(im_str!("Qty##slider")).range(1u32..=99u32);
     slider.build(ui, &mut self.qty);
 
     id_tok.pop(ui);
