@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 use libjdsd_dsiii_practice_tool::config::*;
 use libjdsd_dsiii_practice_tool::utils::imgui_loop;
 
@@ -91,12 +92,6 @@ fn editor(config: Config, path: String) {
       let s = display.gl_window().window().inner_size();
       (s.width as f32, s.height as f32)
     };
-
-    /*let (width, height, x, y) = if ww > wh {
-      (ww * 0.5, wh, ww * 0.5, 0.)
-    } else {
-      (ww, wh * 0.5, 0., wh * 0.5)
-    };*/
 
     let stack_token = ui.push_style_vars({
       &[

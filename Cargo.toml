@@ -8,6 +8,14 @@ edition = "2018"
 name = "jdsd_dsiii_practice_tool"
 path = "src/main.rs"
 
+[[bin]]
+name = "jdsd_dsiii_config_editor"
+path = "src/bin/config_editor.rs"
+
+[[bin]]
+name = "jdsd_dsiii_savefile_manager"
+path = "src/bin/savefile_manager.rs"
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 name = "libjdsd_dsiii_practice_tool"
@@ -15,6 +23,7 @@ name = "libjdsd_dsiii_practice_tool"
 [profile.release]
 lto = true
 codegen-units = 1
+opt-level = 3
 
 [dependencies]
 hudhook = { path = "../hudhook", version = "0.1.5" }
@@ -40,3 +49,6 @@ glium = "0.29.0"
 clipboard = "0.5"
 dynasm = "1.0.0"
 dynasmrt = "1.0.0"
+rusqlite = { version = "0.24.2", features = ["bundled", "blob"] }
+regex = "1"
+chrono = "0.4.19"

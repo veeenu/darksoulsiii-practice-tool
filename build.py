@@ -40,10 +40,15 @@ def package():
     if os.path.exists(zip_name):
         os.remove(zip_name)
 
-    subprocess.run(['cargo', 'build', '--release'])
+    env = os.environ.copy()
+    env['RUSTFLAGS'] = "-C link-args=-Wl,--subsystem,windows"
+
+    subprocess.run(['cargo', 'build', '--release'], env=env)
     update_icon('target/release/jdsd_dsiii_practice_tool.exe',
                 'src/sidherald.ico')
-    update_icon('target/release/config_editor.exe',
+    update_icon('target/release/jdsd_dsiii_savefile_manager.exe',
+                'src/sidherald.ico')
+    update_icon('target/release/jdsd_dsiii_config_editor.exe',
                 'src/sidherald.ico')
 
     def copy_into_zip(src, destn, zhandle):
@@ -57,8 +62,10 @@ def package():
                       'jdsd_dsiii_practice_tool.dll', zhandle)
         copy_into_zip('jdsd_dsiii_practice_tool.toml',
                       'jdsd_dsiii_practice_tool.toml', zhandle)
-        copy_into_zip('target/release/config_editor.exe',
-                      'config_editor.exe', zhandle)
+        copy_into_zip('target/release/jdsd_dsiii_savefile_manager.exe',
+                      'jdsd_dsiii_savefile_manager.exe', zhandle)
+        copy_into_zip('target/release/jdsd_dsiii_config_editor.exe',
+                      'jdsd_dsiii_config_editor.exe', zhandle)
 
 
 def run_release():
@@ -70,7 +77,8 @@ def run_release():
     )
     # os.startfile('steam://rungameid/374320')
     # time.sleep(10)
-    subprocess.run('target/release/jdsd_dsiii_practice_tool.exe', cwd='target/release')
+    subprocess.run('target/release/jdsd_dsiii_practice_tool.exe',
+                   cwd='target/release')
 
 
 def run():
@@ -82,7 +90,8 @@ def run():
     )
     # os.startfile('steam://rungameid/374320')
     # time.sleep(10)
-    subprocess.run('target/debug/jdsd_dsiii_practice_tool.exe', cwd='target/debug')
+    subprocess.run('target/debug/jdsd_dsiii_practice_tool.exe',
+                   cwd='target/debug')
 
 
 def main():
@@ -93,7 +102,8 @@ def main():
     cmd_package.set_defaults(func=package)
     cmd_run = subparsers.add_parser('run', help='Run the tool')
     cmd_run.set_defaults(func=run)
-    cmd_run_release = subparsers.add_parser('run_release', help='Run the tool (release config)')
+    cmd_run_release = subparsers.add_parser(
+        'run_release', help='Run the tool (release config)')
     cmd_run_release.set_defaults(func=run_release)
     parser.parse_args().func()
 
