@@ -170,11 +170,6 @@ fn editor(config: Config, path: String) {
           if let Some(a) = a {
             editor.set_display(a);
           }
-
-          let a = hotkey_combo(ui, im_str!("Focus"), editor.borrow().settings.focus);
-          if let Some(a) = a {
-            editor.set_focus(a);
-          }
         }
 
         ui.dummy([0., 19.]);
@@ -332,19 +327,6 @@ fn editor(config: Config, path: String) {
         }
       });
 
-    /*Window::new(im_str!("window2"))
-    .position([x, y], Condition::Always)
-    .size([width, height], Condition::Always)
-    .flags({
-      WindowFlags::NO_DECORATION
-        | WindowFlags::NO_COLLAPSE
-        | WindowFlags::NO_RESIZE
-        | WindowFlags::NO_MOVE
-    })
-    .build(ui, || {
-      ui.text(ImString::new(format!("{:#?}", editor.borrow())));
-    });*/
-
     stack_token.pop(ui);
   });
 }
@@ -397,10 +379,6 @@ impl Editor {
 
   fn set_display(&self, hk: i32) {
     self.0.borrow_mut().settings.display = hk;
-  }
-
-  fn set_focus(&self, hk: i32) {
-    self.0.borrow_mut().settings.focus = hk;
   }
 
   fn add_command(&self, cs: CommandSettings) {

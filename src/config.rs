@@ -19,7 +19,6 @@ pub struct Config {
 pub struct ConfigSettings {
   pub log_level: log::Level,
   pub display: i32,
-  pub focus: i32,
   pub down: i32,
   pub up: i32,
   pub left: i32,
@@ -40,7 +39,6 @@ impl Default for ConfigSettings {
     ConfigSettings {
       log_level: log::Level::Debug,
       display: '0' as _,
-      focus: '9' as _,
       down: VK_DOWN,
       up: VK_UP,
       left: VK_LEFT,
@@ -87,7 +85,6 @@ struct LocalConfig {
 struct LocalConfigSettings {
   log_level: String,
   display: Option<String>,
-  focus: Option<String>,
   down: Option<String>,
   up: Option<String>,
   left: Option<String>,
@@ -132,7 +129,6 @@ impl From<LocalConfigSettings> for ConfigSettings {
     ConfigSettings {
       log_level,
       display: symmap_or(local_conf_settings.display, '0' as _),
-      focus: symmap_or(local_conf_settings.focus, '0' as _),
       down: symmap_or(local_conf_settings.down, VK_DOWN),
       up: symmap_or(local_conf_settings.up, VK_UP),
       left: symmap_or(local_conf_settings.left, VK_LEFT),
@@ -157,10 +153,7 @@ impl From<&ConfigSettings> for LocalConfigSettings {
 
     LocalConfigSettings {
       log_level: format!("{}", conf_settings.log_level),
-      // interact: Some(symmap_or(conf_settings.interact, String::from("VK_SPACE"))),
-      // capture: Some(symmap_or(conf_settings.capture, String::from("VK_F1"))),
       display: Some(symmap_or(conf_settings.display, String::from("0"))),
-      focus: Some(symmap_or(conf_settings.focus, String::from("9"))),
       down: Some(symmap_or(conf_settings.down, String::from("VK_DOWN"))),
       up: Some(symmap_or(conf_settings.up, String::from("VK_UP"))),
       left: Some(symmap_or(conf_settings.left, String::from("VK_LEFT"))),

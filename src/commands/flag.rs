@@ -55,9 +55,12 @@ impl Command for FlagPointer {
   fn display(&mut self, ui: &imgui::Ui) -> bool {
     let mut value = self.get().unwrap_or(false);
 
-    ui.checkbox(&ImString::new(&self.label), &mut value);
+    if ui.checkbox(&ImString::new(&self.label), &mut value) {
+      self.interact(ui, true, true);
+    }
 
-    ui.is_item_clicked(imgui::MouseButton::Left)
+    false
+    // ui.is_item_clicked(imgui::MouseButton::Left)
   }
 
   fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool) {

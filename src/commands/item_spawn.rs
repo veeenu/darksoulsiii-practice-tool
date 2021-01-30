@@ -11,9 +11,9 @@ use dynasmrt::{dynasm, DynasmApi};
 use imgui::*;
 use log::*;
 
+use super::item_ids::{ITEM_IDS, INFUSION_TYPES, UPGRADES};
 use super::{Command, BUTTON_HEIGHT, BUTTON_WIDTH};
 use crate::config::get_symbol;
-use super::item_ids::ITEM_IDS;
 
 static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -22,17 +22,23 @@ pub(crate) struct ItemSpawn {
   instance_id: usize,
   hotkey_spawn: Option<i32>,
   item_id: u32,
+  infusion: u32,
+  upgrade: u32,
   qty: u32,
   durability: u32,
   addrs: (u64, u64, u64),
 
   item_id_idx: usize,
+  infusion_idx: usize,
+  upgrade_idx: usize,
 }
 
 impl ItemSpawn {
   pub(crate) fn new(
     label: &str,
     item_id: u32,
+    infusion: u32,
+    upgrade: u32,
     qty: u32,
     durability: u32,
     function_ptr: u64,
@@ -45,10 +51,23 @@ impl ItemSpawn {
       instance_id: ID_COUNTER.fetch_add(1, Ordering::Relaxed),
       hotkey_spawn,
       item_id,
+      infusion,
+      upgrade,
       qty,
       durability,
       addrs: (function_ptr, unk_addr1, unk_addr2),
-      item_id_idx: ITEM_IDS.iter().position(|(id, name)| id == &Some(item_id)).unwrap_or(0),
+      item_id_idx: ITEM_IDS
+        .iter()
+        .position(|(id, _)| id == &Some(item_id))
+        .unwrap_or(0),
+      infusion_idx: INFUSION_TYPES
+        .iter()
+        .position(|(id, _)| *id == infusion)
+        .unwrap_or(0),
+      upgrade_idx: UPGRADES
+        .iter()
+        .position(|(id, _)| *id == upgrade)
+        .unwrap_or(0),
     }
   }
 
@@ -59,13 +78,14 @@ impl ItemSpawn {
 
   fn spawn(&self) {
     let mut ops = dynasmrt::x64::Assembler::new().unwrap();
+    let item_id = self.item_id + self.infusion + self.upgrade;
     dynasm!(ops
     ; .arch x64
     ; sub rsp, 0x48
     ; lea r8d, [rsp + 0x20]
     ; lea rdx, [rsp + 0x30]
     ; mov eax, DWORD self.qty as _
-    ; mov ebx, DWORD self.item_id as _
+    ; mov ebx, DWORD item_id as _
     ; mov esi, DWORD self.durability as _
     ; mov DWORD [rsp + 0x30], 1u32 as _
     ; mov [rsp + 0x3c], esi
@@ -163,14 +183,66 @@ impl ItemSpawn {
       }
     });
   }
+
+  // fn filter(&mut self) {}
+
+  // fn filtered_combo_box(&mut self, ui: &imgui::Ui) {
+  //   if ui
+  //     .input_text(im_str!("##filter"), &mut self.input_text)
+  //     .build()
+  //   {
+  //     self.filter();
+  //   }
+
+  //   let mut pos = ui.item_rect_min();
+  //   let mut size = ui.item_rect_size();
+
+  //   ui.same_line(0.);
+  //   if ui.arrow_button(im_str!("##openCombo"), imgui::Direction::Down) {
+  //     ui.open_popup(im_str!("combobox"));
+  //   }
+
+  //   pos[1] += size[1];
+  //   size[0] += ui.item_rect_size()[0];
+  //   size[1] += 5. + (size[1] * 20.);
+
+  //   unsafe {
+  //     imgui::sys::igSetNextWindowPos(
+  //       imgui::sys::ImVec2::new(pos[0], pos[1]),
+  //       imgui::sys::ImGuiCond_Always as _,
+  //       imgui::sys::ImVec2::new(0., 0.),
+  //     );
+  //     imgui::sys::igSetNextWindowSize(
+  //       imgui::sys::ImVec2::new(size[0], size[1]),
+  //       imgui::sys::ImGuiCond_Always as _,
+  //     );
+  //   }
+  //   ui.popup(im_str!("combobox"), || {
+  //     for (idx, (item, label)) in ITEM_IDS.iter().enumerate() {
+  //       let selected = idx == self.item_id_idx;
+  //       if Selectable::new(&label).selected(selected).build(ui) {
+  //         self.item_id_idx = idx;
+  //         if let Some(item) = item {
+  //           self.item_id = *item;
+  //           self.input_text.clear();
+  //           self.input_text.push_str(label.to_str());
+  //           ui.close_current_popup();
+  //           break;
+  //         }
+  //       }
+  //     }
+  //   });
+  // }
 }
 
 impl Command for ItemSpawn {
   fn display(&mut self, ui: &imgui::Ui) -> bool {
-    if ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT]) {
-      self.spawn();
-    }
+    let mut size = ui.window_size();
+
     let id_tok = ui.push_id(self.instance_id as i32);
+
+    let width = size[0] * 0.45;
+    let w_tok = ui.push_item_width(width);
 
     let preview = &ITEM_IDS.get(self.item_id_idx).unwrap_or(&ITEM_IDS[0]).1;
     let combo = ComboBox::new(im_str!("##item_spawn"))
@@ -188,8 +260,46 @@ impl Command for ItemSpawn {
       }
     });
 
-    let slider = Slider::new(im_str!("Qty##slider")).range(1u32..=99u32);
+    ui.same_line(0.);
+    if ui.button(&self.label, [width, BUTTON_HEIGHT]) {
+      self.spawn();
+    }
+
+    let preview = &INFUSION_TYPES.get(self.infusion_idx).unwrap_or(&INFUSION_TYPES[0]).1;
+    let combo_infusion = ComboBox::new(im_str!("##item_spawn_infu"))
+      .preview_value(preview)
+      .height(ComboBoxHeight::Large);
+    combo_infusion.build(ui, || {
+      for (idx, (item, label)) in INFUSION_TYPES.iter().enumerate() {
+        let selected = idx == self.infusion_idx;
+        if Selectable::new(&label).selected(selected).build(ui) {
+          self.infusion_idx = idx;
+          self.infusion = *item;
+        }
+      }
+    });
+
+    ui.same_line(0.);
+    let preview = &UPGRADES.get(self.upgrade_idx).unwrap_or(&UPGRADES[0]).1;
+    let combo_upgrade = ComboBox::new(im_str!("##item_spawn_upgr"))
+      .preview_value(preview)
+      .height(ComboBoxHeight::Large);
+    combo_upgrade.build(ui, || {
+      for (idx, (item, label)) in UPGRADES.iter().enumerate() {
+        let selected = idx == self.upgrade_idx;
+        if Selectable::new(&label).selected(selected).build(ui) {
+          self.upgrade_idx = idx;
+          self.upgrade = *item;
+        }
+      }
+    });
+
+    w_tok.pop(ui);
+
+    let w_tok = ui.push_item_width(size[0] * 0.925);
+    let slider = Slider::new(im_str!("##slider")).range(1u32..=99u32);
     slider.build(ui, &mut self.qty);
+    w_tok.pop(ui);
 
     id_tok.pop(ui);
 

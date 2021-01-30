@@ -282,6 +282,5 @@ impl BaseAddresses {
       mouse_enable: PointerChain::new(&[self.mouse_enable.0 as _, self.mouse_enable.1 as _]),
       quitout: PointerChain::new(&[self.instaqo as _, 0x250]),
     })
-
   }
 }

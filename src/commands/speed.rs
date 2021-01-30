@@ -53,6 +53,11 @@ impl Command for CycleSpeedPointer {
     } else {
       ui.text(ImString::new("[ N/A ]"));
     }
+
+    if clicked {
+      self.interact(ui, true, true);
+    }
+
     clicked
   }
 

@@ -155,16 +155,13 @@ impl DarkSoulsIIIPracticeTool {
     // Always process display toggle
     if ui.is_key_released(self.config.settings.display as _) {
       self.capturing = !self.capturing;
-    }
-
-    if ui.is_key_released(self.config.settings.focus as _) {
       self.focus();
     }
 
     // let interacting = ui.is_key_released(self.config.settings.interact as _);
     // Always process hotkeys
     // for (idx, cmd) in self.commands.iter_mut().enumerate() {
-      // let active = self.current_row == idx && self.capturing;
+    // let active = self.current_row == idx && self.capturing;
     for cmd in self.commands.iter_mut() {
       cmd.interact(ui, false, false);
     }
@@ -237,12 +234,10 @@ impl DarkSoulsIIIPracticeTool {
         ui.text(imgui::ImString::new(format!(
           concat!(
             "Show / Hide    : {}\n",
-            "Focus / Blur   : {}\n",
             "Down / Up      : {} / {}\n",
             "Left / Right   : {} / {}\n",
           ),
           config::get_symbol(self.config.settings.display as _).unwrap(),
-          config::get_symbol(self.config.settings.focus as _).unwrap(),
           config::get_symbol(self.config.settings.down as _).unwrap(),
           config::get_symbol(self.config.settings.up as _).unwrap(),
           config::get_symbol(self.config.settings.left as _).unwrap(),

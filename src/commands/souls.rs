@@ -49,6 +49,10 @@ impl Command for SoulsPointer {
     } else {
       ui.text(ImString::new("[N/A]"));
     }
+    if clicked {
+      self.interact(ui, true, true);
+    }
+
     clicked
   }
 

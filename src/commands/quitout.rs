@@ -38,7 +38,12 @@ impl QuitoutPointer {
 
 impl Command for QuitoutPointer {
   fn display(&mut self, ui: &imgui::Ui) -> bool {
-    ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT])
+    if ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT]) {
+      self.interact(ui, true, true);
+      true
+    } else {
+      false
+    }
   }
 
   fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool) {

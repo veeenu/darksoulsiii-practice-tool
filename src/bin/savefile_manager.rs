@@ -150,7 +150,7 @@ fn main() {
           Ok(_) => {
             let dt = Local::now();
             events.push(ImString::from(format!(
-              "{} State saved",
+              "{} State loaded",
               dt.format("%T").to_string()
             )));
           }
