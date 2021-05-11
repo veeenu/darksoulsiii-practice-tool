@@ -8,14 +8,16 @@ use winapi::um::winuser::GetAsyncKeyState;
 const TITLE: &str = "Practice Tool Savefiles Manager";
 
 mod database {
-  use std::io::Write;
+  use std::cell::RefCell;
   use std::path::PathBuf;
+  use std::collections::VecDeque;
 
-  use rusqlite::{params, Connection, DatabaseName};
+  use chrono::prelude::*;
 
   pub(super) struct Database {
     savefile_path: PathBuf,
-    database_path: PathBuf,
+    counter: RefCell<u32>,
+    buffer: RefCell<VecDeque<(u32, DateTime<Local>, Vec<u8>)>>,
   }
 
   impl Database {
@@ -37,65 +39,55 @@ mod database {
         .ok_or_else(|| "Could not find savefile position".to_string())?;
 
       Ok(Database {
-        savefile_path: savefile_path,
-        database_path: PathBuf::from("./savefiles.db"),
+        savefile_path,
+        counter: RefCell::new(0),
+        buffer: RefCell::new(VecDeque::new()),
       })
     }
 
     pub(super) fn save(&self) -> Result<(), String> {
       let savefile_content = std::fs::read(&self.savefile_path)
         .map_err(|e| format!("Could not read savefile: {}", e))?;
-      let conn = Connection::open(&self.database_path)
-        .map_err(|e| format!("Could not open savefile database: {}", e))?;
-      conn
-        .execute(
-          r"CREATE TABLE IF NOT EXISTS savefiles (data BLOB)",
-          params![],
-        )
-        .map_err(|e| format!("Savefile database error, CREATE: {}", e))?;
-      conn
-        .execute(
-          r"INSERT INTO savefiles (data) VALUES (ZEROBLOB(?))",
-          params![savefile_content.len() as isize],
-        )
-        .map_err(|e| format!("Savefile database error, INSERT: {}", e))?;
 
-      let rowid = conn.last_insert_rowid();
-      let mut blob = conn
-        .blob_open(DatabaseName::Main, "savefiles", "data", rowid, false)
-        .map_err(|e| format!("Savefile database error, blob open: {}", e))?;
-      let bytes_written = blob
-        .write(&savefile_content)
-        .map_err(|e| format!("Savefile database error, blob write: {}", e))?;
-      if bytes_written != savefile_content.len() {
-        Err(format!(
-          "Savefile database error, blob write result: written {} bytes instead of {}",
-          bytes_written,
-          savefile_content.len()
-        ))
+      let mut buffer = self.buffer.borrow_mut();
+      let mut next_id = self.counter.borrow_mut();
+      *next_id += 1;
+      buffer.push_back((*next_id, Local::now(), savefile_content));
+      while buffer.len() > 10 {
+        buffer.pop_front();
+      }
+      Ok(())
+    }
+
+    pub(super) fn load(&self) -> Result<(), String> {
+      match self.buffer.borrow().iter().last() {
+        Some((_, _, savefile_content)) => {
+          std::fs::write(&self.savefile_path, &savefile_content)
+            .map_err(|e| format!("Could not write savefile: {}", e))
+        }
+        None => {
+          Err("Savefile list empty".to_string())
+        }
+      }
+    }
+
+    pub(super) fn pop(&self) -> Result<(), String> {
+      if let None = self.buffer.borrow_mut().pop_back() {
+        Err("Could not pop savefile".to_string())
       } else {
         Ok(())
       }
     }
 
-    pub(super) fn load(&self) -> Result<(), String> {
-      let conn = rusqlite::Connection::open(&self.database_path)
-        .map_err(|e| format!("Could not open savefile database: {}", e))?;
-      let rowid = conn
-        .query_row(r"SELECT MAX(rowid) FROM savefiles", params![], |r| r.get(0))
-        .map_err(|e| format!("Savefile database error, SELECT: {}", e))?;
-      let blob = conn
-        .blob_open(DatabaseName::Main, "savefiles", "data", rowid, false)
-        .map_err(|e| format!("Savefile database error, blob open: {}", e))?;
-      let mut savefile_content = vec![0u8; blob.size() as usize];
-      blob
-        .read_at(&mut savefile_content, 0)
-        .map_err(|e| format!("Savefile database error, blob read: {}", e))?;
-
-      std::fs::write(&self.savefile_path, &savefile_content)
-        .map_err(|e| format!("Could not write savefile: {}", e))?;
-
-      Ok(())
+    pub(super) fn retrieve(&self) -> Result<Vec<(u32, DateTime<Local>)>, String> {
+      Ok(
+        self
+          .buffer
+          .borrow()
+          .iter()
+          .map(|(id, time, _)| (*id, time.clone()))
+          .collect(),
+      )
     }
   }
 }
@@ -103,9 +95,29 @@ mod database {
 fn main() {
   let db = database::Database::new();
 
+  let mut was_pop_pressed: bool = false;
   let mut was_save_pressed: bool = false;
   let mut was_load_pressed: bool = false;
   let mut events: Vec<ImString> = Vec::new();
+  let mut state: Vec<ImString> = Vec::new();
+
+  fn retrieve(db: &database::Database) -> Vec<ImString> {
+    let mut s = match db.retrieve() {
+      Ok(s) => s
+        .into_iter()
+        .map(|(id, time)| ImString::from(format!("{:>8} {}", id, time.format("%T").to_string())))
+        .collect(),
+      Err(e) => {
+        vec![ImString::from(e)]
+      }
+    };
+
+    while s.len() < 10 {
+      s.push(ImString::from(String::new()));
+    }
+
+    s
+  }
 
   match db {
     Ok(db) => imgui_loop(TITLE, move |_, ui, display| {
@@ -122,6 +134,7 @@ fn main() {
         ]
       });
 
+      let pop_key_state = unsafe { GetAsyncKeyState('1' as _) & 0x01 } != 0;
       let save_key_state = unsafe { GetAsyncKeyState('5' as _) & 0x01 } != 0;
       let load_key_state = unsafe { GetAsyncKeyState('9' as _) & 0x01 } != 0;
 
@@ -143,6 +156,8 @@ fn main() {
             )));
           }
         }
+
+        state = retrieve(&db);
       }
 
       if load_key_state && !was_load_pressed {
@@ -163,10 +178,35 @@ fn main() {
             )));
           }
         }
+
+        state = retrieve(&db);
+      }
+
+      if pop_key_state && !was_pop_pressed {
+        match db.pop() {
+          Ok(_) => {
+            let dt = Local::now();
+            events.push(ImString::from(format!(
+              "{} State popped",
+              dt.format("%T").to_string()
+            )));
+          }
+          Err(e) => {
+            let dt = Local::now();
+            events.push(ImString::from(format!(
+              "{} {}",
+              dt.format("%T").to_string(),
+              e
+            )));
+          }
+        }
+
+        state = retrieve(&db);
       }
 
       was_save_pressed = save_key_state;
       was_load_pressed = load_key_state;
+      was_pop_pressed = pop_key_state;
 
       Window::new(im_str!("window1"))
         .position([0., 0.], Condition::Always)
@@ -178,21 +218,31 @@ fn main() {
             | WindowFlags::NO_MOVE
         })
         .build(ui, || {
-          let messages = events.iter().rev().take(50);
-          ui.text(im_str!("Save: 5 / Load: 9"));
-          ui.separator();
+          let messages = events.iter().rev().take(10);
+          ui.text(im_str!("Save: 5 / Load: 9 / Pop: 1"));
 
           let tok = ui.push_item_width(-1.);
+
+          ui.separator();
+
+          let state = state.iter().take(10);
+          for label in state {
+            ui.text(&label);
+          }
+
+          ui.separator();
+
           for label in messages {
             ui.text(&label);
           }
+
           tok.pop(ui);
         });
 
       stack_token.pop(ui);
     }),
     Err(e) => imgui_loop(TITLE, move |_, ui, display| {
-      let (width, height) = {
+      let (_width, _height) = {
         let s = display.gl_window().window().inner_size();
         (s.width as f32, s.height as f32)
       };

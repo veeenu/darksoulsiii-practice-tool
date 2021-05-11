@@ -16,7 +16,7 @@ impl QuitoutPointer {
   pub(crate) fn new(pointer: PointerChain<u8>, hotkey: Option<i32>) -> QuitoutPointer {
     let label = imgui::ImString::new(format!(
       "Quitout ({})",
-      hotkey.and_then(get_symbol).unwrap_or("".to_string())
+      hotkey.and_then(get_symbol).unwrap_or_else(|| "".to_string())
     ));
     QuitoutPointer {
       pointer,

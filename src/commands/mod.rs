@@ -15,7 +15,6 @@ use crate::config::get_keycode;
 use crate::memory::PointerChains;
 
 pub(crate) use flag::*;
-pub(crate) use item_spawn::*;
 pub(crate) use position::*;
 pub(crate) use quitout::*;
 pub(crate) use souls::*;
@@ -39,9 +38,17 @@ pub enum CommandSettings {
   #[serde(rename = "souls")]
   Souls { quantity: i32, hotkey: String },
   #[serde(rename = "cycle_speed")]
-  CycleSpeed { values: Vec<f32>, hotkey: String },
+  CycleSpeed {
+    values: Option<Vec<f32>>,
+    hotkey: String,
+  },
   #[serde(rename = "item_spawn")]
-  SpawnItem { item_id: i64, infusion: Option<i64>, upgrade: Option<i64>, hotkey: String },
+  SpawnItem {
+    item_id: i64,
+    infusion: Option<i64>,
+    upgrade: Option<i64>,
+    hotkey: String,
+  },
 }
 
 impl std::fmt::Display for CommandSettings {
@@ -67,18 +74,30 @@ impl CommandSettings {
   pub(crate) fn try_to_command(&self, pc: &PointerChains) -> Option<Box<dyn Command>> {
     info!("{:#?}", self);
     match self {
-      CommandSettings::SpawnItem { item_id, infusion, upgrade, hotkey } => Some(Box::new(ItemSpawn::new(
-        "Item Spawn",
-        *item_id as _,
-        infusion.unwrap_or(0) as _,
-        upgrade.unwrap_or(0) as _,
-        1,
-        0xffffffff,
-        pc.item_spawn.0,
-        pc.item_spawn.1 as _,
-        pc.item_spawn.2 as _,
-        get_keycode(hotkey),
-      ))),
+      CommandSettings::SpawnItem {
+        item_id,
+        infusion,
+        upgrade,
+        hotkey,
+      } => {
+        if cfg!(item_spawn) {
+          pub(crate) use item_spawn::*;
+          Some(Box::new(ItemSpawn::new(
+            "Item Spawn",
+            *item_id as _,
+            infusion.unwrap_or(0) as _,
+            upgrade.unwrap_or(0) as _,
+            1,
+            0xffffffff,
+            pc.item_spawn.0,
+            pc.item_spawn.1 as _,
+            pc.item_spawn.2 as _,
+            get_keycode(hotkey),
+          )))
+        } else {
+          None
+        }
+      }
       CommandSettings::Position {
         hotkey_save,
         hotkey_load,
@@ -101,6 +120,7 @@ impl CommandSettings {
       CommandSettings::CycleSpeed { values, hotkey } => Some(Box::new(CycleSpeedPointer::new(
         pc.speed.clone(),
         get_keycode(hotkey),
+        values.clone(),
       ))),
       CommandSettings::Toggle { flag, hotkey } => match flag.as_str() {
         "all_no_damage" => Some(Box::new(FlagPointer::new(

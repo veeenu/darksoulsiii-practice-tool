@@ -80,7 +80,7 @@ fn editor(config: Config, path: String) {
       hotkey: String::from("VK_F1"),
     },
     || CommandSettings::CycleSpeed {
-      values: vec![],
+      values: None,
       hotkey: String::from("VK_F1"),
     },
   ];
@@ -146,7 +146,7 @@ fn editor(config: Config, path: String) {
         };
 
         {
-          let a = hotkey_combo(ui, im_str!("Down"), editor.borrow().settings.down);
+          /*let a = hotkey_combo(ui, im_str!("Down"), editor.borrow().settings.down);
           if let Some(a) = a {
             editor.set_down(a);
           }
@@ -164,7 +164,7 @@ fn editor(config: Config, path: String) {
           let a = hotkey_combo(ui, im_str!("Right"), editor.borrow().settings.right);
           if let Some(a) = a {
             editor.set_right(a);
-          }
+          }*/
 
           let a = hotkey_combo(ui, im_str!("Display"), editor.borrow().settings.display);
           if let Some(a) = a {
@@ -361,7 +361,7 @@ impl Editor {
     self.0.borrow_mut().settings.log_level = level;
   }
 
-  fn set_down(&self, hk: i32) {
+  /*fn set_down(&self, hk: i32) {
     self.0.borrow_mut().settings.down = hk;
   }
 
@@ -375,7 +375,7 @@ impl Editor {
 
   fn set_right(&self, hk: i32) {
     self.0.borrow_mut().settings.right = hk;
-  }
+  }*/
 
   fn set_display(&self, hk: i32) {
     self.0.borrow_mut().settings.display = hk;
@@ -440,7 +440,7 @@ fn main() {
     .about("Validate the correctness of your configuration file")
     .arg(
       Arg::with_name("file")
-        .required(true)
+        .required(false)
         .help("The path of the config file"),
     )
     .get_matches();

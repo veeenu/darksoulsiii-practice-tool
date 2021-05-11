@@ -4,7 +4,7 @@ use glium::glutin::event_loop::{ControlFlow, EventLoop};
 use glium::glutin::window::WindowBuilder;
 use glium::{Display, Surface};
 use glutin::platform::windows::EventLoopExtWindows;
-use imgui::{Context, FontConfig, FontSource, Ui};
+use imgui::*;
 use imgui_glium_renderer::Renderer;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
 use std::path::Path;
@@ -48,7 +48,7 @@ pub fn init(title: &str) -> System {
   let context = glutin::ContextBuilder::new().with_vsync(true);
   let builder = WindowBuilder::new()
     .with_title(title.to_owned())
-    .with_inner_size(glutin::dpi::LogicalSize::new(320., 480.));
+    .with_inner_size(glutin::dpi::LogicalSize::new(320., 380.));
   let display = Display::new(builder, context, &event_loop).expect("Failed to initialize display");
 
   let mut imgui = Context::create();
@@ -165,7 +165,7 @@ pub fn imgui_loop<F: FnMut(&mut bool, &mut Ui, &Display) + 'static>(title: &str,
 #[test]
 fn test_entry_point() {
   let system = init(file!());
-  system.main_loop(file!(), move |_, ui| {
+  system.main_loop(move |_, ui, _| {
     Window::new(im_str!("Hello world"))
       .size([300.0, 110.0], Condition::FirstUseEver)
       .build(ui, || {

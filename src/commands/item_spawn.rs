@@ -12,8 +12,7 @@ use imgui::*;
 use log::*;
 
 use super::item_ids::{ITEM_IDS, INFUSION_TYPES, UPGRADES};
-use super::{Command, BUTTON_HEIGHT, BUTTON_WIDTH};
-use crate::config::get_symbol;
+use super::{Command, BUTTON_HEIGHT};
 
 static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -237,7 +236,7 @@ impl ItemSpawn {
 
 impl Command for ItemSpawn {
   fn display(&mut self, ui: &imgui::Ui) -> bool {
-    let mut size = ui.window_size();
+    let size = ui.window_size();
 
     let id_tok = ui.push_id(self.instance_id as i32);
 
@@ -306,7 +305,7 @@ impl Command for ItemSpawn {
     false
   }
 
-  fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool) {
+  fn interact(&mut self, ui: &imgui::Ui, _is_active: bool, is_interacting: bool) {
     if self
       .hotkey_spawn
       .map(|k| ui.is_key_released(k as _))

@@ -10,10 +10,15 @@ pub(crate) struct CycleSpeedPointer {
   pointer: PointerChain<f32>,
   hotkey: Option<i32>,
   label: imgui::ImString,
+  values: Vec<f32>,
 }
 
 impl CycleSpeedPointer {
-  pub(crate) fn new(pointer: PointerChain<f32>, hotkey: Option<i32>) -> CycleSpeedPointer {
+  pub(crate) fn new(
+    pointer: PointerChain<f32>,
+    hotkey: Option<i32>,
+    values: Option<Vec<f32>>,
+  ) -> CycleSpeedPointer {
     let label = imgui::ImString::new(format!(
       "Speed ({})",
       hotkey.and_then(get_symbol).unwrap_or("".to_string())
@@ -22,19 +27,27 @@ impl CycleSpeedPointer {
       pointer,
       hotkey,
       label,
+      values: values.unwrap_or_else(|| vec![1.0, 2.0, 4.0]),
     }
   }
 
   pub(crate) fn cycle(&self) -> Option<f32> {
-    let next = match self.pointer.read() {
-      Some(x) if x <= 0.25 => Some(0.5),
-      Some(x) if x <= 0.5 => Some(1.),
-      Some(x) if x <= 1. => Some(2.),
-      Some(x) if x <= 2. => Some(4.),
-      Some(x) if x <= 4. => Some(8.),
-      Some(_) => Some(0.25),
-      None => None,
-    };
+    /*let next = match self.pointer.read() {
+    Some(x) if x <= 0.25 => Some(0.5),
+    Some(x) if x <= 0.5 => Some(1.),
+    Some(x) if x <= 1. => Some(2.),
+    Some(x) if x <= 2. => Some(4.),
+    Some(x) if x <= 4. => Some(8.),
+    Some(_) => Some(0.25),
+    None => None,
+    };*/
+    let next = self.pointer.read().map(|speed| {
+      *self
+        .values
+        .iter()
+        .find(|&&x| x > speed)
+        .unwrap_or_else(|| self.values.iter().next().unwrap_or(&1.0))
+    });
     next.map(|speed| self.pointer.write(speed));
     next
   }

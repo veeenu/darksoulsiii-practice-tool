@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use hudhook::inject;
 use pkg_version::*;
 use semver::Version;
@@ -39,18 +41,22 @@ fn get_latest_version() -> Result<(Version, String, String), String> {
 }
 
 fn perform_injection() -> Result<(), String> {
-  let mut cur_exe = std::env::current_exe().map_err(err_to_string)?;
+  let mut cur_exe = PathBuf::new();
+  cur_exe.push(std::env::current_exe().map_err(err_to_string)?);
   cur_exe.push("..");
-  cur_exe.push("jdsd_dsiii_practice_tool.dll");
+  cur_exe.push("jdsd_dsiii_practice_tool");
+  cur_exe.set_extension("dll");
 
   if !cur_exe.exists() {
     cur_exe.push("..");
-    cur_exe.push("libjdsd_dsiii_practice_tool.dll");
+    cur_exe.push("libjdsd_dsiii_practice_tool");
+    cur_exe.set_extension("dll");
   }
 
   let cur_dll = cur_exe.canonicalize().map_err(err_to_string)?;
+  log::trace!("Injecting {:?}", cur_dll);
 
-  inject("DarkSoulsIII.exe", &cur_dll.as_path().to_string_lossy()).map_err(err_to_string)?;
+  inject("DarkSoulsIII.exe", &cur_dll).map_err(err_to_string)?;
 
   Ok(())
 }

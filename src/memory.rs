@@ -28,6 +28,7 @@ pub(crate) struct PointerChains {
   pub(crate) item_spawn: (u64, u64, u64),
   pub(crate) quitout: PointerChain<u8>,
   pub(crate) mouse_enable: PointerChain<u8>,
+  pub(crate) format_string: PointerChain<[u16; 90]>,
 }
 
 pub(crate) struct BaseAddresses {
@@ -56,6 +57,9 @@ pub(crate) struct BaseAddresses {
   pub mouse_enable: (u64, u64),
 
   pub version: &'static str,
+
+  // other static pointers
+  pub format_string: u64,
 }
 
 const VER104: BaseAddresses = BaseAddresses {
@@ -79,6 +83,7 @@ const VER104: BaseAddresses = BaseAddresses {
   item_spawn: (0x1407abc00, 0x1446af280, 0),
   mouse_enable: (0x1446A9280, 0x54),
   version: "1.04",
+  format_string: 0x142952940,
 };
 
 const VER108: BaseAddresses = BaseAddresses {
@@ -102,6 +107,7 @@ const VER108: BaseAddresses = BaseAddresses {
   item_spawn: (0x1407B6230, 0x1447163f0, 0x14472cf58),
   mouse_enable: (0x1447103D8, 0x54),
   version: "1.08",
+  format_string: 0x142952940,
 };
 
 const VER112: BaseAddresses = BaseAddresses {
@@ -125,6 +131,7 @@ const VER112: BaseAddresses = BaseAddresses {
   item_spawn: (0x1407BB750, 0x14474c9a0, 0x144763518),
   mouse_enable: (0x144746988, 0x54),
   version: "1.12",
+  format_string: 0x142952940,
 };
 
 const VER115: BaseAddresses = BaseAddresses {
@@ -148,6 +155,7 @@ const VER115: BaseAddresses = BaseAddresses {
   item_spawn: (0x1407BBA70, 0x144752300, 0x144768E78),
   mouse_enable: (0x14474C2E8, 0x54),
   version: "1.15",
+  format_string: 0x142952940,
 };
 
 /**
@@ -281,6 +289,7 @@ impl BaseAddresses {
       item_spawn,
       mouse_enable: PointerChain::new(&[self.mouse_enable.0 as _, self.mouse_enable.1 as _]),
       quitout: PointerChain::new(&[self.instaqo as _, 0x250]),
+      format_string: PointerChain::new(&[self.format_string as _]),
     })
   }
 }

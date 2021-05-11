@@ -63,12 +63,9 @@ impl DarkSoulsIIIPracticeTool {
     let mut config_path = dll_path.clone();
     config_path.push("jdsd_dsiii_practice_tool.toml");
 
-    let config = match config::Config::load_from_file(&config_path) {
-      Ok(config) => config,
-      Err(e) => {
-        error!("{}", e);
-        config::Config::default()
-      }
+    let (config, config_load_err) = match config::Config::load_from_file(&config_path) {
+      Ok(config) => (config, None),
+      Err(e) => (config::Config::default(), Some(e)),
     };
 
     if config.settings.log_level > log::Level::Info {
@@ -90,6 +87,10 @@ impl DarkSoulsIIIPracticeTool {
       ),
     ])
     .ok();
+
+    if let Some(e) = config_load_err {
+      error!("{}", e);
+    }
 
     debug!("DLL path: {:?}", dll_path);
     info!(
@@ -136,7 +137,6 @@ impl DarkSoulsIIIPracticeTool {
 
   fn render_inner(&mut self, ctx: RenderContext<'_>) {
     // Utility function for applying colors
-    use imgui::{ColorStackToken, StyleColor};
     fn apply_colors(ui: &imgui::Ui, active: bool, valid: bool) -> ColorStackToken {
       if active && valid {
         ui.push_style_colors(&[(StyleColor::Text, palette::ORANGE)])
@@ -158,18 +158,52 @@ impl DarkSoulsIIIPracticeTool {
       self.focus();
     }
 
-    // let interacting = ui.is_key_released(self.config.settings.interact as _);
     // Always process hotkeys
-    // for (idx, cmd) in self.commands.iter_mut().enumerate() {
-    // let active = self.current_row == idx && self.capturing;
     for cmd in self.commands.iter_mut() {
       cmd.interact(ui, false, false);
     }
 
-    /*let (font_id, _col_width, _col_height) = {
-      let fonts = ui.fonts().fonts();
-      (fonts[0], 14., 13.)
-    };*/
+    // Always display the meme color
+    /*self.pointer_chains.as_ref().map(|p| {
+      use std::time::{SystemTime, Duration};
+      let h = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or(Duration::from_secs(0)).as_millis();
+      let h = ((h / 10) % 360) as f32;
+
+      fn hsv2rgb(h: f32, s: f32, b: f32) -> u32 {
+        let h = h / 60.;
+        let i = h.trunc() as u8;
+        let f = h.fract();
+
+        let p = b * (1. - s);
+        let q = b * (1. - s * f);
+        let t = b * (1. - s * (1. - f));
+
+        let (r, g, b) = match i {
+          0 => (b, t, p),
+          1 => (q, b, p),
+          2 => (p, b, t),
+          3 => (p, q, b),
+          4 => (t, p, b),
+          _ => (b, p, q)
+        };
+        let (r, g, b) = (r * 255., g * 255., b * 255.);
+        let (r, g, b) = (r as u32, g as u32, b as u32);
+
+        r << 16 | g << 8 | b
+      }
+
+      let mut f: [u16; 90] = [0; 90]; // p.format_string.read()?;
+      format!("<TEXTFORMAT LEADING='%d'><FONT LETTERSPACING='%d' COLOR='#{:06x}'>%s</FONT></TEXTFORMAT>\0\0", hsv2rgb(h, 0.75, 0.75))
+        .encode_utf16()
+        .into_iter()
+        .enumerate()
+        .for_each(|(idx, val): (usize, u16)| {
+          f[idx] = val;
+        });
+      p.format_string.write(f)?;
+
+      None::<Option<()>>
+    });*/
 
     // Don't do anything else if we're not visible
     if !self.capturing {
@@ -234,14 +268,14 @@ impl DarkSoulsIIIPracticeTool {
         ui.text(imgui::ImString::new(format!(
           concat!(
             "Show / Hide    : {}\n",
-            "Down / Up      : {} / {}\n",
-            "Left / Right   : {} / {}\n",
+            // "Down / Up      : {} / {}\n",
+            // "Left / Right   : {} / {}\n",
           ),
           config::get_symbol(self.config.settings.display as _).unwrap(),
-          config::get_symbol(self.config.settings.down as _).unwrap(),
+          /*config::get_symbol(self.config.settings.down as _).unwrap(),
           config::get_symbol(self.config.settings.up as _).unwrap(),
           config::get_symbol(self.config.settings.left as _).unwrap(),
-          config::get_symbol(self.config.settings.right as _).unwrap(),
+          config::get_symbol(self.config.settings.right as _).unwrap(),*/
         )));
       });
 
@@ -249,13 +283,16 @@ impl DarkSoulsIIIPracticeTool {
   }
 
   fn focus(&mut self) {
-    let r = self.pointer_chains.as_ref();
-    if !self.focus.0 {
-      self.focus = (true, r.and_then(|c| c.mouse_enable.read()));
-      r.and_then(|c| c.mouse_enable.write(2));
-    } else if let Some(v) = self.focus.1 {
-      self.focus = (false, None);
-      r.and_then(|c| c.mouse_enable.write(v));
+    #[cfg(feature = "focus")]
+    {
+      let r = self.pointer_chains.as_ref();
+      if !self.focus.0 {
+        self.focus = (true, r.and_then(|c| c.mouse_enable.read()));
+        r.and_then(|c| c.mouse_enable.write(2));
+      } else if let Some(v) = self.focus.1 {
+        self.focus = (false, None);
+        r.and_then(|c| c.mouse_enable.write(v));
+      }
     }
   }
 }
