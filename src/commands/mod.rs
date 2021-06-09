@@ -105,6 +105,7 @@ impl CommandSettings {
         pc.position.0.clone(),
         pc.position.1.clone(),
         pc.position.2.clone(),
+        pc.position.3.clone(),
         get_keycode(hotkey_load),
         get_keycode(hotkey_save),
       ))),
