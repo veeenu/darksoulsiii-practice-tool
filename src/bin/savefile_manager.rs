@@ -1,4 +1,4 @@
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 use libjdsd_dsiii_practice_tool::utils::imgui_loop;
 
 use chrono::prelude::*;
