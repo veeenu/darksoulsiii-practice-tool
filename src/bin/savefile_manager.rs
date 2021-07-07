@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 use libjdsd_dsiii_practice_tool::utils::imgui_loop;
 
 use chrono::prelude::*;
@@ -9,8 +9,8 @@ const TITLE: &str = "Practice Tool Savefiles Manager";
 
 mod database {
   use std::cell::RefCell;
-  use std::path::PathBuf;
   use std::collections::VecDeque;
+  use std::path::PathBuf;
 
   use chrono::prelude::*;
 
@@ -61,13 +61,9 @@ mod database {
 
     pub(super) fn load(&self) -> Result<(), String> {
       match self.buffer.borrow().iter().last() {
-        Some((_, _, savefile_content)) => {
-          std::fs::write(&self.savefile_path, &savefile_content)
-            .map_err(|e| format!("Could not write savefile: {}", e))
-        }
-        None => {
-          Err("Savefile list empty".to_string())
-        }
+        Some((_, _, savefile_content)) => std::fs::write(&self.savefile_path, &savefile_content)
+          .map_err(|e| format!("Could not write savefile: {}", e)),
+        None => Err("Savefile list empty".to_string()),
       }
     }
 
@@ -98,22 +94,28 @@ fn main() {
   let mut was_pop_pressed: bool = false;
   let mut was_save_pressed: bool = false;
   let mut was_load_pressed: bool = false;
-  let mut events: Vec<ImString> = Vec::new();
-  let mut state: Vec<ImString> = Vec::new();
+  let mut events: Vec<(ImString, DateTime<Local>)> = Vec::new();
+  let mut state: Vec<(ImString, DateTime<Local>)> = Vec::new();
 
-  fn retrieve(db: &database::Database) -> Vec<ImString> {
+  fn retrieve(db: &database::Database) -> Vec<(ImString, DateTime<Local>)> {
     let mut s = match db.retrieve() {
       Ok(s) => s
         .into_iter()
-        .map(|(id, time)| ImString::from(format!("{:>8} {}", id, time.format("%T").to_string())))
+        .map(|(id, time)| {
+          (
+            ImString::from(format!("{:>8} {}", id, time.format("%T").to_string())),
+            time,
+          )
+        })
         .collect(),
       Err(e) => {
-        vec![ImString::from(e)]
+        vec![(ImString::from(e), Local::now())]
       }
     };
 
+    let epoch = Local.timestamp(0, 0);
     while s.len() < 10 {
-      s.push(ImString::from(String::new()));
+      s.push((ImString::new(""), epoch));
     }
 
     s
@@ -142,18 +144,18 @@ fn main() {
         match db.save() {
           Ok(_) => {
             let dt = Local::now();
-            events.push(ImString::from(format!(
+            events.push((ImString::from(format!(
               "{} State saved",
               dt.format("%T").to_string()
-            )));
+            )), Local::now()));
           }
           Err(e) => {
             let dt = Local::now();
-            events.push(ImString::from(format!(
+            events.push((ImString::from(format!(
               "{} {}",
               dt.format("%T").to_string(),
               e
-            )));
+            )), Local::now()));
           }
         }
 
@@ -164,18 +166,18 @@ fn main() {
         match db.load() {
           Ok(_) => {
             let dt = Local::now();
-            events.push(ImString::from(format!(
+            events.push((ImString::from(format!(
               "{} State loaded",
               dt.format("%T").to_string()
-            )));
+            )), Local::now()));
           }
           Err(e) => {
             let dt = Local::now();
-            events.push(ImString::from(format!(
+            events.push((ImString::from(format!(
               "{} {}",
               dt.format("%T").to_string(),
               e
-            )));
+            )), Local::now()));
           }
         }
 
@@ -186,18 +188,18 @@ fn main() {
         match db.pop() {
           Ok(_) => {
             let dt = Local::now();
-            events.push(ImString::from(format!(
+            events.push((ImString::from(format!(
               "{} State popped",
               dt.format("%T").to_string()
-            )));
+            )), Local::now()));
           }
           Err(e) => {
             let dt = Local::now();
-            events.push(ImString::from(format!(
+            events.push((ImString::from(format!(
               "{} {}",
               dt.format("%T").to_string(),
               e
-            )));
+            )), Local::now()));
           }
         }
 
@@ -225,15 +227,42 @@ fn main() {
 
           ui.separator();
 
+          let now = Local::now();
           let state = state.iter().take(10);
-          for label in state {
+          for (label, time) in state {
+            let elapsed = (now - *time).to_std().unwrap();
+            let pct = 1. - (elapsed.as_millis() as f32 / 500.0).clamp(0., 1.);
+            let [x, y] = ui.cursor_screen_pos();
+            let th = ui.calc_text_size(&label, false, 10000.0)[1];
             ui.text(&label);
+            let dl = ui.get_window_draw_list();
+            dl.add_rect_filled_multicolor(
+              [x, y],
+              [x + ui.window_size()[0], y + th],
+              [1., 1., 1., pct],
+              [1., 1., 1., pct],
+              [1., 1., 1., pct],
+              [1., 1., 1., pct],
+            );
           }
 
           ui.separator();
 
-          for label in messages {
+          for (label, time) in messages {
+            let elapsed = (now - *time).to_std().unwrap();
+            let pct = 1. - (elapsed.as_millis() as f32 / 500.0).clamp(0., 1.);
+            let [x, y] = ui.cursor_screen_pos();
+            let th = ui.calc_text_size(&label, false, 10000.0)[1];
             ui.text(&label);
+            let dl = ui.get_window_draw_list();
+            dl.add_rect_filled_multicolor(
+              [x, y],
+              [x + ui.window_size()[0], y + th],
+              [1., 1., 1., pct],
+              [1., 1., 1., pct],
+              [1., 1., 1., pct],
+              [1., 1., 1., pct],
+            );
           }
 
           tok.pop(ui);
