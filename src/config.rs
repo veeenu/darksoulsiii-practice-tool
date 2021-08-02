@@ -8,13 +8,13 @@ use serde::{Deserialize, Serialize};
 
 pub use crate::commands::CommandSettings;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Config {
   pub settings: ConfigSettings,
   pub command: Vec<CommandSettings>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ConfigSettings {
   pub log_level: log::Level,
   pub display: i32,

@@ -3,7 +3,7 @@ use hudhook::*;
 
 use log::*;
 
-use super::{Command, BUTTON_HEIGHT, BUTTON_WIDTH};
+use super::Command;
 use crate::config::get_symbol;
 
 pub(crate) struct QuitoutPointer {
@@ -37,21 +37,23 @@ impl QuitoutPointer {
 }
 
 impl Command for QuitoutPointer {
-  fn display(&mut self, ui: &imgui::Ui) -> bool {
-    if ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT]) {
-      self.interact(ui, true, true);
+  fn display(&mut self, ctx: &RenderContext) -> bool {
+    if ctx.frame.button(&self.label) {
+      self.interact(ctx, true);
       true
     } else {
       false
     }
   }
 
-  fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool) {
-    if (is_active && is_interacting)
-      || self
+  fn interact(&mut self, ctx: &RenderContext, is_interacting: bool) {
+    // if (is_active && is_interacting)
+    //  || self
+    if self
         .hotkey
-        .map(|k| ui.is_key_released(k as _))
+        .map(|k| ctx.frame.is_key_index_released(k as _))
         .unwrap_or(false)
+      || (self.is_valid() && is_interacting)
     {
       self.quitout()
     }

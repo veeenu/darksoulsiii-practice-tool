@@ -1,4 +1,4 @@
-use imgui::ImString;
+use crate::imgui::ImString;
 
 lazy_static::lazy_static! {
   pub(crate) static ref ITEM_IDS: Vec<(Option<u32>, ImString)> = [

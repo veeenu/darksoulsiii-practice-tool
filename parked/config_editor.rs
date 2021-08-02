@@ -288,6 +288,7 @@ fn editor(config: Config, path: String) {
               }
             }
             CommandSettings::SpawnItem { .. } => {}
+            CommandSettings::SavefileManager { .. } => {}
             CommandSettings::Quitout { hotkey } => {
               if let Some(a) = hotkey_combo(
                 ui,

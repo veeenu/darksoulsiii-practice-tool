@@ -8,6 +8,10 @@ left = "VK_LEFT"
 right = "VK_RIGHT"
 
 [[command]]
+cmd = "savefile_manager"
+hotkey = "VK_OEM_3"
+
+[[command]]
 cmd = "item_spawn"
 item_id = 305419896
 hotkey = "I"
@@ -86,6 +90,26 @@ hotkey = "VK_F7"
 cmd = "toggle"
 flag = "rend_mesh_lo"
 hotkey = "VK_F8"
+
+[[command]]
+cmd = "toggle"
+flag = "all_draw_hit"
+hotkey = "VK_OEM_4"
+
+[[command]]
+cmd = "toggle"
+flag = "ik_foot_ray"
+hotkey = "VK_OEM_4"
+
+[[command]]
+cmd = "toggle"
+flag = "debug_sphere_1"
+hotkey = "VK_OEM_4"
+
+[[command]]
+cmd = "toggle"
+flag = "debug_sphere_2"
+hotkey = "VK_OEM_4"
 
 [[command]]
 cmd = "toggle"

@@ -3,7 +3,7 @@ use hudhook::*;
 
 use imgui::ImString;
 
-use super::{Command, BUTTON_HEIGHT, BUTTON_WIDTH};
+use super::Command;
 use crate::config::get_symbol;
 
 pub(crate) struct SoulsPointer {
@@ -41,27 +41,30 @@ impl SoulsPointer {
 }
 
 impl Command for SoulsPointer {
-  fn display(&mut self, ui: &imgui::Ui) -> bool {
-    let clicked = ui.button(&self.label, [BUTTON_WIDTH, BUTTON_HEIGHT]);
-    ui.same_line(0.);
+  fn display(&mut self, ctx: &RenderContext) -> bool {
+    let ui = ctx.frame;
+    let clicked = ui.button(&self.label);
+    ui.same_line();
     if let Some(souls) = self.pointer.read() {
       ui.text(ImString::new(format!("[{}]", souls)));
     } else {
       ui.text(ImString::new("[N/A]"));
     }
     if clicked {
-      self.interact(ui, true, true);
+      self.interact(ctx, true);
     }
 
     clicked
   }
 
-  fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool) {
-    if (is_active && is_interacting)
-      || self
+  fn interact(&mut self, ctx: &RenderContext, is_interacting: bool) {
+    //if (is_active && is_interacting)
+    //  || self
+    if self
         .hotkey
-        .map(|k| ui.is_key_released(k as _))
+        .map(|k| ctx.frame.is_key_index_released(k as _))
         .unwrap_or(false)
+      || (self.is_valid() && is_interacting)
     {
       self.incr();
     }

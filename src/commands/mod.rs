@@ -3,8 +3,11 @@ mod item_ids;
 mod item_spawn;
 mod position;
 mod quitout;
+mod savefiles;
 mod souls;
 mod speed;
+
+use std::path::PathBuf;
 
 use hudhook::*;
 
@@ -17,11 +20,12 @@ use crate::memory::PointerChains;
 pub(crate) use flag::*;
 pub(crate) use position::*;
 pub(crate) use quitout::*;
+pub(crate) use savefiles::*;
 pub(crate) use souls::*;
 pub(crate) use speed::*;
 
-const BUTTON_WIDTH: f32 = 128.;
-const BUTTON_HEIGHT: f32 = 18.;
+// const BUTTON_WIDTH: f32 = 128.;
+// const BUTTON_HEIGHT: f32 = 18.;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(tag = "cmd")]
@@ -49,6 +53,8 @@ pub enum CommandSettings {
     upgrade: Option<i64>,
     hotkey: String,
   },
+  #[serde(rename = "savefile_manager")]
+  SavefileManager { path: Option<PathBuf>, hotkey: String },
 }
 
 impl std::fmt::Display for CommandSettings {
@@ -60,18 +66,22 @@ impl std::fmt::Display for CommandSettings {
       CommandSettings::Souls { .. } => write!(f, "Souls"),
       CommandSettings::CycleSpeed { .. } => write!(f, "Cycle Speed"),
       CommandSettings::SpawnItem { .. } => write!(f, "Spawn Item"),
+      CommandSettings::SavefileManager { .. } => write!(f, "Savefile manager"),
     }
   }
 }
 
 pub(crate) trait Command {
-  fn display(&mut self, ui: &imgui::Ui) -> bool;
-  fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool);
+  fn display(&mut self, ctx: &RenderContext) -> bool;
+  fn interact(&mut self, ctx: &RenderContext, is_interacting: bool);
   fn is_valid(&self) -> bool;
 }
 
 impl CommandSettings {
-  pub(crate) fn try_to_command(&self, pc: &PointerChains) -> Option<Box<dyn Command>> {
+  pub(crate) fn try_to_command(
+    &self,
+    pc: &PointerChains,
+  ) -> Option<Box<dyn Command + Send + Sync>> {
     info!("{:#?}", self);
     match self {
       CommandSettings::SpawnItem {
@@ -118,11 +128,12 @@ impl CommandSettings {
         *quantity,
         get_keycode(hotkey),
       ))),
-      CommandSettings::CycleSpeed { values, hotkey } => Some(Box::new(CycleSpeedPointer::new(
-        pc.speed.clone(),
-        get_keycode(hotkey),
-        values.clone(),
-      ))),
+      CommandSettings::CycleSpeed { values, hotkey } => Some(Box::new(
+        CycleSpeedPointer::new(pc.speed.clone(), get_keycode(hotkey), values.clone()),
+      )),
+      CommandSettings::SavefileManager { hotkey, .. } => Some(
+        SavefileManager::new(get_keycode(hotkey))
+      ),
       CommandSettings::Toggle { flag, hotkey } => match flag.as_str() {
         "all_no_damage" => Some(Box::new(FlagPointer::new(
           "All no damage",
@@ -212,6 +223,30 @@ impl CommandSettings {
           "Render mesh (low)",
           pc.rend_mesh_lo.0.clone(),
           pc.rend_mesh_lo.1,
+          get_keycode(&hotkey),
+        ))),
+        "all_draw_hit" => Some(Box::new(FlagPointer::new(
+          "Draw hits",
+          pc.all_draw_hit.clone(),
+          0,
+          get_keycode(&hotkey),
+        ))),
+        "ik_foot_ray" => Some(Box::new(FlagPointer::new(
+          "IK foot ray",
+          pc.ik_foot_ray.clone(),
+          0,
+          get_keycode(&hotkey),
+        ))),
+        "debug_sphere_1" => Some(Box::new(FlagPointer::new(
+          "Hitboxes (#1)",
+          pc.debug_sphere_1.clone(),
+          0,
+          get_keycode(&hotkey),
+        ))),
+        "debug_sphere_2" => Some(Box::new(FlagPointer::new(
+          "Hitboxes (#2)",
+          pc.debug_sphere_2.clone(),
+          0,
           get_keycode(&hotkey),
         ))),
         "gravity" => Some(Box::new(FlagPointer::new(

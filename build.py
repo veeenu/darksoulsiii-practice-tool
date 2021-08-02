@@ -46,10 +46,10 @@ def package():
     subprocess.run(['cargo', 'build', '--release'], env=env)
     update_icon('target/release/jdsd_dsiii_practice_tool.exe',
                 'src/sidherald.ico')
-    update_icon('target/release/jdsd_dsiii_savefile_manager.exe',
-                'src/sidherald.ico')
-    update_icon('target/release/jdsd_dsiii_config_editor.exe',
-                'src/sidherald.ico')
+    # update_icon('target/release/jdsd_dsiii_savefile_manager.exe',
+    #             'src/sidherald.ico')
+    # update_icon('target/release/jdsd_dsiii_config_editor.exe',
+    #             'src/sidherald.ico')
 
     def copy_into_zip(src, destn, zhandle):
         with zhandle.open(destn, mode='w') as dest, open(src, 'rb') as handle:
@@ -62,10 +62,10 @@ def package():
                       'jdsd_dsiii_practice_tool.dll', zhandle)
         copy_into_zip('jdsd_dsiii_practice_tool.toml',
                       'jdsd_dsiii_practice_tool.toml', zhandle)
-        copy_into_zip('target/release/jdsd_dsiii_savefile_manager.exe',
-                      'jdsd_dsiii_savefile_manager.exe', zhandle)
-        copy_into_zip('target/release/jdsd_dsiii_config_editor.exe',
-                      'jdsd_dsiii_config_editor.exe', zhandle)
+        # copy_into_zip('target/release/jdsd_dsiii_savefile_manager.exe',
+        #               'jdsd_dsiii_savefile_manager.exe', zhandle)
+        # copy_into_zip('target/release/jdsd_dsiii_config_editor.exe',
+        #               'jdsd_dsiii_config_editor.exe', zhandle)
 
 
 def run_release():

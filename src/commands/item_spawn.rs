@@ -12,7 +12,7 @@ use imgui::*;
 use log::*;
 
 use super::item_ids::{ITEM_IDS, INFUSION_TYPES, UPGRADES};
-use super::{Command, BUTTON_HEIGHT};
+use super::Command;
 
 static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -235,7 +235,8 @@ impl ItemSpawn {
 }
 
 impl Command for ItemSpawn {
-  fn display(&mut self, ui: &imgui::Ui) -> bool {
+  fn display(&mut self, ctx: &RenderContext) -> bool {
+    let ui = ctx.frame;
     let size = ui.window_size();
 
     let id_tok = ui.push_id(self.instance_id as i32);
@@ -259,8 +260,8 @@ impl Command for ItemSpawn {
       }
     });
 
-    ui.same_line(0.);
-    if ui.button(&self.label, [width, BUTTON_HEIGHT]) {
+    ui.same_line();
+    if ui.button(&self.label) {
       self.spawn();
     }
 
@@ -278,7 +279,7 @@ impl Command for ItemSpawn {
       }
     });
 
-    ui.same_line(0.);
+    ui.same_line();
     let preview = &UPGRADES.get(self.upgrade_idx).unwrap_or(&UPGRADES[0]).1;
     let combo_upgrade = ComboBox::new(im_str!("##item_spawn_upgr"))
       .preview_value(preview)
@@ -300,17 +301,17 @@ impl Command for ItemSpawn {
     slider.build(ui, &mut self.qty);
     w_tok.pop(ui);
 
-    id_tok.pop(ui);
+    id_tok.pop();
 
     false
   }
 
-  fn interact(&mut self, ui: &imgui::Ui, _is_active: bool, is_interacting: bool) {
+  fn interact(&mut self, ctx: &RenderContext, _: bool) {
     if self
       .hotkey_spawn
-      .map(|k| ui.is_key_released(k as _))
+      .map(|k| ctx.frame.is_key_index_released(k as _))
       .unwrap_or(false)
-      || is_interacting
+      // || is_interacting
     {
       self.spawn()
     }

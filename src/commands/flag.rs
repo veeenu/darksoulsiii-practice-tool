@@ -52,22 +52,20 @@ impl FlagPointer {
 }
 
 impl Command for FlagPointer {
-  fn display(&mut self, ui: &imgui::Ui) -> bool {
+  fn display(&mut self, ctx: &RenderContext) -> bool {
     let mut value = self.get().unwrap_or(false);
 
-    if ui.checkbox(&ImString::new(&self.label), &mut value) {
-      self.interact(ui, true, true);
+    if ctx.frame.checkbox(&ImString::new(&self.label), &mut value) {
+      self.interact(ctx, true);
     }
 
     false
-    // ui.is_item_clicked(imgui::MouseButton::Left)
   }
 
-  fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool) {
-    if (is_active && is_interacting)
-      || self
+  fn interact(&mut self, ctx: &RenderContext, is_interacting: bool) {
+    if is_interacting || self
         .hotkey
-        .map(|k| ui.is_key_released(k as _))
+        .map(|k| ctx.frame.is_key_index_released(k as _))
         .unwrap_or(false)
     {
       self.toggle();

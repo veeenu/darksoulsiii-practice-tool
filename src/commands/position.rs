@@ -17,8 +17,8 @@ pub(crate) struct PositionPointer {
   saved_a: f32,
   hotkey_load: Option<i32>,
   hotkey_save: Option<i32>,
-  load_label: String,
-  save_label: String,
+  load_label: ImString,
+  save_label: ImString,
 }
 
 impl PositionPointer {
@@ -30,18 +30,18 @@ impl PositionPointer {
     hotkey_load: Option<i32>,
     hotkey_save: Option<i32>,
   ) -> PositionPointer {
-    let save_label = format!(
+    let save_label = ImString::new(format!(
       "Save ({})",
       hotkey_save
         .and_then(get_symbol)
         .unwrap_or_else(|| "".to_string())
-    );
-    let load_label = format!(
+    ));
+    let load_label = ImString::new(format!(
       "Load ({})",
       hotkey_load
         .and_then(get_symbol)
         .unwrap_or_else(|| "".to_string())
-    );
+    ));
     PositionPointer {
       x,
       y,
@@ -86,31 +86,43 @@ impl PositionPointer {
 }
 
 impl Command for PositionPointer {
-  fn display(&mut self, ui: &imgui::Ui) -> bool {
+  fn display(&mut self, ctx: &RenderContext) -> bool {
+    let ui = ctx.frame;
     let (sx, sy, sz, sa) = (self.saved_x, self.saved_y, self.saved_z, self.saved_a);
     let (cx, cy, cz, ca) = self.read().unwrap_or((0.0, 0.0, 0.0, 0.0));
 
     ui.text(ImString::new(format!(
-      "Position [{:9.2}  {:9.2}  {:9.2}  {:9.2}] {}\n         [{:9.2}  {:9.2}  {:9.2}  {:9.2}] {}",
-      cx, cy, cz, ca, self.save_label, sx, sy, sz, sa, self.load_label
+      "Position [{:9.2}  {:9.2}  {:9.2}  {:9.2}]\n         [{:9.2}  {:9.2}  {:9.2}  {:9.2}]",
+      cx, cy, cz, ca, sx, sy, sz, sa
     )));
+    ui.same_line();
+    
+    let valid = self.is_valid();
+    if ui.button(&self.load_label) && valid {
+      self.load()
+    }
+    ui.same_line();
+    if ui.button(&self.save_label) && valid {
+      self.save();
+    }
+    ui.new_line();
 
     false
   }
 
-  fn interact(&mut self, ui: &imgui::Ui, is_active: bool, is_interacting: bool) {
+  fn interact(&mut self, ctx: &RenderContext, is_interacting: bool) {
     if self
       .hotkey_load
-      .map(|k| ui.is_key_released(k as _))
+      .map(|k| ctx.frame.is_key_index_released(k as _))
       .unwrap_or(false)
     {
       self.load();
     }
     if self
       .hotkey_save
-      .map(|k| ui.is_key_released(k as _))
+      .map(|k| ctx.frame.is_key_index_released(k as _))
       .unwrap_or(false)
-      || (is_active && is_interacting)
+      || (self.is_valid() && is_interacting)
     {
       self.save();
     }

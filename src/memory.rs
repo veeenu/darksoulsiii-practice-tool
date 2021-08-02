@@ -21,6 +21,10 @@ pub(crate) struct PointerChains {
   pub(crate) rend_map: (PointerChain<u8>, u8),
   pub(crate) rend_mesh_hi: (PointerChain<u8>, u8),
   pub(crate) rend_mesh_lo: (PointerChain<u8>, u8),
+  pub(crate) all_draw_hit: PointerChain<u8>,
+  pub(crate) ik_foot_ray: PointerChain<u8>,
+  pub(crate) debug_sphere_1: PointerChain<u8>,
+  pub(crate) debug_sphere_2: PointerChain<u8>,
   pub(crate) gravity: (PointerChain<u8>, u8),
   pub(crate) speed: PointerChain<f32>,
   pub(crate) position: (PointerChain<f32>, PointerChain<f32>, PointerChain<f32>, PointerChain<f32>),
@@ -46,6 +50,10 @@ pub(crate) struct BaseAddresses {
   pub offs_player_exterminate: u64,
   pub offs_all_no_damage: u64,
   pub offs_no_update_ai: u64,
+
+  // hitbox things
+  pub base_z: u64,
+  pub base_hbd: u64,
 
   pub grend: u64,
   pub mesh_lo: u64,
@@ -74,6 +82,11 @@ const VER104: BaseAddresses = BaseAddresses {
   offs_player_exterminate: 1,      // player exterminate
   offs_all_no_damage: 9,           // all no damage
   offs_no_update_ai: 9 + 4,        // no update ai
+  //////////////////// TODO
+  base_z: 0,
+  base_hbd: 0,
+  ////////////////////
+
   grend: 0x140620B1B,              // game rend
   mesh_lo: 0x1446C3BBC,            // mesh (low hit)
   mesh_hi: 0x1446C3BBD,            // mesh (high hit)
@@ -98,6 +111,8 @@ const VER108: BaseAddresses = BaseAddresses {
   offs_player_exterminate: 1,      // player exterminate
   offs_all_no_damage: 9,           // all no damage
   offs_no_update_ai: 9 + 3,        // no update ai
+  base_z: 0x14472D078,
+  base_hbd: 0x14472AC60,
   grend: 0x1406287AB,              // game rend
   mesh_lo: 0x14472AD4C,            // mesh (low hit)
   mesh_hi: 0x14472AD4D,            // mesh (high hit)
@@ -122,6 +137,10 @@ const VER112: BaseAddresses = BaseAddresses {
   offs_player_exterminate: 1,      // player exterminate
   offs_all_no_damage: 9,           // all no damage
   offs_no_update_ai: 9 + 4,        // no update ai
+  //////////////////// TODO
+  base_z: 0,
+  base_hbd: 0,
+  //////////////////// TODO
   grend: 0x14062C45B,              // game rend
   mesh_lo: 0x14476130C,            // mesh (low hit)
   mesh_hi: 0x14476130D,            // mesh (high hit)
@@ -146,6 +165,8 @@ const VER115: BaseAddresses = BaseAddresses {
   offs_player_exterminate: 1,      // player exterminate
   offs_all_no_damage: 9,           // all no damage
   offs_no_update_ai: 9 + 4,        // no update ai
+  base_z: 0x144768F98,
+  base_hbd: 0x144766B80,
   grend: 0x14062C58B,              // game rend
   mesh_lo: 0x144766C6C,            // mesh (low hit)
   mesh_hi: 0x144766C6D,            // mesh (high hit)
@@ -203,6 +224,7 @@ impl BaseAddresses {
   }
 
   // pub(crate) fn make_commands(&self) -> Vec<Box<dyn crate::command_ui::Command>> {
+
   pub(crate) fn make_commands(&self) -> Option<PointerChains> {
     // SAFETY TODO
     let base_b = match base_chain(self.base_b, 3, 7) {
@@ -278,6 +300,10 @@ impl BaseAddresses {
       rend_map: (PointerChain::new(&[grend]), 0),
       rend_mesh_hi: (PointerChain::new(&[self.mesh_hi as usize]), 0),
       rend_mesh_lo: (PointerChain::new(&[self.mesh_lo as usize]), 0),
+      all_draw_hit: PointerChain::new(&[self.base_z as usize, 0x66]),
+      ik_foot_ray: PointerChain::new(&[self.base_z as usize, 0x6B]),
+      debug_sphere_1: PointerChain::new(&[self.base_hbd as usize, 0x30]),
+      debug_sphere_2: PointerChain::new(&[self.base_hbd as usize, 0x31]),
       gravity: (PointerChain::new(&[base_d, 0x60, 0x48]), 0),
       speed: PointerChain::new(&[base_b, 0x80, xa as _, 0x28, self.offs_speed as _]),
       position: (
