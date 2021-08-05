@@ -110,6 +110,7 @@ impl DarkSoulsIIIPracticeToolStub {
       if let Some(commands) = commands {
         DarkSoulsIIIPracticeToolStub::Initialized(DarkSoulsIIIPracticeTool {
           config,
+          command_cursor: 0,
           commands,
           pointer_chains,
           base_addresses,
@@ -151,10 +152,16 @@ impl ControllerState {
   }
 }
 
+struct Context<'a> {
+    frame: &'a imgui::Ui<'a>,
+    ctl_state: &'a ControllerState
+}
+
 pub struct DarkSoulsIIIPracticeTool {
   config: config::Config,
   base_addresses: BaseAddresses,
   commands: Vec<Box<dyn Command + Send + Sync>>,
+  command_cursor: usize,
   pointer_chains: Option<PointerChains>,
   capturing: bool,
   ctl_state: ControllerState,
@@ -269,6 +276,14 @@ impl DarkSoulsIIIPracticeTool {
         ui.push_style_var(StyleVar::WindowBorderSize(1.)),
       ];
 
+      if self.ctl_state.released(|s| s.down) {
+          self.command_cursor = usize::min(self.commands.len() - 1, self.command_cursor + 1);
+      } else if self.ctl_state.released(|s| s.up) {
+          self.command_cursor = usize::max(0, self.command_cursor - 1);
+      }
+
+      let ctx = Context { frame: ctx.frame, ctl_state: &self.ctl_state };
+
       imgui::Window::new(im_str!("johndisandonato's Dark Souls III Practice Tool"))
         .position([32., 32.], imgui::Condition::Always)
         .flags({
@@ -278,10 +293,14 @@ impl DarkSoulsIIIPracticeTool {
             | WindowFlags::NO_SCROLLBAR
         })
         .build(ui, || {
-          for cmd in self.commands.iter_mut() {
+          for (idx, cmd) in self.commands.iter_mut().enumerate() {
             let valid = cmd.is_valid();
-            let style_token = apply_colors(ui, false, valid);
+            let active = idx == self.command_cursor;
+            let style_token = apply_colors(ui, active, valid);
 
+            if active {
+                cmd.interact(&ctx, true);
+            }
             cmd.display(&ctx);
             style_token.pop();
           }

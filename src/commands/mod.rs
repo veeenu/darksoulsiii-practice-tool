@@ -14,6 +14,7 @@ use hudhook::*;
 use log::*;
 use serde::{self, Deserialize, Serialize};
 
+use crate::Context;
 use crate::config::get_keycode;
 use crate::memory::PointerChains;
 
@@ -72,8 +73,8 @@ impl std::fmt::Display for CommandSettings {
 }
 
 pub(crate) trait Command {
-  fn display(&mut self, ctx: &RenderContext) -> bool;
-  fn interact(&mut self, ctx: &RenderContext, is_interacting: bool);
+  fn display(&mut self, ctx: &Context) -> bool;
+  fn interact(&mut self, ctx: &Context, is_interacting: bool);
   fn is_valid(&self) -> bool;
 }
 

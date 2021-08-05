@@ -63,11 +63,12 @@ impl Command for FlagPointer {
   }
 
   fn interact(&mut self, ctx: &RenderContext, is_interacting: bool) {
-    if is_interacting || self
-        .hotkey
-        .map(|k| ctx.frame.is_key_index_released(k as _))
-        .unwrap_or(false)
-    {
+    let is_interacting = is_interacting && ctx.controller.pressed(|s| s.a);
+    let hotkey_pressed = self
+      .hotkey
+      .map(|k| ctx.frame.is_key_index_released(k as _))
+      .unwrap_or(false);
+    if is_interacting || hotkey_pressed {
       self.toggle();
     }
   }
