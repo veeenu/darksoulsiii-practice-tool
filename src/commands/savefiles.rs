@@ -4,13 +4,13 @@ use std::{
   path::{Path, PathBuf},
 };
 
+use hudhook::imgui::StyleColor;
 use log::{error, info};
 use walkdir::WalkDir;
 
-use hudhook::RenderContext;
-
 use super::Command;
 use crate::imgui::{im_str, ComboBox, ComboBoxHeight, ImString, Selectable};
+use crate::Context;
 
 struct SavefileEntry(PathBuf, ImString);
 
@@ -77,7 +77,7 @@ impl SavefileManager {
       paths,
       cur_path: 0,
       open: false,
-      hotkey
+      hotkey,
     })
   }
   pub(crate) fn new(hotkey: Option<i32>) -> Box<dyn Command + Send + Sync> {
@@ -95,8 +95,9 @@ fn load_savefile(src: &Path, dest: &Path) -> Result<(), std::io::Error> {
 }
 
 impl Command for SavefileManager {
-  fn display(&mut self, ctx: &RenderContext) -> bool {
+  fn display(&mut self, ctx: &Context<'_>) -> bool {
     if self.paths.len() > 0 {
+
       let preview = &self.paths[self.cur_path].1;
       let combo = ComboBox::new(im_str!("##item_spawn"))
         .preview_value(preview)
@@ -112,14 +113,27 @@ impl Command for SavefileManager {
             {
               cur_path = Some(idx);
             }
+
+            if is_selected {
+              ctx.frame.set_scroll_here_y();
+            }
+          }
+
+          if !self.open {
+            ctx.frame.close_current_popup();
           }
         });
         if let Some(cur_path) = cur_path {
           self.cur_path = cur_path;
         }
       }
+
+      if self.open {
+        ctx.frame.open_popup(im_str!("##item_spawn"));
+      }
+
       ctx.frame.same_line();
-      if ctx.frame.button(im_str!("Load savefile")) {
+      if ctx.frame.button(im_str!("Load ([Y])")) {
         self.interact(ctx, true)
       }
     }
@@ -127,19 +141,58 @@ impl Command for SavefileManager {
     false
   }
 
-  fn interact(&mut self, ctx: &RenderContext, is_interacting: bool) {
-    if self
+  fn interact(&mut self, ctx: &Context<'_>, is_interacting: bool) {
+    let hotkey_pressed = self
       .hotkey
       .map(|k| ctx.frame.is_key_index_released(k as _))
-      .unwrap_or(false)
-      || is_interacting
-    {
+      .unwrap_or(false);
+
+    if hotkey_pressed {
       info!(
         "Loading {:?} -> {:?}",
         &self.paths[self.cur_path].0, &self.savefile_path
       );
       if let Err(e) = load_savefile(&self.paths[self.cur_path].0, &self.savefile_path) {
         error!("Couldn't load savefile: {:?}", e);
+      }
+    }
+
+    if !is_interacting {
+      return;
+    }
+
+    let a = ctx.controller.pressed(|s| s.a);
+    let b = ctx.controller.pressed(|s| s.b);
+    let y = ctx.controller.pressed(|s| s.y);
+    let down = ctx.controller.down(|s| s.down);
+    let up = ctx.controller.down(|s| s.up);
+
+    if a {
+      if self.open {
+        ctx.nav_lock.release();
+        self.open = false;
+      } else {
+        ctx.nav_lock.acquire();
+        self.open = true;
+      }
+    } else if b {
+      if self.open {
+        ctx.nav_lock.release();
+        self.open = false;
+      }
+    } else if y {
+      info!(
+        "Loading {:?} -> {:?}",
+        &self.paths[self.cur_path].0, &self.savefile_path
+      );
+      if let Err(e) = load_savefile(&self.paths[self.cur_path].0, &self.savefile_path) {
+        error!("Couldn't load savefile: {:?}", e);
+      }
+    } else if self.open {
+      if down {
+        self.cur_path = usize::min(self.paths.len() - 1, self.cur_path + 1);
+      } else if up {
+        self.cur_path = self.cur_path.saturating_sub(1);
       }
     }
   }
@@ -150,14 +203,14 @@ impl Command for SavefileManager {
 }
 
 impl Command for ErroredSavefileManager {
-  fn display(&mut self, ctx: &RenderContext) -> bool {
+  fn display(&mut self, ctx: &Context<'_>) -> bool {
     ctx
       .frame
       .text(format!("Savefile manager failed: {:?}", self.0));
     false
   }
 
-  fn interact(&mut self, _: &RenderContext, _: bool) {}
+  fn interact(&mut self, _: &Context<'_>, _: bool) {}
 
   fn is_valid(&self) -> bool {
     true

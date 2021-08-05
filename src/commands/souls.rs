@@ -4,6 +4,7 @@ use hudhook::*;
 use imgui::ImString;
 
 use super::Command;
+use crate::Context;
 use crate::config::get_symbol;
 
 pub(crate) struct SoulsPointer {
@@ -41,7 +42,7 @@ impl SoulsPointer {
 }
 
 impl Command for SoulsPointer {
-  fn display(&mut self, ctx: &RenderContext) -> bool {
+  fn display(&mut self, ctx: &Context<'_>) -> bool {
     let ui = ctx.frame;
     let clicked = ui.button(&self.label);
     ui.same_line();
@@ -57,15 +58,13 @@ impl Command for SoulsPointer {
     clicked
   }
 
-  fn interact(&mut self, ctx: &RenderContext, is_interacting: bool) {
-    //if (is_active && is_interacting)
-    //  || self
-    if self
-        .hotkey
-        .map(|k| ctx.frame.is_key_index_released(k as _))
-        .unwrap_or(false)
-      || (self.is_valid() && is_interacting)
-    {
+  fn interact(&mut self, ctx: &Context<'_>, is_interacting: bool) {
+    let is_interacting = is_interacting && ctx.controller.pressed(|s| s.a);
+    let hotkey_pressed = self
+      .hotkey
+      .map(|k| ctx.frame.is_key_index_released(k as _))
+      .unwrap_or(false);
+    if is_interacting || hotkey_pressed {
       self.incr();
     }
   }

@@ -13,6 +13,7 @@ use log::*;
 
 use super::item_ids::{ITEM_IDS, INFUSION_TYPES, UPGRADES};
 use super::Command;
+use crate::Context;
 
 static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -235,7 +236,7 @@ impl ItemSpawn {
 }
 
 impl Command for ItemSpawn {
-  fn display(&mut self, ctx: &RenderContext) -> bool {
+  fn display(&mut self, ctx: &Context<'_>) -> bool {
     let ui = ctx.frame;
     let size = ui.window_size();
 
@@ -306,13 +307,13 @@ impl Command for ItemSpawn {
     false
   }
 
-  fn interact(&mut self, ctx: &RenderContext, _: bool) {
-    if self
+  fn interact(&mut self, ctx: &Context<'_>, is_interacting: bool) {
+    let is_interacting = is_interacting && ctx.controller.pressed(|s| s.a);
+    let hotkey_pressed = self
       .hotkey_spawn
       .map(|k| ctx.frame.is_key_index_released(k as _))
-      .unwrap_or(false)
-      // || is_interacting
-    {
+      .unwrap_or(false);
+    if is_interacting || hotkey_pressed {
       self.spawn()
     }
   }

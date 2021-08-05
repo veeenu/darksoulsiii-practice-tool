@@ -5,6 +5,7 @@ use imgui::ImString;
 use log::*;
 
 use super::Command;
+use crate::Context;
 use crate::config::get_symbol;
 
 pub(crate) struct FlagPointer {
@@ -52,7 +53,7 @@ impl FlagPointer {
 }
 
 impl Command for FlagPointer {
-  fn display(&mut self, ctx: &RenderContext) -> bool {
+  fn display(&mut self, ctx: &Context<'_>) -> bool {
     let mut value = self.get().unwrap_or(false);
 
     if ctx.frame.checkbox(&ImString::new(&self.label), &mut value) {
@@ -62,7 +63,7 @@ impl Command for FlagPointer {
     false
   }
 
-  fn interact(&mut self, ctx: &RenderContext, is_interacting: bool) {
+  fn interact(&mut self, ctx: &Context<'_>, is_interacting: bool) {
     let is_interacting = is_interacting && ctx.controller.pressed(|s| s.a);
     let hotkey_pressed = self
       .hotkey

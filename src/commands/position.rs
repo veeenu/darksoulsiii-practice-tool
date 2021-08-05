@@ -4,6 +4,7 @@ use hudhook::*;
 use imgui::ImString;
 
 use super::Command;
+use crate::Context;
 use crate::config::get_symbol;
 
 pub(crate) struct PositionPointer {
@@ -31,13 +32,13 @@ impl PositionPointer {
     hotkey_save: Option<i32>,
   ) -> PositionPointer {
     let save_label = ImString::new(format!(
-      "Save ({})",
+      "Save ({} | [X])",
       hotkey_save
         .and_then(get_symbol)
         .unwrap_or_else(|| "".to_string())
     ));
     let load_label = ImString::new(format!(
-      "Load ({})",
+      "Load ({} [Y])",
       hotkey_load
         .and_then(get_symbol)
         .unwrap_or_else(|| "".to_string())
@@ -86,7 +87,7 @@ impl PositionPointer {
 }
 
 impl Command for PositionPointer {
-  fn display(&mut self, ctx: &RenderContext) -> bool {
+  fn display(&mut self, ctx: &Context<'_>) -> bool {
     let ui = ctx.frame;
     let (sx, sy, sz, sa) = (self.saved_x, self.saved_y, self.saved_z, self.saved_a);
     let (cx, cy, cz, ca) = self.read().unwrap_or((0.0, 0.0, 0.0, 0.0));
@@ -110,11 +111,12 @@ impl Command for PositionPointer {
     false
   }
 
-  fn interact(&mut self, ctx: &RenderContext, is_interacting: bool) {
+  fn interact(&mut self, ctx: &Context<'_>, is_interacting: bool) {
     if self
       .hotkey_load
       .map(|k| ctx.frame.is_key_index_released(k as _))
       .unwrap_or(false)
+      || (is_interacting && ctx.controller.pressed(|s| s.y))
     {
       self.load();
     }
@@ -122,7 +124,7 @@ impl Command for PositionPointer {
       .hotkey_save
       .map(|k| ctx.frame.is_key_index_released(k as _))
       .unwrap_or(false)
-      || (self.is_valid() && is_interacting)
+      || (is_interacting && ctx.controller.pressed(|s| s.x))
     {
       self.save();
     }

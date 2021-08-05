@@ -16,6 +16,9 @@ use imgui::*;
 //
 
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 //
 // Dependencies imports
@@ -115,6 +118,7 @@ impl DarkSoulsIIIPracticeToolStub {
           pointer_chains,
           base_addresses,
           capturing: false,
+          nav_lock: NavLock(Arc::new(AtomicBool::new(false))),
           ctl_state: ControllerState::new(),
         })
       } else {
@@ -126,15 +130,66 @@ impl DarkSoulsIIIPracticeToolStub {
   }
 }
 
-struct ControllerState(hudhook::ControllerState, hudhook::ControllerState);
+#[derive(Clone)]
+struct NavLock(Arc<AtomicBool>);
+
+impl NavLock {
+  fn acquire(&self) -> bool {
+    use std::sync::atomic::Ordering::*;
+    self
+      .0
+      .compare_exchange(false, true, Relaxed, Relaxed)
+      .unwrap_or_else(|e| e)
+  }
+
+  fn release(&self) -> bool {
+    use std::sync::atomic::Ordering::*;
+    self
+      .0
+      .compare_exchange(true, false, Relaxed, Relaxed)
+      .unwrap_or_else(|e| e)
+  }
+
+  fn is_locked(&self) -> bool {
+    use std::sync::atomic::Ordering::*;
+    self.0.load(Relaxed)
+  }
+}
+
+#[derive(Clone)]
+struct ControllerState(
+  hudhook::ControllerState,
+  hudhook::ControllerState,
+  Arc<Mutex<Instant>>,
+);
 
 impl ControllerState {
   fn new() -> ControllerState {
-    ControllerState(Default::default(), Default::default())
+    ControllerState(
+      Default::default(),
+      Default::default(),
+      Arc::new(Mutex::new(Instant::now())),
+    )
   }
 
   fn update(&mut self, new_state: &hudhook::ControllerState) {
-    *self = ControllerState(self.1.clone(), new_state.clone())
+    *self = ControllerState(self.1.clone(), new_state.clone(), self.2.clone())
+  }
+
+  fn down<F>(&self, f: F) -> bool
+  where
+    F: Fn(&hudhook::ControllerState) -> bool,
+  {
+    let mut debounce = self.2.lock().unwrap();
+    if debounce.elapsed() > Duration::from_millis(100) {
+      let state = f(&self.1);
+      if state {
+        *debounce = Instant::now();
+      }
+      state
+    } else {
+      false
+    }
   }
 
   fn pressed<F>(&self, f: F) -> bool
@@ -153,8 +208,9 @@ impl ControllerState {
 }
 
 struct Context<'a> {
-    frame: &'a imgui::Ui<'a>,
-    ctl_state: &'a ControllerState
+  frame: &'a imgui::Ui<'a>,
+  controller: ControllerState,
+  nav_lock: NavLock,
 }
 
 pub struct DarkSoulsIIIPracticeTool {
@@ -162,6 +218,7 @@ pub struct DarkSoulsIIIPracticeTool {
   base_addresses: BaseAddresses,
   commands: Vec<Box<dyn Command + Send + Sync>>,
   command_cursor: usize,
+  nav_lock: NavLock,
   pointer_chains: Option<PointerChains>,
   capturing: bool,
   ctl_state: ControllerState,
@@ -194,6 +251,11 @@ impl DarkSoulsIIIPracticeTool {
       self.focus();
     }
 
+    let ctx = Context {
+      frame: ctx.frame,
+      controller: self.ctl_state.clone(),
+      nav_lock: self.nav_lock.clone(),
+    };
     // Always process hotkeys
     {
       for cmd in self.commands.iter_mut() {
@@ -276,13 +338,13 @@ impl DarkSoulsIIIPracticeTool {
         ui.push_style_var(StyleVar::WindowBorderSize(1.)),
       ];
 
-      if self.ctl_state.released(|s| s.down) {
+      if !self.nav_lock.is_locked() {
+        if self.ctl_state.down(|s| s.down) {
           self.command_cursor = usize::min(self.commands.len() - 1, self.command_cursor + 1);
-      } else if self.ctl_state.released(|s| s.up) {
-          self.command_cursor = usize::max(0, self.command_cursor - 1);
+        } else if self.ctl_state.down(|s| s.up) {
+          self.command_cursor = self.command_cursor.saturating_sub(1);
+        }
       }
-
-      let ctx = Context { frame: ctx.frame, ctl_state: &self.ctl_state };
 
       imgui::Window::new(im_str!("johndisandonato's Dark Souls III Practice Tool"))
         .position([32., 32.], imgui::Condition::Always)
@@ -299,7 +361,7 @@ impl DarkSoulsIIIPracticeTool {
             let style_token = apply_colors(ui, active, valid);
 
             if active {
-                cmd.interact(&ctx, true);
+              cmd.interact(&ctx, true);
             }
             cmd.display(&ctx);
             style_token.pop();
