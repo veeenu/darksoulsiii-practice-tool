@@ -1,0 +1,29 @@
+base:
+  patch104:
+    base_b: 0x1446c5dc8
+    base_d: 0x1446a09f8
+    base_f: 0x144697d88
+    debug: 0x1446c5eb8
+    grend: 0x1444bb000
+    xa: 0x1f70
+  patch108:
+    base_b: 0x14472CF58
+    base_d: 0x144707b58
+    base_f: 0x1446fee88
+    debug:  0x14472d049
+    grend:  0x14451b608
+    xa:     0x1f80
+  patch112:
+    base_b: 0x144763518
+    base_d: 0x14473e120
+    base_f: 0x144735418
+    debug: 0x144763608
+    grend: 0x144550cf0
+    xa: 0x1f88 
+  patch115:
+    base_b: 0x144768e78
+    base_d: 0x144743a80
+    base_f: 0x14473ad78
+    debug: 0x144768f68
+    grend: 0x144555cf0
+    xa: 0x1f90
