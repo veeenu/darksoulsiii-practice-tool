@@ -7,4 +7,5 @@ mod shader_program;
 mod texture;
 
 pub use common::*;
+pub use imgui;
 pub use render_engine::*;

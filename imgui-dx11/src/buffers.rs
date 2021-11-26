@@ -1,7 +1,6 @@
 use std::ptr::null_mut;
 use std::ptr::NonNull;
 
-use imgui::DrawList;
 use imgui::DrawListIterator;
 use imgui::DrawVert;
 use winapi::um::d3d11::*;
@@ -52,7 +51,7 @@ impl Buffers {
         }
     }
 
-    pub(crate) fn bind(&self, dasc: &DeviceAndSwapChain) {}
+    // pub(crate) fn bind(&self, dasc: &DeviceAndSwapChain) {}
 
     pub(crate) fn set_constant_buffer(&mut self, dasc: &DeviceAndSwapChain, rect: [f32; 4]) {
         let [l, t, r, b] = rect;

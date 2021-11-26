@@ -13,6 +13,7 @@ use winapi::shared::windef::*;
 use winapi::um::d3d11::*;
 use winapi::um::d3dcommon::D3D_DRIVER_TYPE_HARDWARE;
 use winapi::Interface;
+use winapi::um::winuser::GetWindowRect;
 
 const DEVICE_FLAGS: u32 = D3D11_CREATE_DEVICE_DEBUG;
 
@@ -68,6 +69,10 @@ impl DeviceAndSwapChain {
             ))
         };
 
+        DeviceAndSwapChain::new_with_ptrs(dev, dev_ctx, swap_chain)
+    }
+
+    pub(crate) fn new_with_ptrs(dev: *mut ID3D11Device, dev_ctx: *mut ID3D11DeviceContext, swap_chain: *mut IDXGISwapChain) -> Self {
         let dev = NonNull::new(dev).expect("Null device");
         let dev_ctx = NonNull::new(dev_ctx).expect("Null device context");
         let swap_chain = NonNull::new(swap_chain).expect("Null swap chain");
@@ -136,6 +141,20 @@ impl DeviceAndSwapChain {
         };
     }
 
+    pub(crate) fn get_window_rect(&self) -> Option<RECT> {
+        let mut sd: DXGI_SWAP_CHAIN_DESC = unsafe { std::mem::zeroed() };
+        let mut rect: RECT = unsafe { std::mem::zeroed() };
+
+        unsafe {
+            check_hresult(self.swap_chain().GetDesc(&mut sd as _));
+            if GetWindowRect(sd.OutputWindow, &mut rect as _) != 0 {
+                Some(rect)
+            } else {
+                None
+            }
+        }
+    }
+
     pub(crate) fn dev(&self) -> &ID3D11Device {
         unsafe { self.dev.as_ref() }
     }
@@ -149,7 +168,7 @@ impl DeviceAndSwapChain {
     }
 
     pub(crate) fn back_buffer(&self) -> *mut ID3D11RenderTargetView {
-        unsafe { self.back_buffer.as_ptr() }
+        self.back_buffer.as_ptr()
     }
 
     pub(crate) fn with_mapped<T, F>(&self, ptr: NonNull<T>, f: F)

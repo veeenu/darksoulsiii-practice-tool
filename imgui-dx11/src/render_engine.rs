@@ -3,11 +3,10 @@ use crate::device_and_swapchain::*;
 use crate::shader_program::ShaderProgram;
 use crate::texture::Texture;
 
-use std::sync::Arc;
-
 use imgui::internal::RawWrapper;
 use imgui::DrawCmd;
 use imgui::DrawVert;
+use winapi::shared::dxgi::IDXGISwapChain;
 use winapi::shared::dxgiformat::*;
 use winapi::shared::windef::*;
 use winapi::um::d3d11::*;
@@ -22,7 +21,8 @@ pub struct RenderEngine {
 }
 
 impl RenderEngine {
-    pub fn new(hwnd: HWND, mut ctx: imgui::Context) -> Self {
+    pub fn new(hwnd: HWND) -> Self {
+        let mut ctx = imgui::Context::create();
         let dasc = DeviceAndSwapChain::new(hwnd);
         let shader_program = ShaderProgram::new(&dasc);
         let buffers = Buffers::new(&dasc);
@@ -36,9 +36,51 @@ impl RenderEngine {
         }
     }
 
-    pub fn render<F: FnOnce(&imgui::Ui)>(&mut self, f: F) -> Result<(), String> {
-        let ui = self.ctx.frame();
-        f(&ui);
+    pub fn new_with_ptrs(
+        dev: *mut ID3D11Device,
+        dev_ctx: *mut ID3D11DeviceContext,
+        swap_chain: *mut IDXGISwapChain,
+    ) -> Self {
+        let mut ctx = imgui::Context::create();
+        let dasc = DeviceAndSwapChain::new_with_ptrs(dev, dev_ctx, swap_chain);
+        let shader_program = ShaderProgram::new(&dasc);
+        let buffers = Buffers::new(&dasc);
+        let texture = Texture::new(&dasc, &mut ctx.fonts());
+        RenderEngine {
+            ctx,
+            dasc,
+            shader_program,
+            buffers,
+            texture,
+        }
+    }
+
+    pub fn ctx(&mut self) -> &mut imgui::Context {
+        &mut self.ctx
+    }
+
+    pub fn dev(&self) -> &ID3D11Device {
+        self.dasc.dev()
+    }
+
+    pub fn dev_ctx(&self) -> &ID3D11DeviceContext {
+        self.dasc.dev_ctx()
+    }
+
+    pub fn swap_chain(&self) -> &IDXGISwapChain {
+        self.dasc.swap_chain()
+    }
+
+    pub fn render<F: FnOnce(&mut imgui::Ui)>(&mut self, f: F) -> Result<(), String> {
+        if let Some(rect) = self.dasc.get_window_rect() {
+            self.ctx.io_mut().display_size = [
+                (rect.right - rect.left) as f32,
+                (rect.bottom - rect.top) as f32,
+            ]
+        }
+
+        let mut ui = self.ctx.frame();
+        f(&mut ui);
         let draw_data = ui.render();
 
         let [x, y] = draw_data.display_pos;

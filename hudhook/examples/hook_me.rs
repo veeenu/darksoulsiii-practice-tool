@@ -3,14 +3,14 @@
 
 #![no_main]
 
+use imgui_dx11::check_hresult;
+
 use std::{
     ffi::c_void,
     mem::MaybeUninit,
     ptr::{null_mut, NonNull},
 };
 
-use imgui::{Condition, Context, Window};
-use imgui_dx11::{check_hresult, RenderEngine};
 use winapi::{
     shared::{
         guiddef::REFIID,
@@ -21,7 +21,8 @@ use winapi::{
     um::{
         dxgidebug::{IDXGIInfoQueue, DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE},
         libloaderapi::{
-            GetModuleHandleA, GetProcAddress, LoadLibraryExA, LOAD_LIBRARY_SEARCH_SYSTEM32,
+            GetModuleHandleA, GetProcAddress, LoadLibraryExA, LoadLibraryExW,
+            LOAD_LIBRARY_SEARCH_SYSTEM32,
         },
         winuser::{
             BeginPaint, CreateWindowExA, DefWindowProcA, DispatchMessageA, DrawTextA, EndPaint,
@@ -67,11 +68,7 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
         )
     }; // lpParam
 
-    let mut ctx = Context::create();
-    ctx.set_ini_filename(None);
-    ctx.io_mut().display_size = [640., 480.];
-
-    let mut renderer = RenderEngine::new(handle, ctx);
+    let mut render_engine = imgui_dx11::RenderEngine::new(handle);
 
     let mut diq: *mut IDXGIInfoQueue = null_mut();
 
@@ -91,6 +88,22 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
     check_hresult(unsafe {
         DXGIGetDebugInterface(&IDXGIInfoQueue::uuidof(), &mut diq as *mut _ as _)
     });
+
+    let mut dll_path = std::env::current_exe().unwrap();
+    dll_path.pop();
+    dll_path.push("hook_you.dll");
+
+    println!("{:?}", dll_path.canonicalize());
+    unsafe {
+        LoadLibraryExW(
+            widestring::WideCString::from_os_str(dll_path.canonicalize().unwrap().as_os_str())
+                .unwrap()
+                .as_ptr(),
+            null_mut(),
+            0,
+        )
+    };
+    println!("Loaded library");
 
     let diq = NonNull::new(diq).expect("Null Debug info queue");
     let diq = unsafe { diq.as_ref() };
@@ -115,23 +128,7 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
             diq.ClearStoredMessages(DXGI_DEBUG_ALL);
         }
 
-        if let Err(e) = renderer.render(|ui| {
-            Window::new("Hello world")
-                .size([300.0, 110.0], Condition::FirstUseEver)
-                .build(&ui, || {
-                    ui.text("Hello world!");
-                    ui.text("こんにちは世界！");
-                    ui.text("This...is...imgui-rs!");
-                    ui.separator();
-                    let mouse_pos = ui.io().mouse_pos;
-                    ui.text(format!(
-                        "Mouse Position: ({:.1},{:.1})",
-                        mouse_pos[0], mouse_pos[1]
-                    ));
-                });
-        }) {
-            eprintln!("{}", e);
-        }
+        render_engine.render(|_| {});
 
         if !handle_message(handle) {
             break;
