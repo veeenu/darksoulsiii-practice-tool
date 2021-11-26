@@ -29,6 +29,9 @@ macro_rules! hudhook {
             _: *mut winapi::ctypes::c_void,
         ) {
             if reason == 1 {
+                unsafe {
+                    winapi::um::consoleapi::AllocConsole();
+                }
                 simplelog::TermLogger::init(
                     LevelFilter::Trace,
                     Config::default(),

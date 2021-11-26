@@ -76,8 +76,11 @@ impl RenderEngine {
             self.ctx.io_mut().display_size = [
                 (rect.right - rect.left) as f32,
                 (rect.bottom - rect.top) as f32,
-            ]
+            ];
+            self.dasc.set_viewport(rect);
         }
+
+        self.dasc.set_render_target();
 
         let mut ui = self.ctx.frame();
         f(&mut ui);
@@ -91,12 +94,8 @@ impl RenderEngine {
         }
 
         unsafe {
-            let color = [0.5f32; 4];
             let dev_ctx = self.dasc.dev_ctx();
 
-            self.dasc
-                .dev_ctx()
-                .ClearRenderTargetView(self.dasc.back_buffer(), &color);
             self.shader_program.set_state(&self.dasc);
 
             self.buffers
@@ -150,9 +149,13 @@ impl RenderEngine {
                 }
             }
 
-            self.dasc.swap_chain().Present(1, 0);
+            // self.dasc.swap_chain().Present(1, 0);
         }
 
         Ok(())
+    }
+
+    pub fn present(&self) {
+        unsafe { self.dasc.swap_chain().Present(1, 0) };
     }
 }

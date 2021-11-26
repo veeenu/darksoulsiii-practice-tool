@@ -128,7 +128,8 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
             diq.ClearStoredMessages(DXGI_DEBUG_ALL);
         }
 
-        render_engine.render(|_| {});
+        render_engine.render(|_| {}).ok();
+        render_engine.present();
 
         if !handle_message(handle) {
             break;

@@ -83,7 +83,6 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
         })
         .lock();
 
-    debug!("Hook renderer doing its thing");
     (*renderer).render();
 
     let m = trampoline(p_this, sync_interval, flags);
@@ -102,13 +101,11 @@ struct ImguiRenderer {
 impl ImguiRenderer {
     fn render(&mut self) {
         let state = state_backup::StateBackup::backup(self.engine.dev_ctx());
-        println!("ImguiRenderer::render start");
 
         if let Err(e) = self.engine.render(|ui| self.render_loop.render(ui)) {
-            println!("ImGui renderer error: {:?}", e);
+            error!("ImGui renderer error: {:?}", e);
         }
 
-        println!("ImguiRenderer::render end");
         state.restore(self.engine.dev_ctx());
     }
 }

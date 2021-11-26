@@ -17,7 +17,6 @@ impl ImguiRenderLoop for HookYou {
                     mouse_pos[0], mouse_pos[1]
                 ));
             });
-        println!("Hook");
     }
 }
 

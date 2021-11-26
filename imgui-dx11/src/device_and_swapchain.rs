@@ -12,8 +12,8 @@ use winapi::shared::dxgitype::DXGI_USAGE_RENDER_TARGET_OUTPUT;
 use winapi::shared::windef::*;
 use winapi::um::d3d11::*;
 use winapi::um::d3dcommon::D3D_DRIVER_TYPE_HARDWARE;
-use winapi::Interface;
 use winapi::um::winuser::GetWindowRect;
+use winapi::Interface;
 
 const DEVICE_FLAGS: u32 = D3D11_CREATE_DEVICE_DEBUG;
 
@@ -72,7 +72,11 @@ impl DeviceAndSwapChain {
         DeviceAndSwapChain::new_with_ptrs(dev, dev_ctx, swap_chain)
     }
 
-    pub(crate) fn new_with_ptrs(dev: *mut ID3D11Device, dev_ctx: *mut ID3D11DeviceContext, swap_chain: *mut IDXGISwapChain) -> Self {
+    pub(crate) fn new_with_ptrs(
+        dev: *mut ID3D11Device,
+        dev_ctx: *mut ID3D11DeviceContext,
+        swap_chain: *mut IDXGISwapChain,
+    ) -> Self {
         let dev = NonNull::new(dev).expect("Null device");
         let dev_ctx = NonNull::new(dev_ctx).expect("Null device context");
         let swap_chain = NonNull::new(swap_chain).expect("Null swap chain");
@@ -126,19 +130,33 @@ impl DeviceAndSwapChain {
     pub(crate) fn setup_state(&self, draw_data: &imgui::DrawData) {
         let [x, y] = draw_data.display_pos;
         let [w, h] = draw_data.display_size;
+    }
+
+    pub(crate) fn set_viewport(&self, rect: RECT) {
         unsafe {
             self.dev_ctx().RSSetViewports(
                 1,
                 &D3D11_VIEWPORT {
-                    TopLeftX: x,
-                    TopLeftY: y,
-                    Width: w,
-                    Height: h,
+                    TopLeftX: rect.left as f32,
+                    TopLeftY: rect.top as f32,
+                    Width: (rect.right - rect.left) as f32,
+                    Height: (rect.bottom - rect.top) as f32,
                     MinDepth: 0.,
                     MaxDepth: 0.,
                 },
             )
         };
+    }
+
+
+    pub(crate) fn set_render_target(&self) {
+        unsafe {
+            self.dev_ctx().OMSetRenderTargets(
+                1,
+                &mut self.back_buffer.as_ptr() as *mut _,
+                null_mut(),
+            );
+        }
     }
 
     pub(crate) fn get_window_rect(&self) -> Option<RECT> {
