@@ -4,7 +4,21 @@ use hudhook::mh::LPVOID;
 use imgui_dx11::check_hresult;
 use log::*;
 use simplelog::*;
-use winapi::{shared::minwindef::{DWORD, MAX_PATH}, um::{errhandlingapi::GetLastError, handleapi::CloseHandle, libloaderapi::{GetModuleHandleA, GetProcAddress}, memoryapi, minwinbase::LPSECURITY_ATTRIBUTES, processthreadsapi, synchapi::WaitForSingleObject, winbase::INFINITE, winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, PROCESS_ALL_ACCESS}, winuser::{FindWindowA, GetWindowThreadProcessId}}};
+use winapi::{
+    shared::minwindef::{DWORD, MAX_PATH},
+    um::{
+        errhandlingapi::GetLastError,
+        handleapi::CloseHandle,
+        libloaderapi::{GetModuleHandleA, GetProcAddress},
+        memoryapi,
+        minwinbase::LPSECURITY_ATTRIBUTES,
+        processthreadsapi,
+        synchapi::WaitForSingleObject,
+        winbase::INFINITE,
+        winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, PROCESS_ALL_ACCESS},
+        winuser::{FindWindowA, GetWindowThreadProcessId},
+    },
+};
 
 fn main() {
     simplelog::TermLogger::init(

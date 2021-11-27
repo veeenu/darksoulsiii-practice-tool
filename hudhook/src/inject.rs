@@ -1,3 +1,22 @@
+use std::{ffi::CString, ptr::null_mut};
+
+use log::*;
+use winapi::{
+    shared::minwindef::{DWORD, LPVOID, MAX_PATH},
+    um::{
+        errhandlingapi::GetLastError,
+        handleapi::CloseHandle,
+        libloaderapi::{GetModuleHandleA, GetProcAddress},
+        memoryapi,
+        minwinbase::LPSECURITY_ATTRIBUTES,
+        processthreadsapi,
+        synchapi::WaitForSingleObject,
+        winbase::INFINITE,
+        winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, PROCESS_ALL_ACCESS},
+        winuser::{FindWindowA, GetWindowThreadProcessId},
+    },
+};
+
 pub fn inject(title: &str) {
     let title = CString::new(title).unwrap();
     let hwnd = unsafe { FindWindowA(null_mut(), title.as_ptr() as *const i8) };

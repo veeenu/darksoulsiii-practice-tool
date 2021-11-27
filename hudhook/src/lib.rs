@@ -1,6 +1,6 @@
 pub mod hooks;
-pub mod mh;
 pub mod inject;
+pub mod mh;
 
 pub mod init {
     pub fn alloc_console() {
@@ -52,7 +52,7 @@ pub use winapi::um::winnt::{
 ///         println!("Initialization code (logging, ...) in this block!");
 ///         hudhook::init::alloc_console();
 ///         hudhook::init::simplelog();
-///     }, 
+///     },
 ///     // {
 ///     //     hudhook::deinit::free_console();
 ///     // }
