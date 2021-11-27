@@ -36,7 +36,7 @@ use winapi::{
 
 #[no_mangle]
 pub fn main(_argc: i32, _argv: *const *const u8) {
-    let hinstance = unsafe { GetModuleHandleA(0 as *const i8) };
+    let hinstance = unsafe { GetModuleHandleA(std::ptr::null::<i8>()) };
     let wnd_class = WNDCLASSA {
         style: CS_OWNDC | CS_HREDRAW | CS_VREDRAW,
         lpfnWndProc: Some(window_proc),
@@ -47,7 +47,7 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
         hIcon: 0 as HICON,
         hCursor: 0 as HICON,
         hbrBackground: 0 as HBRUSH,
-        lpszMenuName: 0 as *const i8,
+        lpszMenuName: std::ptr::null::<i8>(),
     };
     unsafe { RegisterClassA(&wnd_class) };
     let handle = unsafe {
@@ -185,5 +185,5 @@ pub unsafe extern "system" fn window_proc(
             return DefWindowProcA(hwnd, msg, wParam, lParam);
         }
     }
-    return 0;
+    0
 }

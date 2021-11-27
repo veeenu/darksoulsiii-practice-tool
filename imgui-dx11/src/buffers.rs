@@ -72,7 +72,7 @@ impl Buffers {
 
     pub(crate) fn set_buffers(&mut self, dasc: &DeviceAndSwapChain, meshes: DrawListIterator) {
         let (vertices, indices): (Vec<DrawVert>, Vec<u16>) = meshes
-            .map(|m| (m.vtx_buffer().into_iter(), m.idx_buffer().into_iter()))
+            .map(|m| (m.vtx_buffer().iter(), m.idx_buffer().iter()))
             .fold((Vec::new(), Vec::new()), |(mut ov, mut oi), (v, i)| {
                 ov.extend(v);
                 oi.extend(i);

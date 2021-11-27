@@ -6,7 +6,7 @@ impl ImguiRenderLoop for HookYou {
     fn render(&mut self, ui: &mut imgui_dx11::imgui::Ui) {
         Window::new("Hello world")
             .size([300.0, 110.0], Condition::FirstUseEver)
-            .build(&ui, || {
+            .build(ui, || {
                 ui.text("Hello world!");
                 ui.text("こんにちは世界！");
                 ui.text("This...is...imgui-rs!");
@@ -25,9 +25,6 @@ hudhook::hudhook!(
         println!("Initializing");
         hudhook::init::alloc_console();
         hudhook::init::simplelog();
-    },
-    {
-        hudhook::deinit::free_console();
     },
     [hudhook::hooks::dx11::hook_imgui(HookYou {})]
 );

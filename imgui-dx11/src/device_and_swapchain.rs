@@ -128,8 +128,8 @@ impl DeviceAndSwapChain {
     }
 
     pub(crate) fn setup_state(&self, draw_data: &imgui::DrawData) {
-        let [x, y] = draw_data.display_pos;
-        let [w, h] = draw_data.display_size;
+        let [_x, _y] = draw_data.display_pos;
+        let [_w, _h] = draw_data.display_size;
     }
 
     pub(crate) fn set_viewport(&self, rect: RECT) {

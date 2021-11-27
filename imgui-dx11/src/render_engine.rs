@@ -77,8 +77,8 @@ impl RenderEngine {
                 (rect.right - rect.left) as f32,
                 (rect.bottom - rect.top) as f32,
             ];
-            rect.right = rect.right - rect.left;
-            rect.bottom = rect.bottom - rect.top;
+            rect.right -= rect.left;
+            rect.bottom -= rect.top;
             rect.top = 0;
             rect.left = 0;
             self.dasc.set_viewport(rect);
@@ -94,7 +94,7 @@ impl RenderEngine {
         let [width, height] = draw_data.display_size;
 
         if width <= 0. && height <= 0. {
-            return Err(format!("Insufficient display size {} x {}", width, height).into());
+            return Err(format!("Insufficient display size {} x {}", width, height));
         }
 
         unsafe {
@@ -147,7 +147,7 @@ impl RenderEngine {
                                 cmd_params.vtx_offset as _,
                             );
                         }
-                        DrawCmd::ResetRenderState => self.dasc.setup_state(&draw_data),
+                        DrawCmd::ResetRenderState => self.dasc.setup_state(draw_data),
                         DrawCmd::RawCallback { callback, raw_cmd } => callback(cl.raw(), raw_cmd),
                     }
                 }

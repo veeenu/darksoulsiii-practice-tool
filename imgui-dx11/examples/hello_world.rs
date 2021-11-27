@@ -9,7 +9,7 @@ use std::{
     ptr::{null_mut, NonNull},
 };
 
-use imgui::{Condition, Context, Window};
+use imgui::{Condition, Window};
 use imgui_dx11::{check_hresult, RenderEngine};
 use winapi::{
     shared::{
@@ -35,7 +35,7 @@ use winapi::{
 
 #[no_mangle]
 pub fn main(_argc: i32, _argv: *const *const u8) {
-    let hinstance = unsafe { GetModuleHandleA(0 as *const i8) };
+    let hinstance = unsafe { GetModuleHandleA(std::ptr::null::<i8>()) };
     let wnd_class = WNDCLASSA {
         style: CS_OWNDC | CS_HREDRAW | CS_VREDRAW,
         lpfnWndProc: Some(window_proc),
@@ -46,7 +46,7 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
         hIcon: 0 as HICON,
         hCursor: 0 as HICON,
         hbrBackground: 0 as HBRUSH,
-        lpszMenuName: 0 as *const i8,
+        lpszMenuName: std::ptr::null::<i8>(),
     };
     unsafe { RegisterClassA(&wnd_class) };
     let handle = unsafe {
@@ -67,11 +67,7 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
         )
     }; // lpParam
 
-    let mut ctx = Context::create();
-    ctx.set_ini_filename(None);
-    ctx.io_mut().display_size = [640., 480.];
-
-    let mut renderer = RenderEngine::new(handle, ctx);
+    let mut renderer = RenderEngine::new(handle);
 
     let mut diq: *mut IDXGIInfoQueue = null_mut();
 
@@ -118,7 +114,7 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
         if let Err(e) = renderer.render(|ui| {
             Window::new("Hello world")
                 .size([300.0, 110.0], Condition::FirstUseEver)
-                .build(&ui, || {
+                .build(ui, || {
                     ui.text("Hello world!");
                     ui.text("こんにちは世界！");
                     ui.text("This...is...imgui-rs!");
@@ -187,5 +183,5 @@ pub unsafe extern "system" fn window_proc(
             return DefWindowProcA(hwnd, msg, wParam, lParam);
         }
     }
-    return 0;
+    0
 }

@@ -1,7 +1,7 @@
 use std::{ffi::CString, ptr::null_mut};
 
 use hudhook::mh::LPVOID;
-use imgui_dx11::check_hresult;
+
 use log::*;
 use simplelog::*;
 use winapi::{

@@ -5,7 +5,7 @@ use std::{
 };
 
 use hudhook::mh::LPVOID;
-use imgui_dx11::check_hresult;
+
 use log::*;
 use simplelog::*;
 use winapi::{
@@ -57,7 +57,7 @@ fn main() {
     let proc_addr =
         unsafe { GetProcAddress(GetModuleHandleA(kernel32.as_ptr()), freelibrary.as_ptr()) };
 
-    let dll_path =
+    let _dll_path =
         widestring::WideCString::from_os_str(dll_path.canonicalize().unwrap().as_os_str()).unwrap();
 
     let hproc = unsafe { processthreadsapi::OpenProcess(PROCESS_ALL_ACCESS, 0, pid) };
@@ -96,7 +96,7 @@ fn main() {
                 };
 
                 let mut bytes_written = 0usize;
-                let res = memoryapi::WriteProcessMemory(
+                let _res = memoryapi::WriteProcessMemory(
                     hproc,
                     ptr,
                     (&hmodule[i as usize]) as *const _ as *const std::ffi::c_void,

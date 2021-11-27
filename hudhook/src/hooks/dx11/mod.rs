@@ -85,8 +85,8 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
 
     (*renderer).render();
 
-    let m = trampoline(p_this, sync_interval, flags);
-    m
+    
+    trampoline(p_this, sync_interval, flags)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

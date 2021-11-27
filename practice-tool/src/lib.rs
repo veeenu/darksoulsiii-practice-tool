@@ -7,7 +7,7 @@ impl ImguiRenderLoop for HookYou {
         Window::new("Hello world")
             .position([0., 0.], Condition::FirstUseEver)
             .size([320.0, 200.0], Condition::FirstUseEver)
-            .build(&ui, || {
+            .build(ui, || {
                 ui.text("Hello world!");
                 ui.text("こんにちは世界！");
                 ui.text("This...is...imgui-rs!");
