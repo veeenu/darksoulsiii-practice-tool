@@ -9,6 +9,7 @@ pub use winapi::shared::{
     ntdef::{LPCSTR, LPCWSTR},
 };
 
+#[allow(non_camel_case_types)]
 #[must_use]
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -84,11 +85,50 @@ impl Hook {
         let status = MH_QueueDisableHook(self.hook_impl);
         debug!("MH_QueueDisableHook: {:?}", status);
     }
+}
 
-    pub unsafe fn apply_queue(hooks: &[&Hook]) {
+pub struct Hooks(Vec<Hook>);
+unsafe impl Send for Hooks {}
+unsafe impl Sync for Hooks {}
+
+impl Hooks {
+    pub fn new<F: Fn() -> T, T: IntoIterator<Item = Hook>>(hooks: F) -> Hooks {
+        let status = unsafe { MH_Initialize() };
+        debug!("MH_Initialize: {:?}", status);
+
+        let hooks = hooks().into_iter().collect::<Vec<_>>();
+
+        unsafe { Hooks::apply_hooks(&hooks) };
+        Hooks(hooks)
+    }
+
+    pub fn unapply(&self) {
+        unsafe { Hooks::unapply_hooks(&self.0) };
+        let status = unsafe { MH_Uninitialize() };
+        debug!("MH_Uninitialize: {:?}", status);
+    }
+
+    unsafe fn apply_hooks(hooks: &[Hook]) {
         for hook in hooks {
-            debug!("MH_QueueEnable: {:?}", MH_QueueEnableHook(hook.addr));
+            let status = MH_QueueEnableHook(hook.addr);
+            debug!("MH_QueueEnable: {:?}", status);
         }
-        debug!("MH_ApplyQueued: {:?}", MH_ApplyQueued());
+        let status = MH_ApplyQueued();
+        debug!("MH_ApplyQueued: {:?}", status);
+    }
+
+    unsafe fn unapply_hooks(hooks: &[Hook]) {
+        for hook in hooks {
+            let status = MH_QueueDisableHook(hook.addr);
+            debug!("MH_QueueDisable: {:?}", status);
+        }
+        let status = MH_ApplyQueued();
+        debug!("MH_ApplyQueued: {:?}", status);
+    }
+}
+
+impl Drop for Hooks {
+    fn drop(&mut self) {
+        self.unapply();
     }
 }

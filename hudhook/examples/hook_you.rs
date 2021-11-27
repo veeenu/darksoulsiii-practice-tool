@@ -20,4 +20,12 @@ impl ImguiRenderLoop for HookYou {
     }
 }
 
-hudhook::hudhook!(HookYou {});
+hudhook::hudhook!({
+    println!("Initializing");
+    hudhook::init::alloc_console();
+    hudhook::init::simplelog();
+}, {
+    hudhook::deinit::free_console();
+}, [
+    hudhook::hooks::dx11::hook_imgui(HookYou {})
+]);

@@ -72,11 +72,15 @@ impl RenderEngine {
     }
 
     pub fn render<F: FnOnce(&mut imgui::Ui)>(&mut self, f: F) -> Result<(), String> {
-        if let Some(rect) = self.dasc.get_window_rect() {
+        if let Some(mut rect) = self.dasc.get_window_rect() {
             self.ctx.io_mut().display_size = [
                 (rect.right - rect.left) as f32,
                 (rect.bottom - rect.top) as f32,
             ];
+            rect.right = rect.right - rect.left;
+            rect.bottom = rect.bottom - rect.top;
+            rect.top = 0;
+            rect.left = 0;
             self.dasc.set_viewport(rect);
         }
 

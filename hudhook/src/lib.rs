@@ -1,5 +1,42 @@
 pub mod hooks;
 pub mod mh;
+pub mod inject;
+
+pub mod init {
+    pub fn alloc_console() {
+        unsafe {
+            winapi::um::consoleapi::AllocConsole();
+        }
+    }
+
+    pub fn simplelog() {
+        use log::*;
+        use simplelog::*;
+
+        TermLogger::init(
+            LevelFilter::Trace,
+            Config::default(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        )
+        .ok();
+    }
+}
+
+pub mod deinit {
+    pub fn free_console() {
+        unsafe {
+            winapi::um::wincon::FreeConsole();
+        }
+    }
+}
+
+pub use log;
+pub use log_panics;
+pub use once_cell;
+pub use winapi::um::winnt::{
+    DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, DLL_THREAD_ATTACH, DLL_THREAD_DETACH,
+};
 
 /// Entry point for the library.
 ///
@@ -10,16 +47,29 @@ pub mod mh;
 ///   fn render(&self, frame: imgui::Ui) { ... }
 /// }
 ///
-/// hudhook!(Box::new(MyRenderLoop::new(...)));
+/// hudhook!(
+///     {
+///         println!("Initialization code (logging, ...) in this block!");
+///         hudhook::init::alloc_console();
+///         hudhook::init::simplelog();
+///     }, 
+///     // {
+///     //     hudhook::deinit::free_console();
+///     // }
+///     [
+///         hudhook::hooks::dx11::hook_imgui(RenderLoop {}),
+///     ]
+/// );
 /// ```
 #[macro_export]
 macro_rules! hudhook {
-    ($e:expr) => {
+    // ($init:block, $deinit:block, $hooks:expr) => {
+    ($init:block, $hooks:expr) => {
         use hudhook::*;
 
-        use simplelog::*;
-        use log::*;
-        use log_panics;
+        use hudhook::log::*;
+        use hudhook::log_panics;
+        use hudhook::once_cell::sync::OnceCell;
 
         /// Entry point created by the `hudhook` library.
         #[no_mangle]
@@ -28,27 +78,23 @@ macro_rules! hudhook {
             reason: u32,
             _: *mut winapi::ctypes::c_void,
         ) {
-            if reason == 1 {
-                unsafe {
-                    winapi::um::consoleapi::AllocConsole();
-                }
-                simplelog::TermLogger::init(
-                    LevelFilter::Trace,
-                    Config::default(),
-                    TerminalMode::Mixed,
-                    ColorChoice::Auto
-                ).ok();
+            static mut HOOKS: OnceCell<mh::Hooks> = OnceCell::new();
+
+            if reason == DLL_PROCESS_ATTACH {
+                $init
+
                 trace!("DllMain()");
                 std::thread::spawn(move || {
-                    debug!("Started thread, enabling hook...");
-
-                    let status = mh::MH_Initialize();
-                    debug!("MH_Initialize: {:?}", status);
-
-                    let mut hook = hooks::dx11::hook_imgui($e);
-
-                    mh::Hook::apply_queue(&mut [&mut hook]);
+                    let hooks = hudhook::mh::Hooks::new(|| { $hooks });
+                    HOOKS.set(hooks).ok();
                 });
+            } else if reason == DLL_PROCESS_DETACH {
+                // TODO figure out a way to trigger drops on exit
+                // In this branch, logging panics
+
+                // $deinit
+
+                // drop(HOOKS.take());
             }
         }
     };
