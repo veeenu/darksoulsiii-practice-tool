@@ -1,21 +1,18 @@
-use std::{ffi::CString, path::PathBuf, ptr::null_mut};
+use std::ffi::CString;
+use std::path::PathBuf;
+use std::ptr::null_mut;
 
 use log::*;
-use winapi::{
-    shared::minwindef::{DWORD, LPVOID, MAX_PATH},
-    um::{
-        errhandlingapi::GetLastError,
-        handleapi::CloseHandle,
-        libloaderapi::{GetModuleHandleA, GetProcAddress},
-        memoryapi,
-        minwinbase::LPSECURITY_ATTRIBUTES,
-        processthreadsapi,
-        synchapi::WaitForSingleObject,
-        winbase::INFINITE,
-        winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, PROCESS_ALL_ACCESS},
-        winuser::{FindWindowA, GetWindowThreadProcessId},
-    },
-};
+use winapi::shared::minwindef::{DWORD, LPVOID, MAX_PATH};
+use winapi::um::errhandlingapi::GetLastError;
+use winapi::um::handleapi::CloseHandle;
+use winapi::um::libloaderapi::{GetModuleHandleA, GetProcAddress};
+use winapi::um::minwinbase::LPSECURITY_ATTRIBUTES;
+use winapi::um::synchapi::WaitForSingleObject;
+use winapi::um::winbase::INFINITE;
+use winapi::um::winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, PROCESS_ALL_ACCESS};
+use winapi::um::winuser::{FindWindowA, GetWindowThreadProcessId};
+use winapi::um::{memoryapi, processthreadsapi};
 
 pub fn inject(title: &str, dll_path: PathBuf) {
     let title = CString::new(title).unwrap();

@@ -1,13 +1,12 @@
 #![allow(dead_code, non_snake_case, non_camel_case_types)]
 
-use std::{ffi::c_void, ptr::null_mut};
+use std::ffi::c_void;
+use std::ptr::null_mut;
 
 use log::*;
 
-pub use winapi::shared::{
-    minwindef::LPVOID,
-    ntdef::{LPCSTR, LPCWSTR},
-};
+pub use winapi::shared::minwindef::LPVOID;
+pub use winapi::shared::ntdef::{LPCSTR, LPCWSTR};
 
 #[allow(non_camel_case_types)]
 #[must_use]

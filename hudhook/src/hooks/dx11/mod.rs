@@ -85,7 +85,6 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
 
     (*renderer).render();
 
-    
     trampoline(p_this, sync_interval, flags)
 }
 

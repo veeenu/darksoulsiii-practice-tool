@@ -1,8 +1,6 @@
-use std::ptr::null_mut;
-use std::ptr::NonNull;
+use std::ptr::{null_mut, NonNull};
 
-use imgui::DrawListIterator;
-use imgui::DrawVert;
+use imgui::{DrawListIterator, DrawVert};
 use winapi::um::d3d11::*;
 
 use crate::common::check_hresult;

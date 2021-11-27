@@ -1,3 +1,5 @@
+#![feature(once_cell)]
+
 use hudhook::hooks::dx11::ImguiRenderLoop;
 use imgui_dx11::imgui::{Condition, Window};
 struct HookYou {}

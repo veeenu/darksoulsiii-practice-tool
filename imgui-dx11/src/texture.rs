@@ -1,8 +1,7 @@
 use crate::common::check_hresult;
 use crate::device_and_swapchain::DeviceAndSwapChain;
 
-use std::ptr::null_mut;
-use std::ptr::NonNull;
+use std::ptr::{null_mut, NonNull};
 
 use winapi::shared::dxgiformat::*;
 use winapi::shared::dxgitype::DXGI_SAMPLE_DESC;

@@ -1,14 +1,12 @@
 use crate::common::check_hresult;
 
-use std::ptr::null_mut;
-use std::ptr::NonNull;
+use std::ptr::{null_mut, NonNull};
 
 use winapi::shared::dxgi::*;
 use winapi::shared::dxgiformat::*;
-use winapi::shared::dxgitype::DXGI_MODE_DESC;
-use winapi::shared::dxgitype::DXGI_RATIONAL;
-use winapi::shared::dxgitype::DXGI_SAMPLE_DESC;
-use winapi::shared::dxgitype::DXGI_USAGE_RENDER_TARGET_OUTPUT;
+use winapi::shared::dxgitype::{
+    DXGI_MODE_DESC, DXGI_RATIONAL, DXGI_SAMPLE_DESC, DXGI_USAGE_RENDER_TARGET_OUTPUT,
+};
 use winapi::shared::windef::*;
 use winapi::um::d3d11::*;
 use winapi::um::d3dcommon::D3D_DRIVER_TYPE_HARDWARE;

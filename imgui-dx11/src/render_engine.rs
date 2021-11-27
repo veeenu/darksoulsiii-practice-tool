@@ -4,8 +4,7 @@ use crate::shader_program::ShaderProgram;
 use crate::texture::Texture;
 
 use imgui::internal::RawWrapper;
-use imgui::DrawCmd;
-use imgui::DrawVert;
+use imgui::{DrawCmd, DrawVert};
 use winapi::shared::dxgi::IDXGISwapChain;
 use winapi::shared::dxgiformat::*;
 use winapi::shared::windef::*;

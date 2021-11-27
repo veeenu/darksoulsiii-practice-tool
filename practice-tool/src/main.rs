@@ -1,5 +1,3 @@
-
-
 use hudhook::inject::inject;
 use pkg_version::*;
 use semver::Version;
@@ -46,7 +44,7 @@ fn perform_injection() -> Result<(), String> {
     dll_path.push("jdsd_dsiii_practice_tool.dll");
 
     if !dll_path.exists() {
-        dll_path.push("..");
+        dll_path.pop();
         dll_path.push("libjdsd_dsiii_practice_tool");
         dll_path.set_extension("dll");
     }

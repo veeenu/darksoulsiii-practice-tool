@@ -1,3 +1,5 @@
+#![feature(once_cell)]
+
 pub mod hooks;
 pub mod inject;
 pub mod mh;
@@ -31,12 +33,10 @@ pub mod deinit {
     }
 }
 
-pub use log;
-pub use log_panics;
-pub use once_cell;
 pub use winapi::um::winnt::{
     DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, DLL_THREAD_ATTACH, DLL_THREAD_DETACH,
 };
+pub use {log, log_panics};
 
 /// Entry point for the library.
 ///
@@ -69,7 +69,8 @@ macro_rules! hudhook {
 
         use hudhook::log::*;
         use hudhook::log_panics;
-        use hudhook::once_cell::sync::OnceCell;
+
+        use std::lazy::OnceCell;
 
         /// Entry point created by the `hudhook` library.
         #[no_mangle]

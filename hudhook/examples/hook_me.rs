@@ -5,34 +5,25 @@
 
 use imgui_dx11::check_hresult;
 
-use std::{
-    ffi::c_void,
-    mem::MaybeUninit,
-    ptr::{null_mut, NonNull},
-};
+use std::ffi::c_void;
+use std::mem::MaybeUninit;
+use std::ptr::{null_mut, NonNull};
 
-use winapi::{
-    shared::{
-        guiddef::REFIID,
-        minwindef::{LPARAM, LPVOID, LRESULT, UINT, WPARAM},
-        ntdef::HRESULT,
-        windef::{HBRUSH, HICON, HMENU, HWND},
-    },
-    um::{
-        dxgidebug::{IDXGIInfoQueue, DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE},
-        libloaderapi::{
-            GetModuleHandleA, GetProcAddress, LoadLibraryExA, LoadLibraryExW,
-            LOAD_LIBRARY_SEARCH_SYSTEM32,
-        },
-        winuser::{
-            BeginPaint, CreateWindowExA, DefWindowProcA, DispatchMessageA, DrawTextA, EndPaint,
-            GetClientRect, GetMessageA, PostQuitMessage, RegisterClassA, TranslateMessage,
-            CS_HREDRAW, CS_OWNDC, CS_VREDRAW, DT_CENTER, DT_SINGLELINE, DT_VCENTER, WM_QUIT,
-            WNDCLASSA, WS_OVERLAPPEDWINDOW, WS_VISIBLE,
-        },
-    },
-    Interface,
+use winapi::shared::guiddef::REFIID;
+use winapi::shared::minwindef::{LPARAM, LPVOID, LRESULT, UINT, WPARAM};
+use winapi::shared::ntdef::HRESULT;
+use winapi::shared::windef::{HBRUSH, HICON, HMENU, HWND};
+use winapi::um::dxgidebug::{IDXGIInfoQueue, DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE};
+use winapi::um::libloaderapi::{
+    GetModuleHandleA, GetProcAddress, LoadLibraryExA, LoadLibraryExW, LOAD_LIBRARY_SEARCH_SYSTEM32,
 };
+use winapi::um::winuser::{
+    BeginPaint, CreateWindowExA, DefWindowProcA, DispatchMessageA, DrawTextA, EndPaint,
+    GetClientRect, GetMessageA, PostQuitMessage, RegisterClassA, TranslateMessage, CS_HREDRAW,
+    CS_OWNDC, CS_VREDRAW, DT_CENTER, DT_SINGLELINE, DT_VCENTER, WM_QUIT, WNDCLASSA,
+    WS_OVERLAPPEDWINDOW, WS_VISIBLE,
+};
+use winapi::Interface;
 
 #[no_mangle]
 pub fn main(_argc: i32, _argv: *const *const u8) {

@@ -1,28 +1,21 @@
-use std::{
-    ffi::{CStr, CString},
-    mem,
-    ptr::null_mut,
-};
+use std::ffi::{CStr, CString};
+use std::mem;
+use std::ptr::null_mut;
 
 use hudhook::mh::LPVOID;
 
 use log::*;
 use simplelog::*;
-use winapi::{
-    shared::minwindef::{DWORD, HMODULE, MAX_PATH},
-    um::{
-        errhandlingapi::GetLastError,
-        handleapi::CloseHandle,
-        libloaderapi::{GetModuleHandleA, GetProcAddress},
-        memoryapi,
-        minwinbase::LPSECURITY_ATTRIBUTES,
-        processthreadsapi, psapi,
-        synchapi::WaitForSingleObject,
-        winbase::INFINITE,
-        winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, PROCESS_ALL_ACCESS},
-        winuser::{FindWindowA, GetWindowThreadProcessId},
-    },
-};
+use winapi::shared::minwindef::{DWORD, HMODULE, MAX_PATH};
+use winapi::um::errhandlingapi::GetLastError;
+use winapi::um::handleapi::CloseHandle;
+use winapi::um::libloaderapi::{GetModuleHandleA, GetProcAddress};
+use winapi::um::minwinbase::LPSECURITY_ATTRIBUTES;
+use winapi::um::synchapi::WaitForSingleObject;
+use winapi::um::winbase::INFINITE;
+use winapi::um::winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, PROCESS_ALL_ACCESS};
+use winapi::um::winuser::{FindWindowA, GetWindowThreadProcessId};
+use winapi::um::{memoryapi, processthreadsapi, psapi};
 
 fn main() {
     simplelog::TermLogger::init(
