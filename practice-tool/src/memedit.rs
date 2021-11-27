@@ -1,5 +1,5 @@
 use std::ffi::c_void;
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor};
+use std::ops::{BitAnd, BitXor};
 use std::ptr::null_mut;
 
 use winapi::um::memoryapi::{ReadProcessMemory, WriteProcessMemory};

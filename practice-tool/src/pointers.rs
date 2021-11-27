@@ -222,7 +222,7 @@ fn vercmp(ptr: usize, ver: &str) -> bool {
             "Version string: matching {:?} against {:?}",
             ver, ver_memstr
         );
-        ver_memstr == OsString::from(ver)
+        ver_memstr == *ver
     } else {
         false
     }

@@ -78,15 +78,13 @@ fn main() {
             println!("{:?}", mn);
 
             if mn == "hook_you.dll" {
-                let ptr = unsafe {
-                    memoryapi::VirtualAllocEx(
-                        hproc,
-                        0 as LPVOID,
-                        std::mem::size_of::<HMODULE>(),
-                        MEM_RESERVE | MEM_COMMIT,
-                        PAGE_READWRITE,
-                    )
-                };
+                let ptr = memoryapi::VirtualAllocEx(
+                    hproc,
+                    0 as LPVOID,
+                    std::mem::size_of::<HMODULE>(),
+                    MEM_RESERVE | MEM_COMMIT,
+                    PAGE_READWRITE,
+                );
 
                 let mut bytes_written = 0usize;
                 let _res = memoryapi::WriteProcessMemory(

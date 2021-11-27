@@ -36,7 +36,7 @@ pub mod deinit {
 pub use winapi::um::winnt::{
     DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, DLL_THREAD_ATTACH, DLL_THREAD_DETACH,
 };
-pub use {log, log_panics};
+pub use log;
 
 /// Entry point for the library.
 ///
@@ -66,9 +66,7 @@ macro_rules! hudhook {
     // ($init:block, $deinit:block, $hooks:expr) => {
     ($init:block, $hooks:expr) => {
         use hudhook::*;
-
         use hudhook::log::*;
-        use hudhook::log_panics;
 
         use std::lazy::OnceCell;
 

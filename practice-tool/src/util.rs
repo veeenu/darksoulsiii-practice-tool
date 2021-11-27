@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{HashMap};
 use std::ffi::OsString;
 use std::lazy::SyncLazy;
 use std::os::windows::prelude::OsStringExt;
@@ -13,7 +13,7 @@ use winapi::um::libloaderapi::{
     GetModuleFileNameW, GetModuleHandleExA, GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
     GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
 };
-use winapi::um::winuser::{GetAsyncKeyState, GetKeyNameTextW, MapVirtualKeyA, MapVirtualKeyW};
+use winapi::um::winuser::{GetAsyncKeyState, GetKeyNameTextW, MapVirtualKeyA};
 
 /// Returns the path of the implementor's DLL.
 pub fn get_dll_path() -> Option<PathBuf> {
