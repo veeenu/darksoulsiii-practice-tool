@@ -795,6 +795,7 @@ dependencies = [
  "glium",
  "glutin",
  "hudhook",
+ "imgui",
  "lazy_static",
  "libloading 0.6.7",
  "log",

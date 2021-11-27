@@ -148,7 +148,6 @@ impl DeviceAndSwapChain {
         };
     }
 
-
     pub(crate) fn set_render_target(&self) {
         unsafe {
             self.dev_ctx().OMSetRenderTargets(

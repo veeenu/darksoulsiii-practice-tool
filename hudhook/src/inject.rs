@@ -1,4 +1,4 @@
-use std::{ffi::CString, ptr::null_mut};
+use std::{ffi::CString, path::PathBuf, ptr::null_mut};
 
 use log::*;
 use winapi::{
@@ -17,7 +17,7 @@ use winapi::{
     },
 };
 
-pub fn inject(title: &str) {
+pub fn inject(title: &str, dll_path: PathBuf) {
     let title = CString::new(title).unwrap();
     let hwnd = unsafe { FindWindowA(null_mut(), title.as_ptr() as *const i8) };
 
@@ -30,12 +30,6 @@ pub fn inject(title: &str) {
     unsafe { GetWindowThreadProcessId(hwnd, &mut pid as *mut _ as _) };
 
     println!("{:?}", pid);
-
-    let mut dll_path = std::env::current_exe().unwrap();
-    dll_path.pop();
-    dll_path.push("hook_you.dll");
-
-    println!("{:?}", dll_path.canonicalize());
 
     let kernel32 = CString::new("Kernel32").unwrap();
     let loadlibraryw = CString::new("LoadLibraryW").unwrap();
