@@ -16,7 +16,7 @@ use util::get_key_code;
 
 struct PracticeTool {
     // pointers: SyncLazy<pointers::PointerChains>,
-    widgets: SyncLazy<widgets::Flag>,
+    widgets: SyncLazy<widgets::flag::Flag>,
 }
 
 impl PracticeTool {

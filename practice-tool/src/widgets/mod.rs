@@ -1,3 +1,6 @@
+pub(crate) mod config;
 pub(crate) mod flag;
 
-pub(crate) use flag::*;
+pub(crate) trait Command {
+    fn render(&self, ui: &imgui::Ui);
+}

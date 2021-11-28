@@ -1,4 +1,4 @@
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use std::ffi::OsString;
 use std::lazy::SyncLazy;
 use std::os::windows::prelude::OsStringExt;
@@ -7,6 +7,7 @@ use std::ptr::null_mut;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use log::*;
+use serde::Deserialize;
 use winapi::shared::minwindef::{HMODULE, MAX_PATH};
 use winapi::um::errhandlingapi::GetLastError;
 use winapi::um::libloaderapi::{
@@ -44,6 +45,7 @@ pub fn get_dll_path() -> Option<PathBuf> {
     Some(OsString::from_wide(&sz_filename[..len]).into())
 }
 
+#[derive(Debug)]
 pub(crate) struct KeyState(i32, AtomicBool);
 
 impl KeyState {
@@ -70,6 +72,23 @@ impl KeyState {
 
     fn is_key_down(vkey: i32) -> bool {
         (unsafe { GetAsyncKeyState(vkey) } & 0b1) != 0
+    }
+}
+
+impl<'de> Deserialize<'de> for KeyState {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+
+        match get_key_code(&value) {
+            Some(key_code) => Ok(KeyState::new(key_code)),
+            None => Err(serde::de::Error::invalid_value(
+                serde::de::Unexpected::Str(&value),
+                &"is not a valid key code",
+            )),
+        }
     }
 }
 
@@ -285,6 +304,5 @@ pub static VK_SYMBOL_MAP: SyncLazy<HashMap<String, i32>> = SyncLazy::new(|| {
     .collect()
 });
 
-pub static VK_SYMBOL_MAP_INV: SyncLazy<HashMap<i32, String>> = SyncLazy::new(|| {
-    VK_SYMBOL_MAP.iter().map(|(k, &v)| (v, k.clone())).collect()
-});
+pub static VK_SYMBOL_MAP_INV: SyncLazy<HashMap<i32, String>> =
+    SyncLazy::new(|| VK_SYMBOL_MAP.iter().map(|(k, &v)| (v, k.clone())).collect());
