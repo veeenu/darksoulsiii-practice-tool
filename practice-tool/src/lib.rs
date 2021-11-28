@@ -7,14 +7,20 @@ mod style;
 mod util;
 mod widgets;
 
-use hudhook::hooks::dx11::ImguiRenderLoop;
+use std::sync::Arc;
 
 use imgui::*;
-use pointers::PointerChains;
+
+use hudhook::hooks::dx11::ImguiRenderLoop;
+use parking_lot::Mutex;
+
+use crate::pointers::PointerChains;
+use crate::widgets::{Widget, WidgetList};
 
 struct PracticeTool {
     config: config::Config,
-    widgets: Vec<Box<dyn widgets::Command>>,
+    root_widget: Arc<Mutex<Box<dyn widgets::Widget>>>,
+    widgets_stack: Vec<Arc<Mutex<Box<dyn widgets::Widget>>>>,
 
     is_shown: bool,
 }
@@ -87,7 +93,7 @@ impl PracticeTool {
             debug!("{:?}", err);
         }
 
-        let widgets = {
+        let root_widget = {
             let pointers: PointerChains = pointers::detect_version()
                 .expect("Couldn't detect version!")
                 .into();
@@ -95,11 +101,20 @@ impl PracticeTool {
             let widgets = config.make_commands(&pointers);
             debug!("Config: {:?}", config);
             debug!("Widgets: {:?}", widgets);
-            widgets
+            Arc::new(Mutex::new(
+                Box::new(WidgetList::new(widgets)) as Box<dyn Widget>
+            ))
         };
 
+        let widgets_stack = vec![Arc::clone(&root_widget)];
+
         log_panics::init();
-        PracticeTool { config, widgets, is_shown: false }
+        PracticeTool {
+            config,
+            root_widget,
+            widgets_stack,
+            is_shown: false,
+        }
     }
 
     fn render_visible(&mut self, ui: &mut imgui::Ui) {
@@ -114,9 +129,29 @@ impl PracticeTool {
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
             .build(ui, || {
-                for w in &self.widgets {
-                    w.render(ui);
+                if self.config.settings.down.keyup() {
+                    self.widgets_stack.last_mut().unwrap().lock().cursor_down();
+                } else if self.config.settings.up.keyup() {
+                    self.widgets_stack.last_mut().unwrap().lock().cursor_up();
+                } else if self.config.settings.right.keyup() {
+                    let child = {
+                        self.widgets_stack
+                            .last_mut()
+                            .unwrap()
+                            .lock()
+                            .enter()
+                            .clone()
+                    };
+                    if let Some(child) = child {
+                        self.widgets_stack.push(child);
+                    }
+                } else if self.config.settings.left.keyup() && self.widgets_stack.len() > 1 {
+                    self.widgets_stack.pop();
                 }
+
+                let mut w = self.widgets_stack.last_mut().unwrap().lock();
+                w.interact();
+                w.render(ui);
             });
     }
 
@@ -138,6 +173,8 @@ impl PracticeTool {
             })
             .build(ui, || {
                 ui.text("johndisandonato's Dark Souls III Practice Tool is active");
+
+                self.widgets_stack.last_mut().unwrap().lock().interact();
             });
 
         for st in stack_tokens.into_iter().rev() {

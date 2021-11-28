@@ -1,8 +1,7 @@
 use crate::memedit::Bitflag;
-use crate::style::StyleState;
 use crate::util::KeyState;
 
-use super::Command;
+use super::Widget;
 
 #[derive(Debug)]
 pub(crate) struct Flag {
@@ -21,22 +20,22 @@ impl Flag {
     }
 }
 
-impl Command for Flag {
+impl Widget for Flag {
     fn render(&self, ui: &imgui::Ui) {
-        if self.hotkey.keyup() {
-            self.bitflag.toggle();
-        }
-
         let state = self.bitflag.get();
 
         if let Some(mut state) = state {
-            let token = StyleState::InactiveValid.get_style_token(ui);
             ui.checkbox(&self.label, &mut state);
-            token.pop();
         } else {
-            let token = StyleState::InactiveInvalid.get_style_token(ui);
+            let token = ui.begin_disabled(true);
             ui.checkbox(&self.label, &mut false);
-            token.pop();
+            token.end();
+        }
+    }
+
+    fn interact(&mut self) {
+        if self.hotkey.keyup() {
+            self.bitflag.toggle();
         }
     }
 }

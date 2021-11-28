@@ -7,10 +7,13 @@ use crate::memedit::*;
 use crate::pointers::PointerChains;
 use crate::util;
 use crate::util::KeyState;
+use crate::widgets::cycle_speed::CycleSpeed;
 use crate::widgets::flag::Flag;
 use crate::widgets::position::SavePosition;
-use crate::widgets::Command;
 use crate::widgets::quitout::Quitout;
+use crate::widgets::savefile_manager::SavefileManager;
+use crate::widgets::souls::Souls;
+use crate::widgets::Widget;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Config {
@@ -86,7 +89,7 @@ impl Config {
         toml::from_str::<Config>(cfg).map_err(|e| format!("TOML configuration parse error: {}", e))
     }
 
-    pub(crate) fn make_commands(&self, chains: &PointerChains) -> Vec<Box<dyn Command>> {
+    pub(crate) fn make_commands(&self, chains: &PointerChains) -> Vec<Box<dyn Widget>> {
         self.commands
             .iter()
             .filter_map(|cmd| match cmd {
@@ -94,21 +97,32 @@ impl Config {
                     &flag.label,
                     (flag.getter)(chains).clone(),
                     hotkey.clone(),
-                )) as Box<dyn Command>),
-                // CfgCommand::SavefileManager { hotkey } => todo!(),
+                )) as Box<dyn Widget>),
+                CfgCommand::SavefileManager { hotkey } => {
+                    Some(Box::new(SavefileManager::new(hotkey.clone())))
+                }
                 CfgCommand::Position { hotkey, modifier } => Some(Box::new(SavePosition::new(
                     chains.position.clone(),
                     hotkey.clone(),
                     modifier.clone(),
-                ))
-                    as Box<dyn Command>),
-                // CfgCommand::CycleSpeed { cycle_speed, hotkey } => todo!(),
-                // CfgCommand::Souls { amount, hotkey } => todo!(),
+                ))),
+                CfgCommand::CycleSpeed {
+                    cycle_speed,
+                    hotkey,
+                } => Some(Box::new(CycleSpeed::new(
+                    cycle_speed,
+                    chains.speed.clone(),
+                    hotkey.clone(),
+                ))),
+                CfgCommand::Souls { amount, hotkey } => Some(Box::new(Souls::new(
+                    *amount,
+                    chains.souls.clone(),
+                    hotkey.clone(),
+                ))),
                 CfgCommand::Quitout { hotkey } => Some(Box::new(Quitout::new(
                     chains.quitout.clone(),
                     hotkey.clone(),
                 ))),
-                _ => None,
             })
             .collect()
     }

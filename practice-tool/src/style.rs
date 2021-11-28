@@ -10,22 +10,21 @@ pub const GRAY: [f32; 4] = [0.733, 0.733, 0.733, 1.];
 pub const DARK_GRAY: [f32; 4] = [0.2, 0.2, 0.2, 1.];
 
 pub(crate) enum StyleState {
-    ActiveValid,
-    ActiveInvalid,
-    InactiveValid,
-    InactiveInvalid,
+    Active,
+    Inactive,
 }
 
 impl StyleState {
-    pub(crate) fn get_style_token<'a>(&self, ui: &'a Ui) -> ColorStackToken<'a> {
-        ui.push_style_color(
-            StyleColor::Text,
-            match self {
-                StyleState::ActiveValid => ORANGE,
-                StyleState::ActiveInvalid => DARK_ORANGE,
-                StyleState::InactiveValid => GRAY,
-                StyleState::InactiveInvalid => DARK_GRAY,
-            },
-        )
+    pub(crate) fn get_style_token<'a>(&self, ui: &'a Ui) -> Vec<ColorStackToken<'a>> {
+        match self {
+            StyleState::Active => vec![
+                ui.push_style_color(StyleColor::Text, ORANGE),
+                ui.push_style_color(StyleColor::TextDisabled, DARK_ORANGE),
+            ],
+            StyleState::Inactive => vec![
+                ui.push_style_color(StyleColor::Text, GRAY),
+                ui.push_style_color(StyleColor::TextDisabled, DARK_GRAY),
+            ],
+        }
     }
 }

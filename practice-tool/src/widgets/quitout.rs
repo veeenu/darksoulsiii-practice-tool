@@ -1,7 +1,7 @@
 use crate::memedit::PointerChain;
 use crate::util::KeyState;
 
-use super::Command;
+use super::Widget;
 
 #[derive(Debug)]
 pub(crate) struct Quitout {
@@ -20,12 +20,14 @@ impl Quitout {
     }
 }
 
-impl Command for Quitout {
+impl Widget for Quitout {
     fn render(&self, ui: &imgui::Ui) {
+        ui.text(&self.label);
+    }
+
+    fn interact(&mut self) {
         if self.hotkey.keyup() {
             self.ptr.write(1);
         }
-
-        ui.text(&self.label);
     }
 }
