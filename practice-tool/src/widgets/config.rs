@@ -28,33 +28,32 @@ pub(crate) struct Settings {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(tag = "cmd")]
+#[serde(untagged)]
 enum CfgCommand {
-    #[serde(rename = "savefile_manager")]
     SavefileManager {
+        #[serde(rename = "savefile_manager_hotkey")]
         hotkey: KeyState,
     },
-    #[serde(rename = "flag")]
     Flag {
         flag: FlagSpec,
         hotkey: KeyState,
     },
-    #[serde(rename = "position")]
     Position {
+        #[serde(rename = "position_hotkey")]
         hotkey: KeyState,
     },
-    #[serde(rename = "speed")]
     CycleSpeed {
-        cycle_values: Vec<f32>,
+        #[serde(rename = "cycle_speed")]
+        cycle_speed: Vec<f32>,
         hotkey: KeyState,
     },
-    #[serde(rename = "souls")]
     Souls {
+        #[serde(rename = "souls")]
         amount: u32,
         hotkey: KeyState,
     },
-    #[serde(rename = "quitout")]
     Quitout {
+        #[serde(rename = "quitout")]
         hotkey: KeyState,
     },
 }
@@ -82,8 +81,7 @@ impl TryFrom<String> for LevelFilterSerde {
 
 impl Config {
     pub(crate) fn parse(cfg: &str) -> Result<Self, String> {
-        println!("{}", cfg);
-        toml::from_str(cfg).map_err(|e| format!("TOML configuration parse error: {}", e))?
+        toml::from_str::<Config>(cfg).map_err(|e| format!("TOML configuration parse error: {}", e))
     }
 
     pub(crate) fn make_commands(&self, chains: &PointerChains) -> Vec<Box<dyn Command>> {
@@ -187,5 +185,16 @@ mod tests {
         );
     }
 
-    // TODO tests with errors
+    #[test]
+    fn test_parse_errors() {
+        println!(
+            "{:#?}",
+            Config::parse(
+                r#"commands = [ { boh = 3 } ]
+                [settings]
+                log_level = "DEBUG"
+                "#
+            )
+        );
+    }
 }
