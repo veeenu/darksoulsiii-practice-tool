@@ -66,8 +66,7 @@ impl Display for KeyState {
 
 impl KeyState {
     pub(crate) fn new(vkey: i32) -> Self {
-        let state = KeyState::is_key_down(vkey);
-        KeyState(vkey, AtomicBool::new(state))
+        KeyState(vkey, AtomicBool::new(unsafe { GetAsyncKeyState(vkey) < 0 }))
     }
 
     pub(crate) fn keyup(&self) -> bool {
@@ -80,15 +79,14 @@ impl KeyState {
         !prev_state && state
     }
 
-    fn update(&self) -> (bool, bool) {
-        let state = KeyState::is_key_down(self.0);
-        let prev_state = self.1.swap(state, Ordering::SeqCst);
-        (prev_state, state)
+    pub(crate) fn is_key_down(&self) -> bool {
+        unsafe { GetAsyncKeyState(self.0) < 0 }
     }
 
-    fn is_key_down(vkey: i32) -> bool {
-        let state = unsafe { GetAsyncKeyState(vkey) };
-        state < 0
+    fn update(&self) -> (bool, bool) {
+        let state = self.is_key_down();
+        let prev_state = self.1.swap(state, Ordering::SeqCst);
+        (prev_state, state)
     }
 }
 

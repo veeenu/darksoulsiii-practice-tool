@@ -808,6 +808,7 @@ dependencies = [
  "log",
  "log-panics",
  "open",
+ "parking_lot",
  "pkg-version",
  "regex",
  "semver 0.11.0",

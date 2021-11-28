@@ -7,9 +7,9 @@ use crate::memedit::*;
 use crate::pointers::PointerChains;
 use crate::util;
 use crate::util::KeyState;
-
-use super::flag::Flag;
-use super::Command;
+use crate::widgets::flag::Flag;
+use crate::widgets::Command;
+use crate::widgets::position::SavePosition;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Config {
@@ -31,7 +31,7 @@ pub(crate) struct Settings {
 #[serde(untagged)]
 enum CfgCommand {
     SavefileManager {
-        #[serde(rename = "savefile_manager_hotkey")]
+        #[serde(rename = "savefile_manager")]
         hotkey: KeyState,
     },
     Flag {
@@ -39,8 +39,9 @@ enum CfgCommand {
         hotkey: KeyState,
     },
     Position {
-        #[serde(rename = "position_hotkey")]
+        #[serde(rename = "position")]
         hotkey: KeyState,
+        modifier: KeyState,
     },
     CycleSpeed {
         #[serde(rename = "cycle_speed")]
@@ -87,15 +88,20 @@ impl Config {
     pub(crate) fn make_commands(&self, chains: &PointerChains) -> Vec<Box<dyn Command>> {
         self.commands
             .iter()
-            .filter_map(|cmd| {
-                if let CfgCommand::Flag { flag, hotkey } = cmd {
-                    Some(
-                        Box::new(Flag::new(&flag.label, (flag.getter)(chains).clone(), hotkey.clone()))
-                            as Box<dyn Command>,
-                    )
-                } else {
-                    None
+            .filter_map(|cmd| match cmd {
+                CfgCommand::Flag { flag, hotkey } => Some(Box::new(Flag::new(
+                    &flag.label,
+                    (flag.getter)(chains).clone(),
+                    hotkey.clone(),
+                )) as Box<dyn Command>),
+                // CfgCommand::SavefileManager { hotkey } => todo!(),
+                CfgCommand::Position { hotkey, modifier } => {
+                    Some(Box::new(SavePosition::new(chains.position.clone(), hotkey.clone(), modifier.clone())) as Box<dyn Command>)
                 }
+                // CfgCommand::CycleSpeed { cycle_speed, hotkey } => todo!(),
+                // CfgCommand::Souls { amount, hotkey } => todo!(),
+                // CfgCommand::Quitout { hotkey } => todo!(),
+                _ => None,
             })
             .collect()
     }

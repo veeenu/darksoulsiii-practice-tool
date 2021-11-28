@@ -5,6 +5,7 @@ use crate::memedit::*;
 
 use log::*;
 
+#[derive(Clone, Debug)]
 #[repr(C)]
 pub(crate) struct Position {
     pub(crate) w: f32,
@@ -12,6 +13,18 @@ pub(crate) struct Position {
     pub(crate) x: f32,
     pub(crate) z: f32,
     pub(crate) y: f32,
+}
+
+impl Default for Position {
+    fn default() -> Self {
+        Position {
+            w: 0.,
+            unknown: 0.,
+            x: 0.,
+            z: 0.,
+            y: 0.,
+        }
+    }
 }
 
 pub(crate) struct PointerChains {
