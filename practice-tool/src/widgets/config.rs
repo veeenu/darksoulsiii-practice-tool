@@ -90,7 +90,7 @@ impl Config {
             .filter_map(|cmd| {
                 if let CfgCommand::Flag { flag, hotkey } = cmd {
                     Some(
-                        Box::new(Flag::new((flag.getter)(chains).clone(), hotkey.clone()))
+                        Box::new(Flag::new(&flag.label, (flag.getter)(chains).clone(), hotkey.clone()))
                             as Box<dyn Command>,
                     )
                 } else {

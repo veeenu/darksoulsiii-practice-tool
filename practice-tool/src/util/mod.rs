@@ -3,6 +3,7 @@ mod vk;
 pub(crate) use vk::*;
 
 use std::ffi::OsString;
+use std::fmt::Display;
 use std::os::windows::prelude::OsStringExt;
 use std::path::PathBuf;
 use std::ptr::null_mut;
@@ -57,6 +58,12 @@ impl Clone for KeyState {
     }
 }
 
+impl Display for KeyState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", get_key_repr(self.0).unwrap_or("N/A"))
+    }
+}
+
 impl KeyState {
     pub(crate) fn new(vkey: i32) -> Self {
         let state = KeyState::is_key_down(vkey);
@@ -80,7 +87,8 @@ impl KeyState {
     }
 
     fn is_key_down(vkey: i32) -> bool {
-        (unsafe { GetAsyncKeyState(vkey) } & 0b1) != 0
+        let state = unsafe { GetAsyncKeyState(vkey) };
+        state < 0
     }
 }
 
