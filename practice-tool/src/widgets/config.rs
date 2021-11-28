@@ -3,74 +3,126 @@ use std::str::FromStr;
 use log::LevelFilter;
 use serde::Deserialize;
 
-use crate::{memedit::*, util};
+use crate::memedit::*;
 use crate::pointers::PointerChains;
+use crate::util;
 use crate::util::KeyState;
 
+use super::flag::Flag;
+use super::Command;
+
 #[derive(Debug, Deserialize)]
-struct Config {
-    settings: Settings,
+pub(crate) struct Config {
+    pub(crate) settings: Settings,
     commands: Vec<CfgCommand>,
 }
 
 #[derive(Debug, Deserialize)]
-struct Settings {
-    #[serde(deserialize_with = "deserialize_level_filter")]
-    log_level: LevelFilter,
-    display: KeyState,
-    down: KeyState,
-    up: KeyState,
-    left: KeyState,
-    right: KeyState,
+pub(crate) struct Settings {
+    pub(crate) log_level: LevelFilterSerde,
+    pub(crate) display: KeyState,
+    pub(crate) down: KeyState,
+    pub(crate) up: KeyState,
+    pub(crate) left: KeyState,
+    pub(crate) right: KeyState,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(untagged)]
+#[serde(tag = "cmd")]
 enum CfgCommand {
+    #[serde(rename = "savefile_manager")]
     SavefileManager {
-        #[serde(rename = "savefile_manager_hotkey")]
         hotkey: KeyState,
     },
+    #[serde(rename = "flag")]
     Flag {
         flag: FlagSpec,
         hotkey: KeyState,
     },
+    #[serde(rename = "position")]
     Position {
-        #[serde(rename = "position_hotkey")]
         hotkey: KeyState,
     },
+    #[serde(rename = "speed")]
     CycleSpeed {
-        cycle_speed: Vec<f32>,
+        cycle_values: Vec<f32>,
         hotkey: KeyState,
     },
+    #[serde(rename = "souls")]
     Souls {
-        souls: u32,
+        amount: u32,
         hotkey: KeyState,
     },
+    #[serde(rename = "quitout")]
     Quitout {
-        #[serde(rename = "quitout")]
         hotkey: KeyState,
     },
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(try_from = "String")]
+pub(crate) struct LevelFilterSerde(log::LevelFilter);
+
+impl LevelFilterSerde {
+    pub(crate) fn inner(&self) -> log::LevelFilter {
+        self.0
+    }
+}
+
+impl TryFrom<String> for LevelFilterSerde {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ok(LevelFilterSerde(
+            log::LevelFilter::from_str(&value)
+                .map_err(|e| format!("Couldn't parse log level filter: {}", e))?,
+        ))
+    }
+}
+
+impl Config {
+    pub(crate) fn parse(cfg: &str) -> Result<Self, String> {
+        println!("{}", cfg);
+        toml::from_str(cfg).map_err(|e| format!("TOML configuration parse error: {}", e))?
+    }
+
+    pub(crate) fn make_commands(&self, chains: &PointerChains) -> Vec<Box<dyn Command>> {
+        self.commands
+            .iter()
+            .filter_map(|cmd| {
+                if let CfgCommand::Flag { flag, hotkey } = cmd {
+                    Some(
+                        Box::new(Flag::new((flag.getter)(chains).clone(), hotkey.clone()))
+                            as Box<dyn Command>,
+                    )
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
             settings: Settings {
-                log_level: LevelFilter::Debug,
+                log_level: LevelFilterSerde(LevelFilter::Debug),
                 display: KeyState::new(util::get_key_code("0").unwrap()),
                 down: KeyState::new(util::get_key_code("down").unwrap()),
                 up: KeyState::new(util::get_key_code("up").unwrap()),
                 left: KeyState::new(util::get_key_code("left").unwrap()),
                 right: KeyState::new(util::get_key_code("right").unwrap()),
             },
-            commands: Vec::new()
+            commands: Vec::new(),
         }
     }
 }
 
+#[derive(Deserialize)]
+#[serde(try_from = "String")]
 struct FlagSpec {
-    label: &'static str,
+    label: String,
     getter: fn(&PointerChains) -> &Bitflag<u8>,
 }
 
@@ -81,18 +133,18 @@ impl std::fmt::Debug for FlagSpec {
 }
 
 impl FlagSpec {
-    fn new(label: &'static str, getter: fn(&PointerChains) -> &Bitflag<u8>) -> FlagSpec {
-        FlagSpec { label, getter }
+    fn new(label: &str, getter: fn(&PointerChains) -> &Bitflag<u8>) -> FlagSpec {
+        FlagSpec {
+            label: label.to_string(),
+            getter,
+        }
     }
 }
 
-impl<'de> Deserialize<'de> for FlagSpec {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let value = String::deserialize(deserializer)?;
+impl TryFrom<String> for FlagSpec {
+    type Error = String;
 
+    fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.as_str() {
             "all_no_damage" => Ok(FlagSpec::new("All no damage", |c| &c.all_no_damage)),
             "inf_stamina" => Ok(FlagSpec::new("Inf Stamina", |c| &c.inf_stamina)),
@@ -114,30 +166,8 @@ impl<'de> Deserialize<'de> for FlagSpec {
             "debug_sphere_1" => Ok(FlagSpec::new("Debug sphere 1", |c| &c.debug_sphere_1)),
             "debug_sphere_2" => Ok(FlagSpec::new("Debug sphere 2", |c| &c.debug_sphere_2)),
             "gravity" => Ok(FlagSpec::new("Gravity", |c| &c.gravity)),
-            e => Err(serde::de::Error::invalid_value(
-                serde::de::Unexpected::Str(e),
-                &"is not a valid flag specifier",
-            )),
+            e => Err(format!("\"{}\" is not a valid flag specifier", e)),
         }
-    }
-}
-
-fn deserialize_level_filter<'de, D>(deserializer: D) -> Result<LevelFilter, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let value = String::deserialize(deserializer)?;
-    LevelFilter::from_str(&value).map_err(|_| {
-        serde::de::Error::invalid_value(
-            serde::de::Unexpected::Str(&value),
-            &"is not a valid level filter",
-        )
-    })
-}
-
-impl Config {
-    fn parse(cfg: &str) -> Result<Config, String> {
-        toml::from_str(cfg).map_err(|e| format!("TOML configuration parse error: {:?}", e))?
     }
 }
 
@@ -147,6 +177,10 @@ mod tests {
 
     #[test]
     fn test_parse() {
+        println!(
+            "{:#?}",
+            toml::from_str::<toml::Value>(include_str!("../../../jdsd_dsiii_practice_tool.toml"))
+        );
         println!(
             "{:#?}",
             Config::parse(include_str!("../../../jdsd_dsiii_practice_tool.toml"))

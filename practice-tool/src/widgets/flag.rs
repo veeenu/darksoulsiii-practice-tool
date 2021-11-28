@@ -2,20 +2,25 @@ use crate::memedit::Bitflag;
 use crate::style::StyleState;
 use crate::util::KeyState;
 
+use super::Command;
+
+#[derive(Debug)]
 pub(crate) struct Flag {
     bitflag: Bitflag<u8>,
     hotkey: KeyState,
 }
 
 impl Flag {
-    pub(crate) fn new(bitflag: Bitflag<u8>, hotkey: i32) -> Self {
+    pub(crate) fn new(bitflag: Bitflag<u8>, hotkey: KeyState) -> Self {
         Flag {
             bitflag,
-            hotkey: KeyState::new(hotkey),
+            hotkey,
         }
     }
+}
 
-    pub(crate) fn render(&self, ui: &imgui::Ui) {
+impl Command for Flag {
+    fn render(&self, ui: &imgui::Ui) {
         if self.hotkey.keyup() {
             self.bitflag.toggle();
         }

@@ -24,7 +24,7 @@ use winapi::um::processthreadsapi::GetCurrentProcess;
 ///
 /// This is useful for managing reverse engineered structures which are not
 /// fully known.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PointerChain<T> {
     proc: *const c_void,
     base: *mut T,
@@ -124,7 +124,7 @@ impl<T> PointerChain<T> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Bitflag<T>(PointerChain<T>, T);
 
 impl<T> Bitflag<T>
