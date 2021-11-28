@@ -8,8 +8,9 @@ use crate::pointers::PointerChains;
 use crate::util;
 use crate::util::KeyState;
 use crate::widgets::flag::Flag;
-use crate::widgets::Command;
 use crate::widgets::position::SavePosition;
+use crate::widgets::Command;
+use crate::widgets::quitout::Quitout;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Config {
@@ -95,12 +96,18 @@ impl Config {
                     hotkey.clone(),
                 )) as Box<dyn Command>),
                 // CfgCommand::SavefileManager { hotkey } => todo!(),
-                CfgCommand::Position { hotkey, modifier } => {
-                    Some(Box::new(SavePosition::new(chains.position.clone(), hotkey.clone(), modifier.clone())) as Box<dyn Command>)
-                }
+                CfgCommand::Position { hotkey, modifier } => Some(Box::new(SavePosition::new(
+                    chains.position.clone(),
+                    hotkey.clone(),
+                    modifier.clone(),
+                ))
+                    as Box<dyn Command>),
                 // CfgCommand::CycleSpeed { cycle_speed, hotkey } => todo!(),
                 // CfgCommand::Souls { amount, hotkey } => todo!(),
-                // CfgCommand::Quitout { hotkey } => todo!(),
+                CfgCommand::Quitout { hotkey } => Some(Box::new(Quitout::new(
+                    chains.quitout.clone(),
+                    hotkey.clone(),
+                ))),
                 _ => None,
             })
             .collect()

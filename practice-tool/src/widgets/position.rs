@@ -65,18 +65,13 @@ impl Command for SavePosition {
             token.pop();
         } else {
             let token = StyleState::InactiveInvalid.get_style_token(ui);
-            ui.text("Position unavailable");
+            let saved_pos = *self.saved_position.lock();
+            ui.text(format!(
+              "Position [{:9.2}  {:9.2}  {:9.2}  {:9.2}] ({})\n         [{:9.2}  {:9.2}  {:9.2}  {:9.2}] ({})",
+                0., 0., 0., 0., self.hotkey,
+                saved_pos[1], saved_pos[3], saved_pos[2], saved_pos[0], self.modifier,
+            ));
             token.pop();
         }
-
-        // if let Some(mut state) = state {
-        //     let token = StyleState::InactiveValid.get_style_token(ui);
-        //     ui.checkbox(&self.label, &mut state);
-        //     token.pop();
-        // } else {
-        //     let token = StyleState::InactiveInvalid.get_style_token(ui);
-        //     ui.checkbox(&self.label, &mut false);
-        //     token.pop();
-        // }
     }
 }
