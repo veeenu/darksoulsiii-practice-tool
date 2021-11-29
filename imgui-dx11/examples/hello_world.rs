@@ -126,6 +126,17 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
                             imgui::Selectable::new("test4").build(ui);
                             imgui::Selectable::new("test5").build(ui);
                         });
+
+                    imgui::ComboBox::new("##combo")
+                        .preview_value("test")
+                        .build(ui, || {
+                            imgui::Selectable::new("test1").build(ui);
+                            imgui::Selectable::new("test2").build(ui);
+                            imgui::Selectable::new("test3").selected(true).build(ui);
+                            imgui::Selectable::new("test4").build(ui);
+                            imgui::Selectable::new("test5").build(ui);
+                        });
+                    ui.open_popup("##combo");
                 });
         }) {
             eprintln!("{}", e);

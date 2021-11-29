@@ -120,7 +120,7 @@ impl PracticeTool {
     fn render_visible(&mut self, ui: &mut imgui::Ui) {
         imgui::Window::new("##tool_window")
             .position([16., 16.], Condition::Always)
-            .bg_alpha(0.0)
+            .bg_alpha(0.8)
             .flags({
                 WindowFlags::NO_TITLE_BAR
                     | WindowFlags::NO_RESIZE

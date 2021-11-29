@@ -1,6 +1,8 @@
+use std::cmp::Ordering;
+use std::path::PathBuf;
 use std::sync::Arc;
 
-use imgui::{ListBox, Selectable};
+use imgui::{ComboBox, ListBox, Selectable};
 use parking_lot::Mutex;
 
 use crate::util::{get_key_code, KeyState};
@@ -16,10 +18,15 @@ pub(crate) struct SavefileManager {
 
 impl SavefileManager {
     pub(crate) fn new(hotkey: KeyState) -> Self {
+        let inner = match SavefileManagerInner::new(hotkey.clone()) {
+            Ok(i) => Arc::new(Mutex::new(Box::new(i) as _)),
+            Err(i) => Arc::new(Mutex::new(Box::new(i) as _)),
+        };
+
         SavefileManager {
             label: format!("Savefile manager ({})", hotkey),
             hotkey,
-            inner: Arc::new(Mutex::new(Box::new(SavefileManagerInner::new()) as _)),
+            inner,
         }
     }
 }
@@ -37,58 +44,217 @@ impl Widget for SavefileManager {
 }
 
 #[derive(Debug)]
+pub(crate) struct ErroredSavefileManagerInner {
+    error: String,
+}
+
+impl ErroredSavefileManagerInner {
+    pub fn new(error: String) -> Self {
+        ErroredSavefileManagerInner { error }
+    }
+}
+
+impl Widget for ErroredSavefileManagerInner {
+    fn render(&self, ui: &imgui::Ui) {
+        ui.text(&self.error);
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct SavefileManagerInner {
     key_enter: KeyState,
-    index: usize,
-    open: bool,
-    open_toggle: bool,
+    key_exit: KeyState,
+    key_load: KeyState,
+    dir_stack: DirStack,
 }
 
 impl SavefileManagerInner {
-    fn new() -> Self {
-        SavefileManagerInner {
-            key_enter: KeyState::new(get_key_code("x").unwrap()),
-            index: 0,
-            open: true,
-            open_toggle: true,
-        }
+    fn new(key_load: KeyState) -> Result<Self, ErroredSavefileManagerInner> {
+        let savefile_path = get_savefile_path().map_err(|e| {
+            ErroredSavefileManagerInner::new(format!("Could not find savefile path: {}", e))
+        })?;
+
+        let dir_stack = DirStack::new(savefile_path).map_err(|e| {
+            ErroredSavefileManagerInner::new(format!("Couldn't construct file browser: {}", e))
+        })?;
+
+        Ok(SavefileManagerInner {
+            key_enter: KeyState::new(get_key_code("return").unwrap()),
+            key_exit: KeyState::new(get_key_code("q").unwrap()),
+            key_load,
+            dir_stack,
+        })
     }
 }
 
 impl Widget for SavefileManagerInner {
     fn render(&self, ui: &imgui::Ui) {
-        let vals = ["one", "two", "three", "four", "five"];
+        const TAG: &'static str = "##savefile-manager";
 
-        ui.text("I am internal hehe");
+        ui.text(format!("Enter directory: {}", self.key_enter));
+        ui.text(format!("Exit directory:  {}", self.key_exit));
+        ui.text(format!("Load savefile:   {}", self.key_load));
 
-        let listbox = ListBox::new("##savefile-manager").size([100., 100.]);
-
-        if let Some(_token) = listbox.begin(ui) {
-            for (idx, i) in vals.iter().enumerate() {
-                let is_selected = idx == self.index;
+        ListBox::new(TAG).size([0f32, 100.]).build(ui, || {
+            for (is_selected, i) in self.dir_stack.values() {
                 Selectable::new(i).selected(is_selected).build(ui);
+                if is_selected {
+                    ui.set_scroll_here_y();
+                }
             }
-
-            // if !self.open {
-            //     ui.close_current_popup();
-            // }
-        };
+        });
     }
 
     fn interact(&mut self) {
-        self.open_toggle = false;
-
         if self.key_enter.keyup() {
-            self.open = !self.open;
-            self.open_toggle = true;
+            self.dir_stack.enter();
+        } else if self.key_exit.keyup() {
+            self.dir_stack.exit();
+        } else if self.key_load.keyup() {
+            // load savefile
         }
     }
 
     fn cursor_down(&mut self) {
-        self.index = usize::min(self.index + 1, 2);
+        self.dir_stack.next();
     }
 
     fn cursor_up(&mut self) {
-        self.index = self.index.saturating_sub(1);
+        self.dir_stack.prev();
     }
+}
+
+#[derive(Debug)]
+struct DirEntry {
+    path: PathBuf,
+    list: Vec<(PathBuf, String)>,
+    cursor: usize,
+}
+
+impl DirEntry {
+    fn new(path: PathBuf) -> DirEntry {
+        let mut list = DirStack::ls(&path).unwrap();
+
+        list.sort_by(|a, b| {
+            let (ad, bd) = (a.is_dir(), b.is_dir());
+
+            if ad == bd {
+                a.cmp(b)
+            } else if ad && !bd {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        });
+
+        let list = list
+            .into_iter()
+            .map(|a| {
+                let repr = if a.is_dir() {
+                    format!("+ {}", a.file_name().unwrap().to_str().unwrap())
+                } else {
+                    format!("  {}", a.file_name().unwrap().to_str().unwrap())
+                };
+                (a, repr)
+            })
+            .collect();
+
+        DirEntry {
+            path,
+            list,
+            cursor: 0,
+        }
+    }
+
+    fn values(&self) -> impl IntoIterator<Item = (bool, &str)> {
+        self.list
+            .iter()
+            .enumerate()
+            .map(|(i, f)| (i == self.cursor, f.1.as_str()))
+    }
+
+    fn current(&self) -> &PathBuf {
+        &self.list[self.cursor].0
+    }
+
+    fn next(&mut self) {
+        self.cursor = usize::min(self.cursor + 1, self.list.len() - 1);
+    }
+
+    fn prev(&mut self) {
+        self.cursor = self.cursor.saturating_sub(1);
+    }
+}
+
+#[derive(Debug)]
+struct DirStack {
+    stack: Vec<DirEntry>,
+}
+
+impl DirStack {
+    fn new(path: PathBuf) -> Result<Self, String> {
+        let stack = vec![DirEntry::new(path)];
+
+        Ok(DirStack { stack })
+    }
+
+    fn enter(&mut self) {
+        let current_entry = self.stack.last().unwrap().current();
+
+        if current_entry.is_dir() {
+            let current_entry = current_entry.clone();
+            self.stack.push(DirEntry::new(current_entry));
+        }
+    }
+
+    fn exit(&mut self) {
+        if self.stack.len() <= 1 {
+            return;
+        }
+
+        self.stack.pop().unwrap();
+    }
+
+    fn values(&self) -> impl IntoIterator<Item = (bool, &str)> {
+        self.stack.last().unwrap().values()
+    }
+
+    fn next(&mut self) {
+        self.stack.last_mut().unwrap().next();
+    }
+
+    fn prev(&mut self) {
+        self.stack.last_mut().unwrap().prev();
+    }
+
+    // TODO SAFETY
+    // FS errors would be permission denied (which shouldn't happen but should be reported)
+    // and not a directory (which doesn't happen because we checked for is_dir).
+    // For the moment, I just unwrap.
+    fn ls(path: &PathBuf) -> Result<Vec<PathBuf>, String> {
+        Ok(std::fs::read_dir(path)
+            .map_err(|e| format!("{}", e))?
+            .filter_map(Result::ok)
+            .map(|f| f.path())
+            .collect())
+    }
+}
+
+fn get_savefile_path() -> Result<PathBuf, String> {
+    let re = regex::Regex::new(r"^[a-f0-9]+$").unwrap();
+    let savefile_path: PathBuf = [
+        std::env::var("APPDATA")
+            .map_err(|e| format!("{}", e))?
+            .as_str(),
+        "DarkSoulsIII",
+    ]
+    .iter()
+    .collect();
+    std::fs::read_dir(&savefile_path)
+        .map_err(|e| format!("{}", e))?
+        .filter_map(|e| e.ok())
+        .find(|e| re.is_match(&e.file_name().to_string_lossy()) && e.path().is_dir())
+        .map(|e| e.path())
+        .map(PathBuf::from)
+        .ok_or_else(|| String::from("Couldn't find savefile path"))
 }
