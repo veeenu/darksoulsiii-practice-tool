@@ -72,12 +72,6 @@ pub(crate) struct BaseAddresses {
 }
 
 const VER104: BaseAddresses = BaseAddresses {
-    // base_b: 0x1404BC5FA,             // base b
-    // base_d: 0x1404C1DC0,             // base d
-    // base_f: 0x1404C527D,             // base f
-    // debug: 0x1408C3388,              // debug
-    // grend: 0x140620B1B,              // game rend
-    // xa: 0x140830AF1,                 // xa
     base_b: 0x1446c5dc8,
     base_d: 0x1446a09f8,
     base_f: 0x144697d88,
@@ -106,12 +100,6 @@ const VER104: BaseAddresses = BaseAddresses {
 };
 
 const VER108: BaseAddresses = BaseAddresses {
-    // base_b: 0x1404C0DDA, // base b
-    // base_d: 0x1404C6580, // base d
-    // base_f: 0x1404C9A4D, // base f
-    // debug: 0x1408D06F8,  // debug
-    // grend: 0x1406287AB,  // game rend
-    // xa: 0x14083BA91,     // xa
     base_b: 0x14472CF58,
     base_d: 0x144707b58,
     base_f: 0x1446fee88,
@@ -139,12 +127,6 @@ const VER108: BaseAddresses = BaseAddresses {
 };
 
 const VER112: BaseAddresses = BaseAddresses {
-    // base_b: 0x1404C191A, // base b
-    // base_d: 0x1404C7120, // base d
-    // base_f: 0x1404CA5ED, // base f
-    // debug: 0x1408D7C88,  // debug
-    // grend: 0x14062C45B,  // game rend
-    // xa: 0x140841875,     // xa
     base_b: 0x144763518,
     base_d: 0x14473e120,
     base_f: 0x144735418,
@@ -172,12 +154,6 @@ const VER112: BaseAddresses = BaseAddresses {
 };
 
 const VER115: BaseAddresses = BaseAddresses {
-    // base_b: 0x1404C1A3A, // base b
-    // base_d: 0x1404C7240, // base d
-    // base_f: 0x1404CA70D, // base f
-    // debug: 0x1408D9748,  // debug
-    // xa: 0x140841D05,     // xa
-    // grend: 0x14062C58B,  // game rend
     base_b: 0x144768e78,
     base_d: 0x144743a80,
     base_f: 0x14473ad78,
@@ -261,8 +237,6 @@ impl From<BaseAddresses> for PointerChains {
         } = b;
 
         let item_spawn = (item_spawn.0, item_spawn.1, item_spawn.2);
-
-        // Position layout is: w ? x z y (0x74 - 0x78 - 0x80 - 0x84 - 0x88)
 
         PointerChains {
             all_no_damage: bitflag!(0b1; debug + offs_all_no_damage as usize),

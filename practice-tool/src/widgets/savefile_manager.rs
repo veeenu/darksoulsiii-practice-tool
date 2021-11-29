@@ -24,7 +24,7 @@ impl SavefileManager {
         };
 
         SavefileManager {
-            label: format!("Savefile manager ({}) ->", hotkey),
+            label: format!("Savefile manager ({})", hotkey),
             hotkey,
             inner,
         }
