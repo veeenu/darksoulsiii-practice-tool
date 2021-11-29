@@ -50,8 +50,8 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
             // size and position
             100,
             100,
-            640,
-            480,
+            800,
+            600,
             0 as HWND,  // hWndParent
             0 as HMENU, // hMenu
             hinstance,  // hInstance
@@ -105,7 +105,7 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
 
         if let Err(e) = renderer.render(|ui| {
             Window::new("Hello world")
-                .size([300.0, 110.0], Condition::FirstUseEver)
+                .size([640.0, 480.0], Condition::Always)
                 .build(ui, || {
                     ui.text("Hello world!");
                     ui.text("こんにちは世界！");
@@ -116,10 +116,21 @@ pub fn main(_argc: i32, _argv: *const *const u8) {
                         "Mouse Position: ({:.1},{:.1})",
                         mouse_pos[0], mouse_pos[1]
                     ));
+
+                    imgui::ListBox::new("##listbox")
+                        .size([300., 150.])
+                        .build(ui, || {
+                            imgui::Selectable::new("test1").build(ui);
+                            imgui::Selectable::new("test2").build(ui);
+                            imgui::Selectable::new("test3").selected(true).build(ui);
+                            imgui::Selectable::new("test4").build(ui);
+                            imgui::Selectable::new("test5").build(ui);
+                        });
                 });
         }) {
             eprintln!("{}", e);
         }
+        renderer.present();
 
         if !handle_message(handle) {
             break;

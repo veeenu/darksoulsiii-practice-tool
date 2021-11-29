@@ -1,6 +1,9 @@
+use std::ffi::c_void;
+
 use crate::buffers::Buffers;
 use crate::device_and_swapchain::*;
 use crate::shader_program::ShaderProgram;
+use crate::state_backup::StateBackup;
 use crate::texture::Texture;
 
 use imgui::internal::RawWrapper;
@@ -71,6 +74,8 @@ impl RenderEngine {
     }
 
     pub fn render<F: FnOnce(&mut imgui::Ui)>(&mut self, f: F) -> Result<(), String> {
+        let state_backup = StateBackup::backup(self.dasc.dev_ctx());
+
         if let Some(mut rect) = self.dasc.get_window_rect() {
             self.ctx.io_mut().display_size = [
                 (rect.right - rect.left) as f32,
@@ -81,9 +86,9 @@ impl RenderEngine {
             rect.top = 0;
             rect.left = 0;
             self.dasc.set_viewport(rect);
+            self.dasc.set_render_target();
         }
-
-        self.dasc.set_render_target();
+        unsafe { self.shader_program.set_state(&self.dasc) };
 
         let mut ui = self.ctx.frame();
         f(&mut ui);
@@ -98,8 +103,6 @@ impl RenderEngine {
 
         unsafe {
             let dev_ctx = self.dasc.dev_ctx();
-
-            self.shader_program.set_state(&self.dasc);
 
             self.buffers
                 .set_constant_buffer(&self.dasc, [x, y, x + width, y + height]);
@@ -125,6 +128,9 @@ impl RenderEngine {
             dev_ctx.VSSetConstantBuffers(0, 1, &self.buffers.mtx_buffer());
             dev_ctx.PSSetShaderResources(0, 1, &self.texture.tex_view());
 
+            let mut vtx_offset = 0usize;
+            let mut idx_offset = 0usize;
+
             for cl in draw_data.draw_lists() {
                 for cmd in cl.commands() {
                     match cmd {
@@ -140,20 +146,32 @@ impl RenderEngine {
                                 },
                             );
 
+                            self.dasc.set_shader_resources(
+                                cmd_params.texture_id.id() as _
+                            );
+
                             dev_ctx.DrawIndexed(
                                 count as u32,
-                                cmd_params.idx_offset as _,
-                                cmd_params.vtx_offset as _,
+                                idx_offset as _,
+                                vtx_offset as _,
                             );
+
+                            idx_offset += count;
                         }
-                        DrawCmd::ResetRenderState => self.dasc.setup_state(draw_data),
+                        DrawCmd::ResetRenderState => {
+                            self.dasc.setup_state(draw_data);
+                            self.shader_program.set_state(&self.dasc);
+                        }
                         DrawCmd::RawCallback { callback, raw_cmd } => callback(cl.raw(), raw_cmd),
                     }
                 }
+                vtx_offset += cl.vtx_buffer().len();
             }
 
             // self.dasc.swap_chain().Present(1, 0);
         }
+
+        state_backup.restore(self.dasc.dev_ctx());
 
         Ok(())
     }

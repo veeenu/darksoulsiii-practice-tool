@@ -1,5 +1,3 @@
-mod state_backup;
-
 use crate::mh;
 
 use std::ffi::c_void;
@@ -96,13 +94,9 @@ struct ImguiRenderer {
 
 impl ImguiRenderer {
     fn render(&mut self) {
-        let state = state_backup::StateBackup::backup(self.engine.dev_ctx());
-
         if let Err(e) = self.engine.render(|ui| self.render_loop.render(ui)) {
             error!("ImGui renderer error: {:?}", e);
         }
-
-        state.restore(self.engine.dev_ctx());
     }
 }
 

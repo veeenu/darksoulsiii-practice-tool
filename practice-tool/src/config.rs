@@ -204,11 +204,11 @@ mod tests {
     fn test_parse() {
         println!(
             "{:#?}",
-            toml::from_str::<toml::Value>(include_str!("../../../jdsd_dsiii_practice_tool.toml"))
+            toml::from_str::<toml::Value>(include_str!("../../jdsd_dsiii_practice_tool.toml"))
         );
         println!(
             "{:#?}",
-            Config::parse(include_str!("../../../jdsd_dsiii_practice_tool.toml"))
+            Config::parse(include_str!("../../jdsd_dsiii_practice_tool.toml"))
         );
     }
 

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use imgui::Selectable;
+use imgui::{ListBox, Selectable};
 use parking_lot::Mutex;
 
 use crate::util::{get_key_code, KeyState};
@@ -41,6 +41,7 @@ pub(crate) struct SavefileManagerInner {
     key_enter: KeyState,
     index: usize,
     open: bool,
+    open_toggle: bool,
 }
 
 impl SavefileManagerInner {
@@ -48,7 +49,8 @@ impl SavefileManagerInner {
         SavefileManagerInner {
             key_enter: KeyState::new(get_key_code("x").unwrap()),
             index: 0,
-            open: false,
+            open: true,
+            open_toggle: true,
         }
     }
 }
@@ -59,16 +61,26 @@ impl Widget for SavefileManagerInner {
 
         ui.text("I am internal hehe");
 
-        // ComboBox and ListBox don't work for some reason
-        for (idx, i) in vals.iter().enumerate() {
-            let is_selected = idx == self.index;
-            Selectable::new(i).selected(is_selected).build(ui);
-        }
+        let listbox = ListBox::new("##savefile-manager").size([100., 100.]);
+
+        if let Some(_token) = listbox.begin(ui) {
+            for (idx, i) in vals.iter().enumerate() {
+                let is_selected = idx == self.index;
+                Selectable::new(i).selected(is_selected).build(ui);
+            }
+
+            // if !self.open {
+            //     ui.close_current_popup();
+            // }
+        };
     }
 
     fn interact(&mut self) {
+        self.open_toggle = false;
+
         if self.key_enter.keyup() {
             self.open = !self.open;
+            self.open_toggle = true;
         }
     }
 

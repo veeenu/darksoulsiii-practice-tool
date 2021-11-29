@@ -25,8 +25,8 @@ impl ImguiRenderLoop for HookYou {
 hudhook::hudhook!(
     {
         println!("Initializing");
-        hudhook::init::alloc_console();
-        hudhook::init::simplelog();
+        hudhook::utils::alloc_console();
+        hudhook::utils::simplelog();
     },
     [hudhook::hooks::dx11::hook_imgui(HookYou {})]
 );

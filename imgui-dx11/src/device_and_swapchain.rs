@@ -112,7 +112,7 @@ impl DeviceAndSwapChain {
                     Width: 640.,
                     Height: 480.,
                     MinDepth: 0.,
-                    MaxDepth: 0.,
+                    MaxDepth: 1.,
                 },
             )
         };
@@ -128,6 +128,14 @@ impl DeviceAndSwapChain {
     pub(crate) fn setup_state(&self, draw_data: &imgui::DrawData) {
         let [_x, _y] = draw_data.display_pos;
         let [_w, _h] = draw_data.display_size;
+
+        self.set_render_target();
+    }
+
+    pub(crate) fn set_shader_resources(&self, srv: *mut ID3D11ShaderResourceView) {
+        unsafe {
+            self.dev_ctx().PSSetShaderResources(0, 1, &srv as *const _)
+        }
     }
 
     pub(crate) fn set_viewport(&self, rect: RECT) {
@@ -135,12 +143,12 @@ impl DeviceAndSwapChain {
             self.dev_ctx().RSSetViewports(
                 1,
                 &D3D11_VIEWPORT {
-                    TopLeftX: rect.left as f32,
-                    TopLeftY: rect.top as f32,
+                    TopLeftX: 0.,
+                    TopLeftY: 0.,
                     Width: (rect.right - rect.left) as f32,
                     Height: (rect.bottom - rect.top) as f32,
                     MinDepth: 0.,
-                    MaxDepth: 0.,
+                    MaxDepth: 1.,
                 },
             )
         };

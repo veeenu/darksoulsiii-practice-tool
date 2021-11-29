@@ -28,7 +28,7 @@ struct PracticeTool {
 impl PracticeTool {
     fn new() -> Self {
         use simplelog::*;
-        hudhook::init::alloc_console();
+        hudhook::utils::alloc_console();
 
         fn load_config() -> Result<config::Config, String> {
             let config_path = crate::util::get_dll_path()

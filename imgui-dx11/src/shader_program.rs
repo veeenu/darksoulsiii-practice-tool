@@ -158,7 +158,7 @@ impl ShaderProgram {
         check_hresult(unsafe {
             dasc.dev().CreateSamplerState(
                 &D3D11_SAMPLER_DESC {
-                    Filter: D3D11_FILTER_ANISOTROPIC,
+                    Filter: D3D11_FILTER_MIN_MAG_MIP_LINEAR,
                     AddressU: D3D11_TEXTURE_ADDRESS_WRAP,
                     AddressV: D3D11_TEXTURE_ADDRESS_WRAP,
                     AddressW: D3D11_TEXTURE_ADDRESS_WRAP,
@@ -246,28 +246,14 @@ impl ShaderProgram {
             )
         });
 
-        // unsafe {
-        //     dasc.dev_ctx.as_ref().VSSetShader(vtx_shader, null(), 0);
-        //     dasc.dev_ctx.as_ref().PSSetShader(pix_shader, null(), 0);
-        //     dasc.dev_ctx.as_ref().IASetInputLayout(layout);
-        //     dasc.dev_ctx.as_ref().PSSetSamplers(0, 1, &sampler);
-        //     dasc.dev_ctx
-        //         .as_ref()
-        //         .OMSetBlendState(blend_state, &[0f32; 4], 0xFFFFFFFF);
-        //     dasc.dev_ctx
-        //         .as_ref()
-        //         .OMSetDepthStencilState(depth_stencil_state, 0);
-        //     dasc.dev_ctx.as_ref().RSSetState(rasterizer_state);
-        // };
-
         ShaderProgram {
             vtx_shader: NonNull::new(vtx_shader).expect("Null vertex shader"),
             pix_shader: NonNull::new(pix_shader).expect("Null pixel shader"),
             layout: NonNull::new(layout).expect("Null input layout"),
             sampler: NonNull::new(sampler).expect("Null sampler"),
             blend_state: NonNull::new(blend_state).expect("Null blend state"),
-            depth_stencil_state: NonNull::new(depth_stencil_state).expect("Null blend state"),
-            rasterizer_state: NonNull::new(rasterizer_state).expect("Null blend state"),
+            depth_stencil_state: NonNull::new(depth_stencil_state).expect("Null depth stencil state"),
+            rasterizer_state: NonNull::new(rasterizer_state).expect("Null rasterizer state"),
         }
     }
 
