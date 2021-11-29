@@ -4,7 +4,7 @@ pub mod hooks;
 pub mod inject;
 pub mod mh;
 
-pub mod init {
+pub mod utils {
     pub fn alloc_console() {
         unsafe {
             winapi::um::consoleapi::AllocConsole();
@@ -23,9 +23,7 @@ pub mod init {
         )
         .ok();
     }
-}
 
-pub mod deinit {
     pub fn free_console() {
         unsafe {
             winapi::um::wincon::FreeConsole();
@@ -33,10 +31,10 @@ pub mod deinit {
     }
 }
 
+pub use log;
 pub use winapi::um::winnt::{
     DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, DLL_THREAD_ATTACH, DLL_THREAD_DETACH,
 };
-pub use log;
 
 /// Entry point for the library.
 ///
