@@ -174,7 +174,10 @@ impl PracticeTool {
             .build(ui, || {
                 ui.text("johndisandonato's Dark Souls III Practice Tool is active");
 
-                self.widgets_stack.last_mut().unwrap().lock().interact();
+                // self.widgets_stack.last_mut().unwrap().lock().interact();
+                for w in self.widgets_stack.iter().rev() {
+                    w.lock().interact();
+                }
             });
 
         for st in stack_tokens.into_iter().rev() {

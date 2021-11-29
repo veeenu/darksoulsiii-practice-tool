@@ -66,23 +66,27 @@ pub(crate) struct SavefileManagerInner {
     key_exit: KeyState,
     key_load: KeyState,
     dir_stack: DirStack,
+    savefile_path: PathBuf,
 }
 
 impl SavefileManagerInner {
     fn new(key_load: KeyState) -> Result<Self, ErroredSavefileManagerInner> {
-        let savefile_path = get_savefile_path().map_err(|e| {
+        let mut savefile_path = get_savefile_path().map_err(|e| {
             ErroredSavefileManagerInner::new(format!("Could not find savefile path: {}", e))
         })?;
 
-        let dir_stack = DirStack::new(savefile_path).map_err(|e| {
+        let dir_stack = DirStack::new(&savefile_path).map_err(|e| {
             ErroredSavefileManagerInner::new(format!("Couldn't construct file browser: {}", e))
         })?;
+
+        savefile_path.push("DS30000.sl2");
 
         Ok(SavefileManagerInner {
             key_enter: KeyState::new(get_key_code("return").unwrap()),
             key_exit: KeyState::new(get_key_code("q").unwrap()),
             key_load,
             dir_stack,
+            savefile_path,
         })
     }
 }
@@ -111,7 +115,13 @@ impl Widget for SavefileManagerInner {
         } else if self.key_exit.keyup() {
             self.dir_stack.exit();
         } else if self.key_load.keyup() {
-            // load savefile
+            // TODO error checking and reporting, now just fails silently
+            let src_path = self.dir_stack.current();
+            println!("Current {:?}", src_path);
+            if src_path.is_file() {
+                println!("Loading savefile {:?}", self.savefile_path);
+                load_savefile(src_path, &self.savefile_path).ok();
+            }
         }
     }
 
@@ -126,14 +136,13 @@ impl Widget for SavefileManagerInner {
 
 #[derive(Debug)]
 struct DirEntry {
-    path: PathBuf,
     list: Vec<(PathBuf, String)>,
     cursor: usize,
 }
 
 impl DirEntry {
-    fn new(path: PathBuf) -> DirEntry {
-        let mut list = DirStack::ls(&path).unwrap();
+    fn new(path: &PathBuf) -> DirEntry {
+        let mut list = DirStack::ls(path).unwrap();
 
         list.sort_by(|a, b| {
             let (ad, bd) = (a.is_dir(), b.is_dir());
@@ -159,11 +168,7 @@ impl DirEntry {
             })
             .collect();
 
-        DirEntry {
-            path,
-            list,
-            cursor: 0,
-        }
+        DirEntry { list, cursor: 0 }
     }
 
     fn values(&self) -> impl IntoIterator<Item = (bool, &str)> {
@@ -192,18 +197,24 @@ struct DirStack {
 }
 
 impl DirStack {
-    fn new(path: PathBuf) -> Result<Self, String> {
+    fn new(path: &PathBuf) -> Result<Self, String> {
         let stack = vec![DirEntry::new(path)];
 
         Ok(DirStack { stack })
     }
 
     fn enter(&mut self) {
-        let current_entry = self.stack.last().unwrap().current();
+        let new_entry = {
+            let current_entry = self.stack.last().unwrap().current();
+            if current_entry.is_dir() {
+                Some(DirEntry::new(&current_entry))
+            } else {
+                None
+            }
+        };
 
-        if current_entry.is_dir() {
-            let current_entry = current_entry.clone();
-            self.stack.push(DirEntry::new(current_entry));
+        if let Some(e) = new_entry {
+            self.stack.push(e);
         }
     }
 
@@ -217,6 +228,10 @@ impl DirStack {
 
     fn values(&self) -> impl IntoIterator<Item = (bool, &str)> {
         self.stack.last().unwrap().values()
+    }
+
+    fn current(&self) -> &PathBuf {
+        self.stack.last().unwrap().current()
     }
 
     fn next(&mut self) {
@@ -257,4 +272,10 @@ fn get_savefile_path() -> Result<PathBuf, String> {
         .map(|e| e.path())
         .map(PathBuf::from)
         .ok_or_else(|| String::from("Couldn't find savefile path"))
+}
+
+fn load_savefile(src: &PathBuf, dest: &PathBuf) -> Result<(), std::io::Error> {
+    let buf = std::fs::read(src)?;
+    std::fs::write(dest, &buf)?;
+    Ok(())
 }
