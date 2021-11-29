@@ -24,7 +24,7 @@ impl SavefileManager {
         };
 
         SavefileManager {
-            label: format!("Savefile manager ({})", hotkey),
+            label: format!("Savefile manager ({}) ->", hotkey),
             hotkey,
             inner,
         }
@@ -33,10 +33,12 @@ impl SavefileManager {
 
 impl Widget for SavefileManager {
     fn render(&self, ui: &imgui::Ui) {
-        ui.text(&self.label);
+        ui.button(&self.label);
     }
 
-    fn interact(&mut self) {}
+    fn interact(&mut self) {
+        self.inner.lock().interact();
+    }
 
     fn enter(&self) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
         Some(self.inner.clone())

@@ -19,7 +19,6 @@ use crate::widgets::{Widget, WidgetList};
 
 struct PracticeTool {
     config: config::Config,
-    root_widget: Arc<Mutex<Box<dyn widgets::Widget>>>,
     widgets_stack: Vec<Arc<Mutex<Box<dyn widgets::Widget>>>>,
 
     is_shown: bool,
@@ -111,7 +110,6 @@ impl PracticeTool {
         log_panics::init();
         PracticeTool {
             config,
-            root_widget,
             widgets_stack,
             is_shown: false,
         }
@@ -130,10 +128,13 @@ impl PracticeTool {
             })
             .build(ui, || {
                 if self.config.settings.down.keyup() {
+                    // Send cursor down event to current widget
                     self.widgets_stack.last_mut().unwrap().lock().cursor_down();
                 } else if self.config.settings.up.keyup() {
+                    // Send cursor up event to current widget
                     self.widgets_stack.last_mut().unwrap().lock().cursor_up();
                 } else if self.config.settings.right.keyup() {
+                    // Send enter event to current widget, then ignore outcome
                     let child = {
                         self.widgets_stack
                             .last_mut()
@@ -146,7 +147,23 @@ impl PracticeTool {
                         self.widgets_stack.push(child);
                     }
                 } else if self.config.settings.left.keyup() && self.widgets_stack.len() > 1 {
+                    // Exit event: pop a widget from the stack
                     self.widgets_stack.pop();
+                } else if self.config.settings.interact.keyup() {
+                    // Send enter event to current widget, interact if event is ignored
+                    let child = {
+                        self.widgets_stack
+                            .last_mut()
+                            .unwrap()
+                            .lock()
+                            .enter()
+                            .clone()
+                    };
+                    if let Some(child) = child {
+                        self.widgets_stack.push(child);
+                    } else {
+                        self.widgets_stack.last_mut().unwrap().lock().interact_ui();
+                    }
                 }
 
                 let mut w = self.widgets_stack.last_mut().unwrap().lock();
@@ -174,7 +191,6 @@ impl PracticeTool {
             .build(ui, || {
                 ui.text("johndisandonato's Dark Souls III Practice Tool is active");
 
-                // self.widgets_stack.last_mut().unwrap().lock().interact();
                 for w in self.widgets_stack.iter().rev() {
                     w.lock().interact();
                 }

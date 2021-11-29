@@ -36,19 +36,25 @@ impl Widget for SavePosition {
         let angle = self.ptr_angle.read();
         let saved_pos = *self.saved_position.lock();
 
-        if let (Some(pos), Some(angle)) = (pos, angle) {
-            ui.text(format!(
-              "Position [{:9.2}  {:9.2}  {:9.2}  {:9.2}] ({})\n         [{:9.2}  {:9.2}  {:9.2}  {:9.2}] ({})",
-                pos[0], pos[2], pos[1], angle, self.hotkey,
-                saved_pos[1], saved_pos[3], saved_pos[2], saved_pos[0], self.modifier,
-            ));
+        let (read_pos, valid) = if let (Some(pos), Some(angle)) = (pos, angle) {
+            ([pos[0], pos[2], pos[1], angle,], true)
         } else {
-            ui.text_disabled(format!(
-              "Position [{:9.2}  {:9.2}  {:9.2}  {:9.2}] ({})\n         [{:9.2}  {:9.2}  {:9.2}  {:9.2}] ({})",
-                0., 0., 0., 0., self.hotkey,
-                saved_pos[1], saved_pos[3], saved_pos[2], saved_pos[0], self.modifier,
-            ));
-        }
+            ([0f32; 4], false)
+        };
+
+        let _token = ui.begin_disabled(valid);
+        ui.text(format!(
+            "Position [{:9.2}  {:9.2}  {:9.2}  {:9.2}]",
+            read_pos[0], read_pos[1], read_pos[2], read_pos[3]
+        ));
+        ui.same_line();
+        ui.text(format!("Load ({})", self.hotkey));
+        ui.text(format!(
+            "         [{:9.2}  {:9.2}  {:9.2}  {:9.2}]",
+            saved_pos[1], saved_pos[3], saved_pos[2], saved_pos[0],
+        ));
+        ui.same_line();
+        ui.text(format!("Save ({} + {})", self.modifier, self.hotkey));
     }
 
     fn interact(&mut self) {

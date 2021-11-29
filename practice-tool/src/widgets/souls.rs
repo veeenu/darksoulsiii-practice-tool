@@ -33,10 +33,16 @@ impl Souls {
 
 impl Widget for Souls {
     fn render(&self, ui: &imgui::Ui) {
-        if let Some(souls) = self.ptr.read() {
-            ui.text(format!("{} [{:>10}]", self.label, souls));
+        let souls = self.ptr.read();
+        let _token = ui.begin_disabled(souls.is_some());
+
+        ui.button(&self.label);
+        ui.same_line();
+
+        if let Some(souls) = souls {
+            ui.text(format!("[{:>10}]", souls));
         } else {
-            ui.text_disabled(format!("{} [          ]", self.label));
+            ui.text("[          ]");
         }
     }
 
@@ -44,5 +50,9 @@ impl Widget for Souls {
         if self.hotkey.keyup() {
             self.add();
         }
+    }
+
+    fn interact_ui(&mut self) {
+        self.add();
     }
 }

@@ -14,6 +14,7 @@ pub(crate) mod souls;
 pub(crate) trait Widget: Send + Sync + std::fmt::Debug {
     fn render(&self, ui: &imgui::Ui);
     fn interact(&mut self) {}
+    fn interact_ui(&mut self) {}
 
     fn enter(&self) -> Option<Arc<Mutex<Box<dyn Widget>>>> { None }
     fn cursor_down(&mut self) {}
@@ -49,6 +50,10 @@ impl Widget for WidgetList {
         for w in self.widgets.iter_mut() {
             w.interact();
         }
+    }
+
+    fn interact_ui(&mut self) {
+        self.widgets[self.cursor].interact_ui();
     }
 
     fn enter(&self) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {

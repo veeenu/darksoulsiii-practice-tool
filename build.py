@@ -70,7 +70,7 @@ def package():
 
 def run_release():
     ''' Run the tool '''
-    subprocess.run(['cargo', 'build', '--release'])
+    subprocess.run(['cargo', 'build', '--release', '--lib'])
     shutil.copyfile(
         'target/release/libjdsd_dsiii_practice_tool.dll',
         'target/release/jdsd_dsiii_practice_tool.dll',
@@ -83,7 +83,7 @@ def run_release():
 
 def run():
     ''' Run the tool '''
-    subprocess.run(['cargo', 'build'])
+    subprocess.run(['cargo', 'build', '--lib'])
     shutil.copyfile(
         'target/debug/libjdsd_dsiii_practice_tool.dll',
         'target/debug/jdsd_dsiii_practice_tool.dll',

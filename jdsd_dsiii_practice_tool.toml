@@ -35,4 +35,4 @@ down = "down"
 up = "up"
 left = "left"
 right = "right"
-
+interact = "return"

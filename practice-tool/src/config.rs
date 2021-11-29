@@ -29,6 +29,7 @@ pub(crate) struct Settings {
     pub(crate) up: KeyState,
     pub(crate) left: KeyState,
     pub(crate) right: KeyState,
+    pub(crate) interact: KeyState,
 }
 
 #[derive(Debug, Deserialize)]
@@ -138,6 +139,7 @@ impl Default for Config {
                 up: KeyState::new(util::get_key_code("up").unwrap()),
                 left: KeyState::new(util::get_key_code("left").unwrap()),
                 right: KeyState::new(util::get_key_code("right").unwrap()),
+                interact: KeyState::new(util::get_key_code("return").unwrap()),
             },
             commands: Vec::new(),
         }

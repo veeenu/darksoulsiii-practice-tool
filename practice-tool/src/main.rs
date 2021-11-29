@@ -60,7 +60,9 @@ fn perform_injection() -> Result<(), String> {
 fn main() {
     CombinedLogger::init(vec![TermLogger::new(
         LevelFilter::Trace,
-        Config::default(),
+        ConfigBuilder::new()
+            .add_filter_allow("jdsd_dsiii_practice_tool".to_string())
+            .build(),
         TerminalMode::Mixed,
     )])
     .ok();

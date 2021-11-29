@@ -22,12 +22,16 @@ impl Quitout {
 
 impl Widget for Quitout {
     fn render(&self, ui: &imgui::Ui) {
-        ui.text(&self.label);
+        ui.button(&self.label);
     }
 
     fn interact(&mut self) {
         if self.hotkey.keyup() {
             self.ptr.write(1);
         }
+    }
+
+    fn interact_ui(&mut self) {
+        self.ptr.write(1);
     }
 }
