@@ -59,4 +59,5 @@ for t in tokens:
     except Exception as e:
         raise e
 
-print(json.dumps(root, indent=2))
+with open('items.json', 'w') as fp:
+    fp.write(json.dumps(root))
