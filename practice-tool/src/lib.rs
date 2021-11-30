@@ -8,6 +8,7 @@ mod util;
 mod widgets;
 
 use std::sync::Arc;
+use std::time::Instant;
 
 use imgui::*;
 
@@ -23,7 +24,7 @@ struct PracticeTool {
     widgets_stack: Vec<Arc<Mutex<Box<dyn widgets::Widget>>>>,
 
     keys: GlobalKeys,
-    log: Vec<String>,
+    log: Vec<(Instant, String)>,
 
     is_shown: bool,
 }
@@ -230,7 +231,7 @@ impl PracticeTool {
                     ui.text("");
                 }
                 for l in self.log.iter() {
-                    ui.text(&l);
+                    ui.text(&l.1);
                 }
                 ui.set_scroll_here_y();
             });
@@ -255,8 +256,10 @@ impl ImguiRenderLoop for PracticeTool {
 
         for w in &mut self.widgets_stack {
             if let Some(logs) = w.lock().log() {
-                self.log.extend(logs);
+                let now = Instant::now();
+                self.log.extend(logs.into_iter().map(|l| (now.clone(), l)));
             }
+            self.log.retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
         }
 
         self.render_logs(ui);
