@@ -751,6 +751,7 @@ name = "imgui-dx11"
 version = "0.1.0"
 dependencies = [
  "imgui",
+ "imgui-sys",
  "winapi 0.3.9",
  "windows",
 ]
@@ -803,6 +804,7 @@ dependencies = [
  "glutin",
  "hudhook",
  "imgui",
+ "imgui-sys",
  "lazy_static",
  "libloading 0.6.7",
  "log",

@@ -33,7 +33,7 @@ impl SavefileManager {
 }
 
 impl Widget for SavefileManager {
-    fn render(&self, ui: &imgui::Ui) {
+    fn render(&mut self, ui: &imgui::Ui) {
         ui.button(&self.label);
     }
 
@@ -41,7 +41,7 @@ impl Widget for SavefileManager {
         self.inner.lock().interact();
     }
 
-    fn enter(&self) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
+    fn enter(&self, ui: &imgui::Ui) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
         Some(self.inner.clone())
     }
 }
@@ -58,7 +58,7 @@ impl ErroredSavefileManagerInner {
 }
 
 impl Widget for ErroredSavefileManagerInner {
-    fn render(&self, ui: &imgui::Ui) {
+    fn render(&mut self, ui: &imgui::Ui) {
         ui.text(&self.error);
     }
 }
@@ -95,7 +95,7 @@ impl SavefileManagerInner {
 }
 
 impl Widget for SavefileManagerInner {
-    fn render(&self, ui: &imgui::Ui) {
+    fn render(&mut self, ui: &imgui::Ui) {
         const TAG: &'static str = "##savefile-manager";
 
         ui.text(format!("Enter directory: {}", self.key_enter));

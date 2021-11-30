@@ -21,7 +21,7 @@ impl Quitout {
 }
 
 impl Widget for Quitout {
-    fn render(&self, ui: &imgui::Ui) {
+    fn render(&mut self, ui: &imgui::Ui) {
         ui.button(&self.label);
     }
 

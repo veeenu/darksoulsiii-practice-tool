@@ -39,7 +39,7 @@ impl CycleSpeed {
 }
 
 impl Widget for CycleSpeed {
-    fn render(&self, ui: &imgui::Ui) {
+    fn render(&mut self, ui: &imgui::Ui) {
         let speed = self.ptr.read();
         let _token = ui.begin_disabled(speed.is_some());
 

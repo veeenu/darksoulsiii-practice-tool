@@ -1,5 +1,5 @@
 commands = [
-  { savefile_manager = "oem_3" },
+  { savefile_manager = "o" },
   { flag = "all_no_damage", hotkey = "1" },
   { flag = "inf_stamina", hotkey = "2" },
   { flag = "inf_focus", hotkey = "3" },
@@ -31,8 +31,3 @@ commands = [
 [settings]
 log_level = "DEBUG"
 display = "0"
-down = "down"
-up = "up"
-left = "left"
-right = "right"
-interact = "return"

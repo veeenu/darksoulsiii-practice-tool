@@ -31,7 +31,7 @@ impl SavePosition {
 }
 
 impl Widget for SavePosition {
-    fn render(&self, ui: &imgui::Ui) {
+    fn render(&mut self, ui: &imgui::Ui) {
         let pos = self.ptr_pos.read();
         let angle = self.ptr_angle.read();
         let saved_pos = *self.saved_position.lock();

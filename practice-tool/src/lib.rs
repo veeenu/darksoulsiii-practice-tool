@@ -15,11 +15,15 @@ use hudhook::hooks::dx11::ImguiRenderLoop;
 use parking_lot::Mutex;
 
 use crate::pointers::PointerChains;
+use crate::util::GlobalKeys;
 use crate::widgets::{Widget, WidgetList};
 
 struct PracticeTool {
     config: config::Config,
     widgets_stack: Vec<Arc<Mutex<Box<dyn widgets::Widget>>>>,
+
+    keys: GlobalKeys,
+    log: Vec<String>,
 
     is_shown: bool,
 }
@@ -111,7 +115,9 @@ impl PracticeTool {
         PracticeTool {
             config,
             widgets_stack,
+            keys: GlobalKeys::new(),
             is_shown: false,
+            log: Vec::new(),
         }
     }
 
@@ -127,36 +133,25 @@ impl PracticeTool {
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
             .build(ui, || {
-                if self.config.settings.down.keyup() {
+                let want_exit = { self.widgets_stack.last_mut().unwrap().lock().want_exit() };
+
+                if self.keys.down.keyup() {
                     // Send cursor down event to current widget
                     self.widgets_stack.last_mut().unwrap().lock().cursor_down();
-                } else if self.config.settings.up.keyup() {
+                } else if self.keys.up.keyup() {
                     // Send cursor up event to current widget
                     self.widgets_stack.last_mut().unwrap().lock().cursor_up();
-                } else if self.config.settings.right.keyup() {
-                    // Send enter event to current widget, then ignore outcome
-                    let child = {
-                        self.widgets_stack
-                            .last_mut()
-                            .unwrap()
-                            .lock()
-                            .enter()
-                            .clone()
-                    };
-                    if let Some(child) = child {
-                        self.widgets_stack.push(child);
-                    }
-                } else if self.config.settings.left.keyup() && self.widgets_stack.len() > 1 {
+                } else if (self.keys.esc.keyup() || want_exit) && self.widgets_stack.len() > 1 {
                     // Exit event: pop a widget from the stack
                     self.widgets_stack.pop();
-                } else if self.config.settings.interact.keyup() {
+                } else if self.keys.enter.keyup() {
                     // Send enter event to current widget, interact if event is ignored
                     let child = {
                         self.widgets_stack
                             .last_mut()
                             .unwrap()
                             .lock()
-                            .enter()
+                            .enter(ui)
                             .clone()
                     };
                     if let Some(child) = child {
@@ -166,9 +161,14 @@ impl PracticeTool {
                     }
                 }
 
-                let mut w = self.widgets_stack.last_mut().unwrap().lock();
-                w.interact();
-                w.render(ui);
+                {
+                    for w in self.widgets_stack.iter().rev() {
+                        w.lock().interact();
+                    }
+                }
+                for w in &mut self.widgets_stack {
+                    w.lock().render(ui);
+                }
             });
     }
 
@@ -200,6 +200,45 @@ impl PracticeTool {
             st.pop();
         }
     }
+
+    fn render_logs(&mut self, ui: &mut imgui::Ui) {
+        let io = ui.io();
+
+        let [dw, dh] = io.display_size;
+        let [ww, wh] = [dw * 0.3, 14.0 * 6.];
+
+        let stack_tokens = vec![
+            ui.push_style_var(StyleVar::WindowRounding(0.)),
+            ui.push_style_var(StyleVar::FrameBorderSize(0.)),
+            ui.push_style_var(StyleVar::WindowBorderSize(0.)),
+        ];
+
+        Window::new("##logs")
+            .position_pivot([1., 1.])
+            .position([dw * 0.95, dh * 0.8], Condition::Always)
+            .flags({
+                WindowFlags::NO_TITLE_BAR
+                    | WindowFlags::NO_RESIZE
+                    | WindowFlags::NO_MOVE
+                    | WindowFlags::NO_SCROLLBAR
+                    | WindowFlags::ALWAYS_AUTO_RESIZE
+            })
+            .size([ww, wh], Condition::Always)
+            .bg_alpha(0.0)
+            .build(ui, || {
+                for _ in 0..20 {
+                    ui.text("");
+                }
+                for l in self.log.iter() {
+                    ui.text(&l);
+                }
+                ui.set_scroll_here_y();
+            });
+
+        for st in stack_tokens.into_iter().rev() {
+            st.pop();
+        }
+    }
 }
 
 impl ImguiRenderLoop for PracticeTool {
@@ -213,6 +252,14 @@ impl ImguiRenderLoop for PracticeTool {
         } else {
             self.render_closed(ui);
         }
+
+        for w in &mut self.widgets_stack {
+            if let Some(logs) = w.lock().log() {
+                self.log.extend(logs);
+            }
+        }
+
+        self.render_logs(ui);
     }
 }
 

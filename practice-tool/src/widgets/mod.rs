@@ -13,13 +13,17 @@ pub(crate) mod savefile_manager;
 pub(crate) mod souls;
 
 pub(crate) trait Widget: Send + Sync + std::fmt::Debug {
-    fn render(&self, ui: &imgui::Ui);
+    fn render(&mut self, ui: &imgui::Ui);
     fn interact(&mut self) {}
     fn interact_ui(&mut self) {}
 
-    fn enter(&self) -> Option<Arc<Mutex<Box<dyn Widget>>>> { None }
+    fn enter(&self, _ui: &imgui::Ui) -> Option<Arc<Mutex<Box<dyn Widget>>>> { None }
+    fn exit(&self, _ui: &imgui::Ui) {}
     fn cursor_down(&mut self) {}
     fn cursor_up(&mut self) {}
+
+    fn want_exit(&mut self) -> bool { false }
+    fn log(&mut self) -> Option<Vec<String>> { None }
 }
 
 #[derive(Debug)]
@@ -35,8 +39,8 @@ impl WidgetList {
 }
 
 impl Widget for WidgetList {
-    fn render(&self, ui: &imgui::Ui) {
-        for (i, w) in self.widgets.iter().enumerate() {
+    fn render(&mut self, ui: &imgui::Ui) {
+        for (i, w) in self.widgets.iter_mut().enumerate() {
             let mut token = if i == self.cursor {
                 StyleState::Active.get_style_token(ui)
             } else {
@@ -57,8 +61,8 @@ impl Widget for WidgetList {
         self.widgets[self.cursor].interact_ui();
     }
 
-    fn enter(&self) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
-        self.widgets[self.cursor].enter()
+    fn enter(&self, ui: &imgui::Ui) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
+        self.widgets[self.cursor].enter(ui)
     }
 
     fn cursor_down(&mut self) {
@@ -67,5 +71,14 @@ impl Widget for WidgetList {
 
     fn cursor_up(&mut self) {
         self.cursor = self.cursor.saturating_sub(1);
+    }
+
+    fn log(&mut self) -> Option<Vec<String>> {
+        let logs: Vec<_> = self.widgets.iter_mut().filter_map(|f| f.log()).flatten().collect();
+        if logs.len() > 0 {
+            Some(logs)
+        } else {
+            None
+        }
     }
 }

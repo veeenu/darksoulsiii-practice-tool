@@ -32,7 +32,7 @@ impl Souls {
 }
 
 impl Widget for Souls {
-    fn render(&self, ui: &imgui::Ui) {
+    fn render(&mut self, ui: &imgui::Ui) {
         let souls = self.ptr.read();
         let _token = ui.begin_disabled(souls.is_some());
 

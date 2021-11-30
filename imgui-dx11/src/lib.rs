@@ -9,4 +9,5 @@ mod texture;
 
 pub use common::*;
 pub use imgui;
+pub use imgui_sys;
 pub use render_engine::*;

@@ -2,46 +2,64 @@ use std::cmp::Ordering;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use imgui::{ComboBox, ListBox, Selectable};
+use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, WindowFlags};
 use parking_lot::Mutex;
 
-use crate::util::{get_key_code, KeyState};
+use crate::style;
+use crate::util::{get_key_code, GlobalKeys, KeyState};
 
 use super::Widget;
+
+const SFM_TAG: &'static str = "##savefile-manager";
 
 #[derive(Debug)]
 pub(crate) struct SavefileManager {
     label: String,
-    hotkey: KeyState,
     inner: Arc<Mutex<Box<dyn Widget>>>,
+    next_pos: Arc<Mutex<[f32; 2]>>,
 }
 
 impl SavefileManager {
     pub(crate) fn new(hotkey: KeyState) -> Self {
-        let inner = match SavefileManagerInner::new(hotkey.clone()) {
+        let label = format!("Savefile manager ({})", hotkey);
+        let next_pos = Arc::new(Mutex::new([0f32; 2]));
+        let inner = match SavefileManagerInner::new(hotkey, next_pos.clone()) {
             Ok(i) => Arc::new(Mutex::new(Box::new(i) as _)),
             Err(i) => Arc::new(Mutex::new(Box::new(i) as _)),
         };
 
         SavefileManager {
-            label: format!("Savefile manager ({})", hotkey),
-            hotkey,
+            label,
             inner,
+            next_pos,
         }
     }
 }
 
 impl Widget for SavefileManager {
-    fn render(&self, ui: &imgui::Ui) {
+    fn render(&mut self, ui: &imgui::Ui) {
         ui.button(&self.label);
+        let [cx, cy] = ui.cursor_pos();
+        let [wx, wy] = ui.window_pos();
+        *self.next_pos.lock() = [cx + wx, cy + wy];
     }
 
     fn interact(&mut self) {
         self.inner.lock().interact();
     }
 
-    fn enter(&self) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
+    fn interact_ui(&mut self) {
+        self.inner.lock().interact_ui();
+    }
+
+    fn enter(&self, ui: &imgui::Ui) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
+        ui.open_popup(SFM_TAG);
+
         Some(self.inner.clone())
+    }
+
+    fn log(&mut self) -> Option<Vec<String>> {
+        self.inner.lock().log()
     }
 }
 
@@ -57,7 +75,7 @@ impl ErroredSavefileManagerInner {
 }
 
 impl Widget for ErroredSavefileManagerInner {
-    fn render(&self, ui: &imgui::Ui) {
+    fn render(&mut self, ui: &imgui::Ui) {
         ui.text(&self.error);
     }
 }
@@ -69,10 +87,17 @@ pub(crate) struct SavefileManagerInner {
     key_load: KeyState,
     dir_stack: DirStack,
     savefile_path: PathBuf,
+    breadcrumbs: String,
+    next_pos: Arc<Mutex<[f32; 2]>>,
+    want_exit: bool,
+    log: Option<String>,
 }
 
 impl SavefileManagerInner {
-    fn new(key_load: KeyState) -> Result<Self, ErroredSavefileManagerInner> {
+    fn new(
+        key_load: KeyState,
+        next_pos: Arc<Mutex<[f32; 2]>>,
+    ) -> Result<Self, ErroredSavefileManagerInner> {
         let mut savefile_path = get_savefile_path().map_err(|e| {
             ErroredSavefileManagerInner::new(format!("Could not find savefile path: {}", e))
         })?;
@@ -89,42 +114,94 @@ impl SavefileManagerInner {
             key_load,
             dir_stack,
             savefile_path,
+            next_pos,
+            want_exit: false,
+            log: None,
+            breadcrumbs: " /".to_string(),
         })
     }
 }
 
 impl Widget for SavefileManagerInner {
-    fn render(&self, ui: &imgui::Ui) {
-        const TAG: &'static str = "##savefile-manager";
+    fn render(&mut self, ui: &imgui::Ui) {
+        unsafe {
+            let [x, y] = *self.next_pos.lock();
+            imgui_sys::igSetNextWindowPos(
+                imgui_sys::ImVec2 { x, y },
+                Condition::Always as _,
+                imgui_sys::ImVec2 { x: 0., y: 0. },
+            )
+        };
 
-        ui.text(format!("Enter directory: {}", self.key_enter));
-        ui.text(format!("Exit directory:  {}", self.key_exit));
-        ui.text(format!("Load savefile:   {}", self.key_load));
+        let style_tokens = [
+            ui.push_style_color(imgui::StyleColor::ChildBg, style::DARK_ORANGE),
+            ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, [0., 0., 0., 0.]),
+        ];
 
-        ListBox::new(TAG).size([0f32, 100.]).build(ui, || {
-            for (is_selected, i) in self.dir_stack.values() {
-                Selectable::new(i).selected(is_selected).build(ui);
-                if is_selected {
-                    ui.set_scroll_here_y();
+        if let Some(_token) = PopupModal::new(SFM_TAG)
+            .flags(
+                WindowFlags::NO_TITLE_BAR
+                    | WindowFlags::NO_RESIZE
+                    | WindowFlags::NO_MOVE
+                    | WindowFlags::NO_SCROLLBAR
+                    | WindowFlags::ALWAYS_AUTO_RESIZE,
+            )
+            .begin_popup(ui)
+        {
+            ui.text(format!("Enter directory:    {}", self.key_enter));
+            ui.text(format!("Go up a directory:  {}", self.key_exit));
+            ui.text(format!("Load savefile:      {}", self.key_load));
+            ui.text(format!("Close popup:        {}", GlobalKeys::esc()));
+
+            ChildWindow::new("##savefile-manager-breadcrumbs")
+                .size([240., 14.])
+                .build(ui, || {
+                    ui.text(&self.breadcrumbs);
+                    ui.set_scroll_x(ui.scroll_max_x());
+                });
+
+            ListBox::new(SFM_TAG).size([240., 100.]).build(ui, || {
+                for (is_selected, i) in self.dir_stack.values() {
+                    Selectable::new(i).selected(is_selected).build(ui);
+                    if is_selected {
+                        ui.set_scroll_here_y();
+                    }
                 }
-            }
-        });
+            });
+        }
+
+        style_tokens.into_iter().rev().for_each(|t| t.pop());
+    }
+
+    fn interact_ui(&mut self) {
+        self.dir_stack.enter();
+        self.breadcrumbs = self.dir_stack.breadcrumbs();
     }
 
     fn interact(&mut self) {
         if self.key_enter.keyup() {
-            self.dir_stack.enter();
         } else if self.key_exit.keyup() {
-            self.dir_stack.exit();
+            self.want_exit = self.dir_stack.exit();
+            self.breadcrumbs = self.dir_stack.breadcrumbs();
         } else if self.key_load.keyup() {
-            // TODO error checking and reporting, now just fails silently
             let src_path = self.dir_stack.current();
-            println!("Current {:?}", src_path);
             if src_path.is_file() {
-                println!("Loading savefile {:?}", self.savefile_path);
-                load_savefile(src_path, &self.savefile_path).ok();
+                self.log = match load_savefile(src_path, &self.savefile_path) {
+                    Ok(()) => Some(format!(
+                        "Loaded {} / {}",
+                        self.breadcrumbs,
+                        src_path.file_name().unwrap().to_str().unwrap()
+                    )),
+                    Err(e) => Some(format!("Error loading savefile: {}", e)),
+                };
             }
         }
+    }
+
+    fn want_exit(&mut self) -> bool {
+        let w = self.want_exit;
+        self.want_exit = false;
+        w
     }
 
     fn cursor_down(&mut self) {
@@ -133,6 +210,11 @@ impl Widget for SavefileManagerInner {
 
     fn cursor_up(&mut self) {
         self.dir_stack.prev();
+    }
+
+    fn log(&mut self) -> Option<Vec<String>> {
+        let log_entry = self.log.take();
+        log_entry.map(|e| vec![e])
     }
 }
 
@@ -220,12 +302,26 @@ impl DirStack {
         }
     }
 
-    fn exit(&mut self) {
+    fn exit(&mut self) -> bool {
         if self.stack.len() <= 1 {
-            return;
+            true
+        } else {
+            self.stack.pop().unwrap();
+            false
         }
+    }
 
-        self.stack.pop().unwrap();
+    fn breadcrumbs(&self) -> String {
+        if self.stack.len() == 1 {
+            String::from(" / ")
+        } else {
+            let mut breadcrumbs = String::new();
+            for e in self.stack[..self.stack.len() - 1].iter() {
+                breadcrumbs.extend(" / ".chars());
+                breadcrumbs.extend(e.current().file_name().unwrap().to_str().unwrap().chars());
+            }
+            breadcrumbs
+        }
     }
 
     fn values(&self) -> impl IntoIterator<Item = (bool, &str)> {

@@ -21,7 +21,7 @@ impl Flag {
 }
 
 impl Widget for Flag {
-    fn render(&self, ui: &imgui::Ui) {
+    fn render(&mut self, ui: &imgui::Ui) {
         let state = self.bitflag.get();
 
         if let Some(mut state) = state {
