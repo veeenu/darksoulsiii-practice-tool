@@ -24,6 +24,9 @@ pub(crate) trait Widget: Send + Sync + std::fmt::Debug {
     fn cursor_down(&mut self) {}
     fn cursor_up(&mut self) {}
 
+    fn want_enter(&mut self) -> bool {
+        false
+    }
     fn want_exit(&mut self) -> bool {
         false
     }
@@ -65,6 +68,14 @@ impl Widget for WidgetList {
 
     fn interact_ui(&mut self) {
         self.widgets[self.cursor].interact_ui();
+    }
+
+    fn want_enter(&mut self) -> bool {
+        self.widgets[self.cursor].want_enter()
+    }
+
+    fn want_exit(&mut self) -> bool {
+        self.widgets[self.cursor].want_exit()
     }
 
     fn enter(&self, ui: &imgui::Ui) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {

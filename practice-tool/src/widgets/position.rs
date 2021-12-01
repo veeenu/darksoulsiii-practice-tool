@@ -42,7 +42,7 @@ impl Widget for SavePosition {
             ([0f32; 4], false)
         };
 
-        let _token = ui.begin_disabled(valid);
+        let _token = ui.begin_disabled(!valid);
         ui.text(format!(
             "Position [{:9.2}  {:9.2}  {:9.2}  {:9.2}]",
             read_pos[0], read_pos[1], read_pos[2], read_pos[3]

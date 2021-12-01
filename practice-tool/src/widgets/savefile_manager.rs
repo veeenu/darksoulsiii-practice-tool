@@ -17,6 +17,7 @@ pub(crate) struct SavefileManager {
     label: String,
     inner: Arc<Mutex<Box<dyn Widget>>>,
     next_pos: Arc<Mutex<[f32; 2]>>,
+    want_enter: bool,
 }
 
 impl SavefileManager {
@@ -32,13 +33,17 @@ impl SavefileManager {
             label,
             inner,
             next_pos,
+            want_enter: false,
         }
     }
 }
 
 impl Widget for SavefileManager {
     fn render(&mut self, ui: &imgui::Ui) {
-        ui.button(&self.label);
+        self.want_enter = false;
+        if ui.button(&self.label) {
+            self.want_enter = true;
+        }
         let [cx, cy] = ui.cursor_pos();
         let [wx, wy] = ui.window_pos();
         *self.next_pos.lock() = [cx + wx, cy + wy];
@@ -56,6 +61,10 @@ impl Widget for SavefileManager {
         ui.open_popup(SFM_TAG);
 
         Some(self.inner.clone())
+    }
+
+    fn want_enter(&mut self) -> bool {
+        self.want_enter
     }
 
     fn log(&mut self) -> Option<Vec<String>> {
@@ -120,6 +129,20 @@ impl SavefileManagerInner {
             breadcrumbs: " /".to_string(),
         })
     }
+
+    fn load_savefile(&mut self) {
+        let src_path = self.dir_stack.current();
+        if src_path.is_file() {
+            self.log = match load_savefile(src_path, &self.savefile_path) {
+                Ok(()) => Some(format!(
+                    "Loaded {} / {}",
+                    self.breadcrumbs,
+                    src_path.file_name().unwrap().to_str().unwrap()
+                )),
+                Err(e) => Some(format!("Error loading savefile: {}", e)),
+            };
+        }
+    }
 }
 
 impl Widget for SavefileManagerInner {
@@ -148,11 +171,6 @@ impl Widget for SavefileManagerInner {
             )
             .begin_popup(ui)
         {
-            ui.text(format!("Enter directory:    {}", self.key_enter));
-            ui.text(format!("Go up a directory:  {}", self.key_exit));
-            ui.text(format!("Load savefile:      {}", self.key_load));
-            ui.text(format!("Close popup:        {}", GlobalKeys::esc()));
-
             ChildWindow::new("##savefile-manager-breadcrumbs")
                 .size([240., 14.])
                 .build(ui, || {
@@ -161,13 +179,39 @@ impl Widget for SavefileManagerInner {
                 });
 
             ListBox::new(SFM_TAG).size([240., 100.]).build(ui, || {
-                for (is_selected, i) in self.dir_stack.values() {
-                    Selectable::new(i).selected(is_selected).build(ui);
+                if Selectable::new(format!(".. Up one dir ({})", self.key_exit)).build(ui) {
+                    self.dir_stack.exit();
+                }
+
+                let mut goto: Option<usize> = None;
+                for (idx, is_selected, i) in self.dir_stack.values() {
+                    if Selectable::new(i).selected(is_selected).build(ui) {
+                        goto = Some(idx);
+                    }
                     if is_selected {
                         ui.set_scroll_here_y();
                     }
                 }
+
+                if let Some(idx) = goto {
+                    self.dir_stack.goto(idx);
+                    self.dir_stack.enter();
+                    self.breadcrumbs = self.dir_stack.breadcrumbs();
+                }
             });
+
+            if ui.button_with_size(format!("Enter directory ({})", self.key_enter), [240., 20.]) {
+                self.dir_stack.enter();
+                self.breadcrumbs = self.dir_stack.breadcrumbs();
+            }
+            if ui.button_with_size(format!("Load savefile ({})", self.key_load), [240., 20.]) {
+                self.load_savefile();
+            }
+
+            if ui.button_with_size(format!("Close ({})", GlobalKeys::esc()), [240., 20.]) {
+                ui.close_current_popup();
+                self.want_exit = true;
+            }
         }
 
         style_tokens.into_iter().rev().for_each(|t| t.pop());
@@ -184,17 +228,7 @@ impl Widget for SavefileManagerInner {
             self.want_exit = self.dir_stack.exit();
             self.breadcrumbs = self.dir_stack.breadcrumbs();
         } else if self.key_load.keyup() {
-            let src_path = self.dir_stack.current();
-            if src_path.is_file() {
-                self.log = match load_savefile(src_path, &self.savefile_path) {
-                    Ok(()) => Some(format!(
-                        "Loaded {} / {}",
-                        self.breadcrumbs,
-                        src_path.file_name().unwrap().to_str().unwrap()
-                    )),
-                    Err(e) => Some(format!("Error loading savefile: {}", e)),
-                };
-            }
+            self.load_savefile();
         }
     }
 
@@ -244,9 +278,9 @@ impl DirEntry {
             .into_iter()
             .map(|a| {
                 let repr = if a.is_dir() {
-                    format!("+ {}", a.file_name().unwrap().to_str().unwrap())
+                    format!("+  {}", a.file_name().unwrap().to_str().unwrap())
                 } else {
-                    format!("  {}", a.file_name().unwrap().to_str().unwrap())
+                    format!("   {}", a.file_name().unwrap().to_str().unwrap())
                 };
                 (a, repr)
             })
@@ -255,11 +289,11 @@ impl DirEntry {
         DirEntry { list, cursor: 0 }
     }
 
-    fn values(&self) -> impl IntoIterator<Item = (bool, &str)> {
+    fn values(&self) -> impl IntoIterator<Item = (usize, bool, &str)> {
         self.list
             .iter()
             .enumerate()
-            .map(|(i, f)| (i == self.cursor, f.1.as_str()))
+            .map(|(i, f)| (i, i == self.cursor, f.1.as_str()))
     }
 
     fn current(&self) -> &PathBuf {
@@ -272,6 +306,12 @@ impl DirEntry {
 
     fn prev(&mut self) {
         self.cursor = self.cursor.saturating_sub(1);
+    }
+
+    fn goto(&mut self, idx: usize) {
+        if idx < self.list.len() {
+            self.cursor = idx;
+        }
     }
 }
 
@@ -324,7 +364,7 @@ impl DirStack {
         }
     }
 
-    fn values(&self) -> impl IntoIterator<Item = (bool, &str)> {
+    fn values(&self) -> impl IntoIterator<Item = (usize, bool, &str)> {
         self.stack.last().unwrap().values()
     }
 
@@ -338,6 +378,10 @@ impl DirStack {
 
     fn prev(&mut self) {
         self.stack.last_mut().unwrap().prev();
+    }
+
+    fn goto(&mut self, idx: usize) {
+        self.stack.last_mut().unwrap().goto(idx);
     }
 
     // TODO SAFETY

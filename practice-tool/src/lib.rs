@@ -22,7 +22,7 @@ use crate::widgets::{Widget, WidgetList};
 struct PracticeTool {
     config: config::Config,
     widgets_stack: Vec<Arc<Mutex<Box<dyn widgets::Widget>>>>,
-
+    pointers: PointerChains,
     keys: GlobalKeys,
     log: Vec<(Instant, String)>,
 
@@ -97,11 +97,11 @@ impl PracticeTool {
             debug!("{:?}", err);
         }
 
-        let root_widget = {
-            let pointers: PointerChains = pointers::detect_version()
-                .expect("Couldn't detect version!")
-                .into();
+        let pointers: PointerChains = pointers::detect_version()
+            .expect("Couldn't detect version!")
+            .into();
 
+        let root_widget = {
             let widgets = config.make_commands(&pointers);
             debug!("Config: {:?}", config);
             debug!("Widgets: {:?}", widgets);
@@ -115,6 +115,7 @@ impl PracticeTool {
         log_panics::init();
         PracticeTool {
             config,
+            pointers,
             widgets_stack,
             keys: GlobalKeys::new(),
             is_shown: false,
@@ -123,6 +124,7 @@ impl PracticeTool {
     }
 
     fn render_visible(&mut self, ui: &mut imgui::Ui) {
+        self.pointers.mouse_enable.write(1u8);
         imgui::Window::new("##tool_window")
             .position([16., 16.], Condition::Always)
             .bg_alpha(0.8)
@@ -136,6 +138,7 @@ impl PracticeTool {
             })
             .build(ui, || {
                 let want_exit = { self.widgets_stack.last_mut().unwrap().lock().want_exit() };
+                let want_enter = { self.widgets_stack.last_mut().unwrap().lock().want_enter() };
 
                 if self.keys.down.keyup() {
                     // Send cursor down event to current widget
@@ -146,7 +149,7 @@ impl PracticeTool {
                 } else if (self.keys.esc.keyup() || want_exit) && self.widgets_stack.len() > 1 {
                     // Exit event: pop a widget from the stack
                     self.widgets_stack.pop();
-                } else if self.keys.enter.keyup() {
+                } else if self.keys.enter.keyup() || want_enter {
                     // Send enter event to current widget, interact if event is ignored
                     let child = {
                         self.widgets_stack
