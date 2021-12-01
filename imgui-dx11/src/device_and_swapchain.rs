@@ -133,9 +133,7 @@ impl DeviceAndSwapChain {
     }
 
     pub(crate) fn set_shader_resources(&self, srv: *mut ID3D11ShaderResourceView) {
-        unsafe {
-            self.dev_ctx().PSSetShaderResources(0, 1, &srv as *const _)
-        }
+        unsafe { self.dev_ctx().PSSetShaderResources(0, 1, &srv as *const _) }
     }
 
     pub(crate) fn set_viewport(&self, rect: RECT) {

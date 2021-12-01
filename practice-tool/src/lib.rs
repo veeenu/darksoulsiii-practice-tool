@@ -259,7 +259,8 @@ impl ImguiRenderLoop for PracticeTool {
                 let now = Instant::now();
                 self.log.extend(logs.into_iter().map(|l| (now.clone(), l)));
             }
-            self.log.retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
+            self.log
+                .retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
         }
 
         self.render_logs(ui);

@@ -146,15 +146,10 @@ impl RenderEngine {
                                 },
                             );
 
-                            self.dasc.set_shader_resources(
-                                cmd_params.texture_id.id() as _
-                            );
+                            self.dasc
+                                .set_shader_resources(cmd_params.texture_id.id() as _);
 
-                            dev_ctx.DrawIndexed(
-                                count as u32,
-                                idx_offset as _,
-                                vtx_offset as _,
-                            );
+                            dev_ctx.DrawIndexed(count as u32, idx_offset as _, vtx_offset as _);
 
                             idx_offset += count;
                         }

@@ -8,6 +8,5 @@ mod state_backup;
 mod texture;
 
 pub use common::*;
-pub use imgui;
-pub use imgui_sys;
 pub use render_engine::*;
+pub use {imgui, imgui_sys};

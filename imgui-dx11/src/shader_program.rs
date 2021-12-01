@@ -252,7 +252,8 @@ impl ShaderProgram {
             layout: NonNull::new(layout).expect("Null input layout"),
             sampler: NonNull::new(sampler).expect("Null sampler"),
             blend_state: NonNull::new(blend_state).expect("Null blend state"),
-            depth_stencil_state: NonNull::new(depth_stencil_state).expect("Null depth stencil state"),
+            depth_stencil_state: NonNull::new(depth_stencil_state)
+                .expect("Null depth stencil state"),
             rasterizer_state: NonNull::new(rasterizer_state).expect("Null rasterizer state"),
         }
     }

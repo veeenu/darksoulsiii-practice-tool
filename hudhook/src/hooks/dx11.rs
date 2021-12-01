@@ -12,7 +12,7 @@ use winapi::shared::dxgi::*;
 use winapi::shared::dxgiformat::*;
 use winapi::shared::dxgitype::*;
 use winapi::shared::minwindef::*;
-use winapi::shared::windef::{HBRUSH, HICON, HMENU, HWND};
+use winapi::shared::windef::{HBRUSH, HICON, HMENU, HWND, POINT, RECT};
 use winapi::um::d3d11::*;
 use winapi::um::d3dcommon::*;
 use winapi::um::winnt::*;
@@ -24,6 +24,9 @@ type DXGISwapChainPresentType = unsafe extern "system" fn(
     SyncInterval: UINT,
     Flags: UINT,
 ) -> HRESULT;
+
+type WndProcType =
+    unsafe extern "system" fn(hwnd: HWND, umsg: UINT, wparam: WPARAM, lparam: LPARAM) -> isize;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Data structures and traits
@@ -65,22 +68,175 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
         .get_or_init(|| {
             let mut dev: *mut ID3D11Device = null_mut();
             let mut dev_ctx: *mut ID3D11DeviceContext = null_mut();
+            let mut sd: DXGI_SWAP_CHAIN_DESC = std::mem::zeroed();
 
             check_hresult((*p_this).GetDevice(&ID3D11Device::uuidof(), &mut dev as *mut _ as _));
             (*dev).GetImmediateContext(&mut dev_ctx as _);
 
-            let engine = imgui_dx11::RenderEngine::new_with_ptrs(dev, dev_ctx, &mut *p_this);
+            check_hresult((*p_this).GetDesc(&mut sd as *mut _));
+
+            let mut engine = imgui_dx11::RenderEngine::new_with_ptrs(dev, dev_ctx, &mut *p_this);
             let render_loop = IMGUI_RENDER_LOOP.take().unwrap().into_inner();
+            let wnd_proc = std::mem::transmute::<_, WndProcType>(SetWindowLongPtrA(
+                sd.OutputWindow,
+                GWLP_WNDPROC,
+                imgui_wnd_proc as _,
+            ));
+
+            let imgui_ctx = engine.ctx();
+            imgui_ctx.set_ini_filename(None);
+            imgui_ctx.io_mut().nav_active = true;
+            imgui_ctx.io_mut().nav_visible = true;
+
+            info!(
+                "WndProc {:?}",
+                std::mem::transmute::<_, *const c_void>(wnd_proc)
+            );
             Mutex::new(Box::new(ImguiRenderer {
                 engine,
                 render_loop,
+                wnd_proc,
             }))
         })
         .lock();
 
+    {
+        let ctx = (*renderer).ctx();
+        let mut sd: DXGI_SWAP_CHAIN_DESC = std::mem::zeroed();
+        let mut rect: RECT = std::mem::zeroed();
+        p_this.as_ref().unwrap().GetDesc(&mut sd as _);
+
+        if GetWindowRect(sd.OutputWindow, &mut rect as _) != 0 {
+            let mut io = ctx.io_mut();
+
+            io.display_size = [
+                (rect.right - rect.left) as f32,
+                (rect.bottom - rect.top) as f32,
+            ];
+
+            let mut pos = POINT { x: 0, y: 0 };
+
+            let active_window = GetForegroundWindow();
+            if active_window != 0 as HWND
+                && (active_window == sd.OutputWindow
+                    || IsChild(active_window, sd.OutputWindow) != 0)
+            {
+                let gcp = GetCursorPos(&mut pos as *mut _);
+                if gcp != 0 && ScreenToClient(sd.OutputWindow, &mut pos as *mut _) != 0 {
+                    io.mouse_pos[0] = pos.x as _;
+                    io.mouse_pos[1] = pos.y as _;
+                }
+            }
+        }
+    }
+
     (*renderer).render();
 
     trampoline(p_this, sync_interval, flags)
+}
+
+unsafe extern "system" fn imgui_wnd_proc(
+    hwnd: HWND,
+    umsg: UINT,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) -> isize {
+    if let Some(mut imgui_renderer) = IMGUI_RENDERER.get().map(Mutex::lock) {
+        let set_capture = |mouse_down: &[bool], hwnd| {
+            let any_down = mouse_down.iter().any(|i| *i);
+            if !any_down && GetCapture() == 0 as HWND {
+                SetCapture(hwnd);
+            }
+        };
+
+        let release_capture = |mouse_down: &[bool], hwnd| {
+            let any_down = mouse_down.iter().any(|i| *i);
+            if !any_down && GetCapture() == hwnd {
+                ReleaseCapture();
+            }
+        };
+
+        let ctx = imgui_renderer.ctx();
+        let mut io = ctx.io_mut();
+
+        match umsg {
+            WM_KEYDOWN | WM_SYSKEYDOWN => {
+                if wparam < 256 {
+                    io.keys_down[wparam] = true;
+                }
+            }
+            WM_KEYUP | WM_SYSKEYUP => {
+                if wparam < 256 {
+                    io.keys_down[wparam] = false;
+                }
+            }
+            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK => {
+                // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                io.mouse_down[0] = true;
+                // return 1;
+            }
+            WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => {
+                // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                io.mouse_down[1] = true;
+                // return 1;
+            }
+            WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => {
+                // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                io.mouse_down[2] = true;
+                // return 1;
+            }
+            WM_XBUTTONDOWN | WM_XBUTTONDBLCLK => {
+                let btn = if GET_XBUTTON_WPARAM(wparam) == XBUTTON1 {
+                    3
+                } else {
+                    4
+                };
+                // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                io.mouse_down[btn] = true;
+                // return 1;
+            }
+            WM_LBUTTONUP => {
+                io.mouse_down[0] = false;
+                // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                // return 1;
+            }
+            WM_RBUTTONUP => {
+                io.mouse_down[1] = false;
+                // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                // return 1;
+            }
+            WM_MBUTTONUP => {
+                io.mouse_down[2] = false;
+                // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                // return 1;
+            }
+            WM_XBUTTONUP => {
+                let btn = if GET_XBUTTON_WPARAM(wparam) == XBUTTON1 {
+                    3
+                } else {
+                    4
+                };
+                io.mouse_down[btn] = false;
+                // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+            }
+            WM_MOUSEWHEEL => {
+                io.mouse_wheel += (GET_WHEEL_DELTA_WPARAM(wparam) as f32) / (WHEEL_DELTA as f32);
+            }
+            WM_MOUSEHWHEEL => {
+                io.mouse_wheel_h += (GET_WHEEL_DELTA_WPARAM(wparam) as f32) / (WHEEL_DELTA as f32);
+            }
+            WM_CHAR => io.add_input_character(wparam as u8 as char),
+            _ => {}
+        }
+
+        let wnd_proc = imgui_renderer.wnd_proc;
+        drop(imgui_renderer);
+
+        CallWindowProcW(Some(wnd_proc), hwnd, umsg, wparam, lparam)
+    } else {
+        debug!("WndProc called before hook was set");
+        0
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,6 +246,7 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
 struct ImguiRenderer {
     engine: imgui_dx11::RenderEngine,
     render_loop: Box<dyn ImguiRenderLoop>,
+    wnd_proc: WndProcType,
 }
 
 impl ImguiRenderer {
@@ -97,6 +254,10 @@ impl ImguiRenderer {
         if let Err(e) = self.engine.render(|ui| self.render_loop.render(ui)) {
             error!("ImGui renderer error: {:?}", e);
         }
+    }
+
+    fn ctx(&mut self) -> &mut imgui_dx11::imgui::Context {
+        self.engine.ctx()
     }
 }
 

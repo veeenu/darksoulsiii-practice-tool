@@ -260,7 +260,10 @@ impl From<BaseAddresses> for PointerChains {
             debug_sphere_2: bitflag!(0b1; base_hbd as usize, 0x31),
             gravity: bitflag!(0b1; base_d, 0x60, 0x48),
             speed: pointer_chain!(base_b, 0x80, xa as _, 0x28, offs_speed as _),
-            position: (pointer_chain!(base_b, 0x40, 0x28, 0x74), pointer_chain!(base_b, 0x40, 0x28, 0x80)),
+            position: (
+                pointer_chain!(base_b, 0x40, 0x28, 0x74),
+                pointer_chain!(base_b, 0x40, 0x28, 0x80),
+            ),
             souls: pointer_chain!(base_souls as _, 0x3d0, 0x74),
             item_spawn,
             mouse_enable: pointer_chain!(mouse_enable.0 as _, mouse_enable.1 as _),

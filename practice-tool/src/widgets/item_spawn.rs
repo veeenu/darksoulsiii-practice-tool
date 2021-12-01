@@ -286,14 +286,8 @@ fn load_savefile(src: &PathBuf, dest: &PathBuf) -> Result<(), std::io::Error> {
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 enum Node {
-    Node {
-        node: String,
-        children: Vec<Node>,
-    },
-    Leaf {
-        id: String,
-        desc: String,
-    },
+    Node { node: String, children: Vec<Node> },
+    Leaf { id: String, desc: String },
 }
 
 #[test]

@@ -1,5 +1,6 @@
-use std::{collections::HashMap, lazy::SyncLazy};
-
+use std::collections::HashMap;
+use std::lazy::SyncLazy;
+
 pub(crate) fn get_key_code(k: &str) -> Option<i32> {
     VK_SYMBOL_MAP.get(&k.to_lowercase()).copied()
 }

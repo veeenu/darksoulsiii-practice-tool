@@ -17,13 +17,19 @@ pub(crate) trait Widget: Send + Sync + std::fmt::Debug {
     fn interact(&mut self) {}
     fn interact_ui(&mut self) {}
 
-    fn enter(&self, _ui: &imgui::Ui) -> Option<Arc<Mutex<Box<dyn Widget>>>> { None }
+    fn enter(&self, _ui: &imgui::Ui) -> Option<Arc<Mutex<Box<dyn Widget>>>> {
+        None
+    }
     fn exit(&self, _ui: &imgui::Ui) {}
     fn cursor_down(&mut self) {}
     fn cursor_up(&mut self) {}
 
-    fn want_exit(&mut self) -> bool { false }
-    fn log(&mut self) -> Option<Vec<String>> { None }
+    fn want_exit(&mut self) -> bool {
+        false
+    }
+    fn log(&mut self) -> Option<Vec<String>> {
+        None
+    }
 }
 
 #[derive(Debug)]
@@ -74,7 +80,12 @@ impl Widget for WidgetList {
     }
 
     fn log(&mut self) -> Option<Vec<String>> {
-        let logs: Vec<_> = self.widgets.iter_mut().filter_map(|f| f.log()).flatten().collect();
+        let logs: Vec<_> = self
+            .widgets
+            .iter_mut()
+            .filter_map(|f| f.log())
+            .flatten()
+            .collect();
         if logs.len() > 0 {
             Some(logs)
         } else {

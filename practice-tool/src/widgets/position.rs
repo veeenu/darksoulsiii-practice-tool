@@ -37,7 +37,7 @@ impl Widget for SavePosition {
         let saved_pos = *self.saved_position.lock();
 
         let (read_pos, valid) = if let (Some(pos), Some(angle)) = (pos, angle) {
-            ([pos[0], pos[2], pos[1], angle,], true)
+            ([pos[0], pos[2], pos[1], angle], true)
         } else {
             ([0f32; 4], false)
         };
