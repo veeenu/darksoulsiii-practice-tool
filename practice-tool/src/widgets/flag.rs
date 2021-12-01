@@ -25,7 +25,9 @@ impl Widget for Flag {
         let state = self.bitflag.get();
 
         if let Some(mut state) = state {
-            ui.checkbox(&self.label, &mut state);
+            if ui.checkbox(&self.label, &mut state) {
+                self.bitflag.set(state);
+            }
         } else {
             let token = ui.begin_disabled(true);
             ui.checkbox(&self.label, &mut false);
@@ -40,6 +42,6 @@ impl Widget for Flag {
     }
 
     fn interact_ui(&mut self) {
-        self.bitflag.toggle();
+        // self.bitflag.toggle();
     }
 }

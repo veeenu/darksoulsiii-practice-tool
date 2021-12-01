@@ -1,5 +1,5 @@
 use std::ffi::c_void;
-use std::ops::{BitAnd, BitXor};
+use std::ops::{BitAnd, BitOr, BitXor, Not};
 use std::ptr::null_mut;
 
 use winapi::um::memoryapi::{ReadProcessMemory, WriteProcessMemory};
@@ -129,7 +129,12 @@ pub struct Bitflag<T>(PointerChain<T>, T);
 
 impl<T> Bitflag<T>
 where
-    T: BitXor<Output = T> + BitAnd<Output = T> + PartialEq + Copy,
+    T: BitXor<Output = T>
+        + BitAnd<Output = T>
+        + BitOr<Output = T>
+        + Not<Output = T>
+        + PartialEq
+        + Copy,
 {
     pub(crate) fn new(c: PointerChain<T>, mask: T) -> Self {
         Bitflag(c, mask)
@@ -143,6 +148,12 @@ where
 
     pub(crate) fn get(&self) -> Option<bool> {
         self.0.read().map(|x| (x & self.1) == self.1)
+    }
+
+    pub(crate) fn set(&self, flag: bool) {
+        if let Some(x) = self.0.read() {
+            self.0.write(if flag { x | self.1 } else { x & !self.1 });
+        }
     }
 }
 

@@ -126,6 +126,7 @@ impl PracticeTool {
         imgui::Window::new("##tool_window")
             .position([16., 16.], Condition::Always)
             .bg_alpha(0.8)
+            .nav_inputs(true)
             .flags({
                 WindowFlags::NO_TITLE_BAR
                     | WindowFlags::NO_RESIZE

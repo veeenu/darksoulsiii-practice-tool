@@ -4,6 +4,7 @@ use std::ffi::c_void;
 use std::ptr::null_mut;
 
 use imgui_dx11::check_hresult;
+use imgui_dx11::imgui::ConfigFlags;
 use log::*;
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
