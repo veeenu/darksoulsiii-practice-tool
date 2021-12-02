@@ -74,10 +74,10 @@ impl KeyState {
         prev_state && !state
     }
 
-    pub(crate) fn keydown(&self) -> bool {
-        let (prev_state, state) = self.update();
-        !prev_state && state
-    }
+    // pub(crate) fn keydown(&self) -> bool {
+    //     let (prev_state, state) = self.update();
+    //     !prev_state && state
+    // }
 
     pub(crate) fn is_key_down(&self) -> bool {
         unsafe { GetAsyncKeyState(self.0) < 0 }
@@ -101,48 +101,48 @@ impl TryFrom<String> for KeyState {
     }
 }
 
-pub(crate) struct GlobalKeys {
-    pub(crate) up: KeyState,
-    pub(crate) down: KeyState,
-    pub(crate) left: KeyState,
-    pub(crate) right: KeyState,
-    pub(crate) enter: KeyState,
-    pub(crate) esc: KeyState,
-}
-
-impl GlobalKeys {
-    pub(crate) fn new() -> GlobalKeys {
-        GlobalKeys {
-            up: KeyState::new(get_key_code(GlobalKeys::up()).unwrap()),
-            down: KeyState::new(get_key_code(GlobalKeys::down()).unwrap()),
-            left: KeyState::new(get_key_code(GlobalKeys::left()).unwrap()),
-            right: KeyState::new(get_key_code(GlobalKeys::right()).unwrap()),
-            enter: KeyState::new(get_key_code(GlobalKeys::enter()).unwrap()),
-            esc: KeyState::new(get_key_code(GlobalKeys::esc()).unwrap()),
-        }
-    }
-
-    pub(crate) fn up() -> &'static str {
-        "up"
-    }
-
-    pub(crate) fn down() -> &'static str {
-        "down"
-    }
-
-    pub(crate) fn left() -> &'static str {
-        "up"
-    }
-
-    pub(crate) fn right() -> &'static str {
-        "down"
-    }
-
-    pub(crate) fn enter() -> &'static str {
-        "return"
-    }
-
-    pub(crate) fn esc() -> &'static str {
-        "escape"
-    }
-}
+// pub(crate) struct GlobalKeys {
+//     pub(crate) up: KeyState,
+//     pub(crate) down: KeyState,
+//     pub(crate) left: KeyState,
+//     pub(crate) right: KeyState,
+//     pub(crate) enter: KeyState,
+//     pub(crate) esc: KeyState,
+// }
+// 
+// impl GlobalKeys {
+//     pub(crate) fn new() -> GlobalKeys {
+//         GlobalKeys {
+//             up: KeyState::new(get_key_code(GlobalKeys::up()).unwrap()),
+//             down: KeyState::new(get_key_code(GlobalKeys::down()).unwrap()),
+//             left: KeyState::new(get_key_code(GlobalKeys::left()).unwrap()),
+//             right: KeyState::new(get_key_code(GlobalKeys::right()).unwrap()),
+//             enter: KeyState::new(get_key_code(GlobalKeys::enter()).unwrap()),
+//             esc: KeyState::new(get_key_code(GlobalKeys::esc()).unwrap()),
+//         }
+//     }
+// 
+//     pub(crate) fn up() -> &'static str {
+//         "up"
+//     }
+// 
+//     pub(crate) fn down() -> &'static str {
+//         "down"
+//     }
+// 
+//     pub(crate) fn left() -> &'static str {
+//         "up"
+//     }
+// 
+//     pub(crate) fn right() -> &'static str {
+//         "down"
+//     }
+// 
+//     pub(crate) fn enter() -> &'static str {
+//         "return"
+//     }
+// 
+//     pub(crate) fn esc() -> &'static str {
+//         "escape"
+//     }
+// }

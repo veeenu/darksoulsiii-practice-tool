@@ -4,7 +4,6 @@ use std::ffi::c_void;
 use std::ptr::null_mut;
 
 use imgui_dx11::check_hresult;
-use imgui_dx11::imgui::ConfigFlags;
 use log::*;
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
@@ -143,19 +142,19 @@ unsafe extern "system" fn imgui_wnd_proc(
     lparam: LPARAM,
 ) -> isize {
     if let Some(mut imgui_renderer) = IMGUI_RENDERER.get().map(Mutex::lock) {
-        let set_capture = |mouse_down: &[bool], hwnd| {
-            let any_down = mouse_down.iter().any(|i| *i);
-            if !any_down && GetCapture() == 0 as HWND {
-                SetCapture(hwnd);
-            }
-        };
+        // let set_capture = |mouse_down: &[bool], hwnd| {
+        //     let any_down = mouse_down.iter().any(|i| *i);
+        //     if !any_down && GetCapture() == 0 as HWND {
+        //         SetCapture(hwnd);
+        //     }
+        // };
 
-        let release_capture = |mouse_down: &[bool], hwnd| {
-            let any_down = mouse_down.iter().any(|i| *i);
-            if !any_down && GetCapture() == hwnd {
-                ReleaseCapture();
-            }
-        };
+        // let release_capture = |mouse_down: &[bool], hwnd| {
+        //     let any_down = mouse_down.iter().any(|i| *i);
+        //     if !any_down && GetCapture() == hwnd {
+        //         ReleaseCapture();
+        //     }
+        // };
 
         let ctx = imgui_renderer.ctx();
         let mut io = ctx.io_mut();

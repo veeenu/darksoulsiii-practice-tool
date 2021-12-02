@@ -1,50 +1,13 @@
 use std::cmp::Ordering;
 use std::path::PathBuf;
-use std::sync::Arc;
 
-use imgui::{ComboBox, ListBox, Selectable};
-use parking_lot::Mutex;
-use serde::Deserialize;
+use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, WindowFlags};
 
 use crate::util::{get_key_code, KeyState};
 
 use super::Widget;
 
-#[derive(Debug)]
-pub(crate) struct SavefileManager {
-    label: String,
-    hotkey: KeyState,
-    inner: Arc<Mutex<Box<dyn Widget>>>,
-}
-
-impl SavefileManager {
-    pub(crate) fn new(hotkey: KeyState) -> Self {
-        let inner = match SavefileManagerInner::new(hotkey.clone()) {
-            Ok(i) => Arc::new(Mutex::new(Box::new(i) as _)),
-            Err(i) => Arc::new(Mutex::new(Box::new(i) as _)),
-        };
-
-        SavefileManager {
-            label: format!("Savefile manager ({})", hotkey),
-            hotkey,
-            inner,
-        }
-    }
-}
-
-impl Widget for SavefileManager {
-    fn render(&mut self, ui: &imgui::Ui) {
-        ui.button(&self.label);
-    }
-
-    fn interact(&mut self) {
-        self.inner.lock().interact();
-    }
-
-    fn enter(&self, ui: &imgui::Ui) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
-        Some(self.inner.clone())
-    }
-}
+const SFM_TAG: &'static str = "##savefile-manager";
 
 #[derive(Debug)]
 pub(crate) struct ErroredSavefileManagerInner {
@@ -64,16 +27,35 @@ impl Widget for ErroredSavefileManagerInner {
 }
 
 #[derive(Debug)]
-pub(crate) struct SavefileManagerInner {
-    key_enter: KeyState,
-    key_exit: KeyState,
+pub(crate) struct SavefileManager {
+    label: String,
+    key_back: KeyState,
+    key_close: KeyState,
     key_load: KeyState,
     dir_stack: DirStack,
     savefile_path: PathBuf,
+    breadcrumbs: String,
+    log: Option<String>,
 }
 
-impl SavefileManagerInner {
-    fn new(key_load: KeyState) -> Result<Self, ErroredSavefileManagerInner> {
+impl SavefileManager {
+    pub(crate) fn new(
+        key_load: KeyState,
+        key_back: KeyState,
+        key_close: KeyState,
+    ) -> Box<dyn Widget> {
+        match SavefileManager::new_inner(key_load, key_back, key_close) {
+            Ok(i) => Box::new(i) as _,
+            Err(i) => Box::new(i) as _,
+        }
+    }
+
+    fn new_inner(
+        key_load: KeyState,
+        key_back: KeyState,
+        key_close: KeyState,
+    ) -> Result<Self, ErroredSavefileManagerInner> {
+        let label = format!("Savefile manager ({})", key_load);
         let mut savefile_path = get_savefile_path().map_err(|e| {
             ErroredSavefileManagerInner::new(format!("Could not find savefile path: {}", e))
         })?;
@@ -84,56 +66,114 @@ impl SavefileManagerInner {
 
         savefile_path.push("DS30000.sl2");
 
-        Ok(SavefileManagerInner {
-            key_enter: KeyState::new(get_key_code("return").unwrap()),
-            key_exit: KeyState::new(get_key_code("q").unwrap()),
+        Ok(SavefileManager {
+            label,
+            key_back,
+            key_close,
             key_load,
             dir_stack,
             savefile_path,
+            log: None,
+            breadcrumbs: " /".to_string(),
         })
+    }
+
+    fn load_savefile(&mut self) {
+        let src_path = self.dir_stack.current();
+        if src_path.is_file() {
+            self.log = match load_savefile(src_path, &self.savefile_path) {
+                Ok(()) => Some(format!(
+                    "Loaded {} / {}",
+                    self.breadcrumbs,
+                    src_path.file_name().unwrap().to_str().unwrap()
+                )),
+                Err(e) => Some(format!("Error loading savefile: {}", e)),
+            };
+        }
     }
 }
 
-impl Widget for SavefileManagerInner {
+impl Widget for SavefileManager {
     fn render(&mut self, ui: &imgui::Ui) {
-        const TAG: &'static str = "##savefile-manager";
+        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
+            ui.open_popup(SFM_TAG);
+        }
+        let [cx, cy] = ui.cursor_pos();
+        let [wx, wy] = ui.window_pos();
+        let [x, y] = [cx + wx, cy + wy];
+        unsafe {
+            imgui_sys::igSetNextWindowPos(
+                imgui_sys::ImVec2 { x, y },
+                Condition::Always as _,
+                imgui_sys::ImVec2 { x: 0., y: 0. },
+            )
+        };
 
-        ui.text(format!("Enter directory: {}", self.key_enter));
-        ui.text(format!("Exit directory:  {}", self.key_exit));
-        ui.text(format!("Load savefile:   {}", self.key_load));
+        let style_tokens =
+            [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, [0., 0., 0., 0.])];
 
-        ListBox::new(TAG).size([0f32, 100.]).build(ui, || {
-            for (is_selected, i) in self.dir_stack.values() {
-                Selectable::new(i).selected(is_selected).build(ui);
-                if is_selected {
-                    ui.set_scroll_here_y();
+        if let Some(_token) = PopupModal::new(SFM_TAG)
+            .flags(
+                WindowFlags::NO_TITLE_BAR
+                    | WindowFlags::NO_RESIZE
+                    | WindowFlags::NO_MOVE
+                    | WindowFlags::NO_SCROLLBAR
+                    | WindowFlags::ALWAYS_AUTO_RESIZE,
+            )
+            .begin_popup(ui)
+        {
+            ChildWindow::new("##savefile-manager-breadcrumbs")
+                .size([240., 14.])
+                .build(ui, || {
+                    ui.text(&self.breadcrumbs);
+                    ui.set_scroll_x(ui.scroll_max_x());
+                });
+
+            ListBox::new(SFM_TAG).size([240., 100.]).build(ui, || {
+                if Selectable::new(format!(".. Up one dir ({})", self.key_back)).build(ui) {
+                    self.dir_stack.exit();
                 }
+
+                let mut goto: Option<usize> = None;
+                for (idx, is_selected, i) in self.dir_stack.values() {
+                    if Selectable::new(i).selected(is_selected).build(ui) {
+                        goto = Some(idx);
+                    }
+                }
+
+                if let Some(idx) = goto {
+                    self.dir_stack.goto(idx);
+                    self.dir_stack.enter();
+                    self.breadcrumbs = self.dir_stack.breadcrumbs();
+                }
+            });
+
+            if ui.button_with_size(format!("Load savefile ({})", self.key_load), [240., 20.]) {
+                self.load_savefile();
             }
-        });
+
+            if ui.button_with_size(format!("Close ({})", self.key_close), [240., 20.])
+                || self.key_close.keyup()
+            {
+                ui.close_current_popup();
+            }
+        }
+
+        style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
     fn interact(&mut self) {
-        if self.key_enter.keyup() {
-            self.dir_stack.enter();
-        } else if self.key_exit.keyup() {
+        if self.key_back.keyup() {
             self.dir_stack.exit();
+            self.breadcrumbs = self.dir_stack.breadcrumbs();
         } else if self.key_load.keyup() {
-            // TODO error checking and reporting, now just fails silently
-            let src_path = self.dir_stack.current();
-            println!("Current {:?}", src_path);
-            if src_path.is_file() {
-                println!("Loading savefile {:?}", self.savefile_path);
-                load_savefile(src_path, &self.savefile_path).ok();
-            }
+            self.load_savefile();
         }
     }
 
-    fn cursor_down(&mut self) {
-        self.dir_stack.next();
-    }
-
-    fn cursor_up(&mut self) {
-        self.dir_stack.prev();
+    fn log(&mut self) -> Option<Vec<String>> {
+        let log_entry = self.log.take();
+        log_entry.map(|e| vec![e])
     }
 }
 
@@ -163,9 +203,9 @@ impl DirEntry {
             .into_iter()
             .map(|a| {
                 let repr = if a.is_dir() {
-                    format!("+ {}", a.file_name().unwrap().to_str().unwrap())
+                    format!("+  {}", a.file_name().unwrap().to_str().unwrap())
                 } else {
-                    format!("  {}", a.file_name().unwrap().to_str().unwrap())
+                    format!("   {}", a.file_name().unwrap().to_str().unwrap())
                 };
                 (a, repr)
             })
@@ -174,23 +214,21 @@ impl DirEntry {
         DirEntry { list, cursor: 0 }
     }
 
-    fn values(&self) -> impl IntoIterator<Item = (bool, &str)> {
+    fn values(&self) -> impl IntoIterator<Item = (usize, bool, &str)> {
         self.list
             .iter()
             .enumerate()
-            .map(|(i, f)| (i == self.cursor, f.1.as_str()))
+            .map(|(i, f)| (i, i == self.cursor, f.1.as_str()))
     }
 
     fn current(&self) -> &PathBuf {
         &self.list[self.cursor].0
     }
 
-    fn next(&mut self) {
-        self.cursor = usize::min(self.cursor + 1, self.list.len() - 1);
-    }
-
-    fn prev(&mut self) {
-        self.cursor = self.cursor.saturating_sub(1);
+    fn goto(&mut self, idx: usize) {
+        if idx < self.list.len() {
+            self.cursor = idx;
+        }
     }
 }
 
@@ -221,15 +259,29 @@ impl DirStack {
         }
     }
 
-    fn exit(&mut self) {
+    fn exit(&mut self) -> bool {
         if self.stack.len() <= 1 {
-            return;
+            true
+        } else {
+            self.stack.pop().unwrap();
+            false
         }
-
-        self.stack.pop().unwrap();
     }
 
-    fn values(&self) -> impl IntoIterator<Item = (bool, &str)> {
+    fn breadcrumbs(&self) -> String {
+        if self.stack.len() == 1 {
+            String::from(" / ")
+        } else {
+            let mut breadcrumbs = String::new();
+            for e in self.stack[..self.stack.len() - 1].iter() {
+                breadcrumbs.extend(" / ".chars());
+                breadcrumbs.extend(e.current().file_name().unwrap().to_str().unwrap().chars());
+            }
+            breadcrumbs
+        }
+    }
+
+    fn values(&self) -> impl IntoIterator<Item = (usize, bool, &str)> {
         self.stack.last().unwrap().values()
     }
 
@@ -237,12 +289,8 @@ impl DirStack {
         self.stack.last().unwrap().current()
     }
 
-    fn next(&mut self) {
-        self.stack.last_mut().unwrap().next();
-    }
-
-    fn prev(&mut self) {
-        self.stack.last_mut().unwrap().prev();
+    fn goto(&mut self, idx: usize) {
+        self.stack.last_mut().unwrap().goto(idx);
     }
 
     // TODO SAFETY
@@ -281,17 +329,4 @@ fn load_savefile(src: &PathBuf, dest: &PathBuf) -> Result<(), std::io::Error> {
     let buf = std::fs::read(src)?;
     std::fs::write(dest, &buf)?;
     Ok(())
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-enum Node {
-    Node { node: String, children: Vec<Node> },
-    Leaf { id: String, desc: String },
-}
-
-#[test]
-fn test_deserialize() {
-    let node: Node = serde_json::from_str(include_str!("items.json")).unwrap();
-    println!("{:#?}", node);
 }

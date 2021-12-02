@@ -1,78 +1,13 @@
 use std::cmp::Ordering;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, WindowFlags};
-use parking_lot::Mutex;
 
-use crate::style;
-use crate::util::{get_key_code, GlobalKeys, KeyState};
+use crate::util::KeyState;
 
 use super::Widget;
 
 const SFM_TAG: &'static str = "##savefile-manager";
-
-#[derive(Debug)]
-pub(crate) struct SavefileManager {
-    label: String,
-    inner: Arc<Mutex<Box<dyn Widget>>>,
-    next_pos: Arc<Mutex<[f32; 2]>>,
-    want_enter: bool,
-}
-
-impl SavefileManager {
-    pub(crate) fn new(hotkey: KeyState) -> Self {
-        let label = format!("Savefile manager ({})", hotkey);
-        let next_pos = Arc::new(Mutex::new([0f32; 2]));
-        let inner = match SavefileManagerInner::new(hotkey, next_pos.clone()) {
-            Ok(i) => Arc::new(Mutex::new(Box::new(i) as _)),
-            Err(i) => Arc::new(Mutex::new(Box::new(i) as _)),
-        };
-
-        SavefileManager {
-            label,
-            inner,
-            next_pos,
-            want_enter: false,
-        }
-    }
-}
-
-impl Widget for SavefileManager {
-    fn render(&mut self, ui: &imgui::Ui) {
-        self.want_enter = false;
-        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
-            ui.open_popup(SFM_TAG);
-        }
-        let [cx, cy] = ui.cursor_pos();
-        let [wx, wy] = ui.window_pos();
-        *self.next_pos.lock() = [cx + wx, cy + wy];
-
-        self.inner.lock().render(ui);
-    }
-
-    fn interact(&mut self) {
-        self.inner.lock().interact();
-    }
-
-    // fn interact_ui(&mut self) {
-    //     self.inner.lock().interact_ui();
-    // }
-
-    // fn enter(&self, ui: &imgui::Ui) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
-    //     ui.open_popup(SFM_TAG);
-
-    //     Some(self.inner.clone())
-    // }
-
-    // fn want_enter(&mut self) -> bool {
-    //     self.want_enter
-    // }
-
-    fn log(&mut self) -> Option<Vec<String>> {
-        self.inner.lock().log()
-    }
-}
 
 #[derive(Debug)]
 pub(crate) struct ErroredSavefileManagerInner {
@@ -92,22 +27,35 @@ impl Widget for ErroredSavefileManagerInner {
 }
 
 #[derive(Debug)]
-pub(crate) struct SavefileManagerInner {
-    key_enter: KeyState,
-    key_exit: KeyState,
+pub(crate) struct SavefileManager {
+    label: String,
+    key_back: KeyState,
+    key_close: KeyState,
     key_load: KeyState,
     dir_stack: DirStack,
     savefile_path: PathBuf,
     breadcrumbs: String,
-    next_pos: Arc<Mutex<[f32; 2]>>,
     log: Option<String>,
 }
 
-impl SavefileManagerInner {
-    fn new(
+impl SavefileManager {
+    pub(crate) fn new(
         key_load: KeyState,
-        next_pos: Arc<Mutex<[f32; 2]>>,
+        key_back: KeyState,
+        key_close: KeyState,
+    ) -> Box<dyn Widget> {
+        match SavefileManager::new_inner(key_load, key_back, key_close) {
+            Ok(i) => Box::new(i) as _,
+            Err(i) => Box::new(i) as _,
+        }
+    }
+
+    fn new_inner(
+        key_load: KeyState,
+        key_back: KeyState,
+        key_close: KeyState,
     ) -> Result<Self, ErroredSavefileManagerInner> {
+        let label = format!("Savefile manager ({})", key_load);
         let mut savefile_path = get_savefile_path().map_err(|e| {
             ErroredSavefileManagerInner::new(format!("Could not find savefile path: {}", e))
         })?;
@@ -118,13 +66,13 @@ impl SavefileManagerInner {
 
         savefile_path.push("DS30000.sl2");
 
-        Ok(SavefileManagerInner {
-            key_enter: KeyState::new(get_key_code("return").unwrap()),
-            key_exit: KeyState::new(get_key_code("q").unwrap()),
+        Ok(SavefileManager {
+            label,
+            key_back,
+            key_close,
             key_load,
             dir_stack,
             savefile_path,
-            next_pos,
             log: None,
             breadcrumbs: " /".to_string(),
         })
@@ -145,10 +93,15 @@ impl SavefileManagerInner {
     }
 }
 
-impl Widget for SavefileManagerInner {
+impl Widget for SavefileManager {
     fn render(&mut self, ui: &imgui::Ui) {
+        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
+            ui.open_popup(SFM_TAG);
+        }
+        let [cx, cy] = ui.cursor_pos();
+        let [wx, wy] = ui.window_pos();
+        let [x, y] = [cx + wx, cy + wy];
         unsafe {
-            let [x, y] = *self.next_pos.lock();
             imgui_sys::igSetNextWindowPos(
                 imgui_sys::ImVec2 { x, y },
                 Condition::Always as _,
@@ -156,10 +109,8 @@ impl Widget for SavefileManagerInner {
             )
         };
 
-        let style_tokens = [
-            // ui.push_style_color(imgui::StyleColor::ChildBg, style::DARK_ORANGE),
-            ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, [0., 0., 0., 0.]),
-        ];
+        let style_tokens =
+            [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, [0., 0., 0., 0.])];
 
         if let Some(_token) = PopupModal::new(SFM_TAG)
             .flags(
@@ -179,7 +130,7 @@ impl Widget for SavefileManagerInner {
                 });
 
             ListBox::new(SFM_TAG).size([240., 100.]).build(ui, || {
-                if Selectable::new(format!(".. Up one dir ({})", self.key_exit)).build(ui) {
+                if Selectable::new(format!(".. Up one dir ({})", self.key_back)).build(ui) {
                     self.dir_stack.exit();
                 }
 
@@ -201,7 +152,9 @@ impl Widget for SavefileManagerInner {
                 self.load_savefile();
             }
 
-            if ui.button_with_size(format!("Close ({})", GlobalKeys::esc()), [240., 20.]) {
+            if ui.button_with_size(format!("Close ({})", self.key_close), [240., 20.])
+                || self.key_close.keyup()
+            {
                 ui.close_current_popup();
             }
         }
@@ -209,34 +162,14 @@ impl Widget for SavefileManagerInner {
         style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
-    // fn interact_ui(&mut self) {
-    //     self.dir_stack.enter();
-    //     self.breadcrumbs = self.dir_stack.breadcrumbs();
-    // }
-
     fn interact(&mut self) {
-        if self.key_enter.keyup() {
-        } else if self.key_exit.keyup() {
+        if self.key_back.keyup() {
             self.dir_stack.exit();
             self.breadcrumbs = self.dir_stack.breadcrumbs();
         } else if self.key_load.keyup() {
             self.load_savefile();
         }
     }
-
-    // fn want_exit(&mut self) -> bool {
-    //     let w = self.want_exit;
-    //     self.want_exit = false;
-    //     w
-    // }
-
-    // fn cursor_down(&mut self) {
-    //     self.dir_stack.next();
-    // }
-
-    // fn cursor_up(&mut self) {
-    //     self.dir_stack.prev();
-    // }
 
     fn log(&mut self) -> Option<Vec<String>> {
         let log_entry = self.log.take();
@@ -291,14 +224,6 @@ impl DirEntry {
     fn current(&self) -> &PathBuf {
         &self.list[self.cursor].0
     }
-
-    // fn next(&mut self) {
-    //     self.cursor = usize::min(self.cursor + 1, self.list.len() - 1);
-    // }
-
-    // fn prev(&mut self) {
-    //     self.cursor = self.cursor.saturating_sub(1);
-    // }
 
     fn goto(&mut self, idx: usize) {
         if idx < self.list.len() {
@@ -363,14 +288,6 @@ impl DirStack {
     fn current(&self) -> &PathBuf {
         self.stack.last().unwrap().current()
     }
-
-    // fn next(&mut self) {
-    //     self.stack.last_mut().unwrap().next();
-    // }
-
-    // fn prev(&mut self) {
-    //     self.stack.last_mut().unwrap().prev();
-    // }
 
     fn goto(&mut self, idx: usize) {
         self.stack.last_mut().unwrap().goto(idx);

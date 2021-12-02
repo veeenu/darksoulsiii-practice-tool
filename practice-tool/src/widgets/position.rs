@@ -1,5 +1,3 @@
-use parking_lot::Mutex;
-
 use crate::memedit::PointerChain;
 use crate::util::KeyState;
 

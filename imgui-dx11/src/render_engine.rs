@@ -1,5 +1,3 @@
-use std::ffi::c_void;
-
 use crate::buffers::Buffers;
 use crate::device_and_swapchain::*;
 use crate::shader_program::ShaderProgram;

@@ -25,11 +25,6 @@ pub(crate) struct Config {
 pub(crate) struct Settings {
     pub(crate) log_level: LevelFilterSerde,
     pub(crate) display: KeyState,
-    // pub(crate) down: KeyState,
-    // pub(crate) up: KeyState,
-    // pub(crate) left: KeyState,
-    // pub(crate) right: KeyState,
-    // pub(crate) interact: KeyState,
 }
 
 #[derive(Debug, Deserialize)]
@@ -37,7 +32,9 @@ pub(crate) struct Settings {
 enum CfgCommand {
     SavefileManager {
         #[serde(rename = "savefile_manager")]
-        hotkey: KeyState,
+        hotkey_load: KeyState,
+        hotkey_back: KeyState,
+        hotkey_close: KeyState,
     },
     Flag {
         flag: FlagSpec,
@@ -99,9 +96,15 @@ impl Config {
                     (flag.getter)(chains).clone(),
                     hotkey.clone(),
                 )) as Box<dyn Widget>),
-                CfgCommand::SavefileManager { hotkey } => {
-                    Some(Box::new(SavefileManager::new(hotkey.clone())))
-                }
+                CfgCommand::SavefileManager {
+                    hotkey_load,
+                    hotkey_back,
+                    hotkey_close,
+                } => Some(SavefileManager::new(
+                    hotkey_load.clone(),
+                    hotkey_back.clone(),
+                    hotkey_close.clone(),
+                )),
                 CfgCommand::Position { hotkey, modifier } => Some(Box::new(SavePosition::new(
                     chains.position.clone(),
                     hotkey.clone(),
@@ -186,8 +189,8 @@ impl TryFrom<String> for FlagSpec {
             "rend_chr" => Ok(FlagSpec::new("Render characters", |c| &c.rend_chr)),
             "rend_obj" => Ok(FlagSpec::new("Render objects", |c| &c.rend_obj)),
             "rend_map" => Ok(FlagSpec::new("Render map", |c| &c.rend_map)),
-            "rend_mesh_hi" => Ok(FlagSpec::new("Collision mesh (hi)", |c| &c.rend_mesh_hi)),
-            "rend_mesh_lo" => Ok(FlagSpec::new("Collision mesh (lo)", |c| &c.rend_mesh_lo)),
+            "rend_mesh_hi" => Ok(FlagSpec::new("Collision mesh hi", |c| &c.rend_mesh_hi)),
+            "rend_mesh_lo" => Ok(FlagSpec::new("Collision mesh lo", |c| &c.rend_mesh_lo)),
             "all_draw_hit" => Ok(FlagSpec::new("All draw hit", |c| &c.all_draw_hit)),
             "ik_foot_ray" => Ok(FlagSpec::new("IK foot ray", |c| &c.ik_foot_ray)),
             "debug_sphere_1" => Ok(FlagSpec::new("Debug sphere 1", |c| &c.debug_sphere_1)),
