@@ -36,7 +36,9 @@ impl Widget for Souls {
         let souls = self.ptr.read();
         let _token = ui.begin_disabled(souls.is_none());
 
-        ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]);
+        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
+            self.add();
+        }
         ui.same_line();
 
         if let Some(souls) = souls {

@@ -1,1 +1,0 @@
-- item spawn crash on 1.04

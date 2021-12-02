@@ -43,7 +43,9 @@ impl Widget for CycleSpeed {
         let speed = self.ptr.read();
         let _token = ui.begin_disabled(speed.is_none());
 
-        ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]);
+        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
+            self.cycle();
+        }
         ui.same_line();
 
         if let Some(speed) = speed {
@@ -58,8 +60,4 @@ impl Widget for CycleSpeed {
             self.cycle();
         }
     }
-
-    // fn interact_ui(&mut self) {
-    //     self.cycle();
-    // }
 }
