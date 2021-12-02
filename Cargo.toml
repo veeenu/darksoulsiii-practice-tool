@@ -1,58 +1,14 @@
-[package]
-name = "jdsd_dsiii_practice_tool"
-version = "1.1.3"
-authors = ["Andrea Venuta <venutawebdesign@gmail.com>"]
-edition = "2018"
+[workspace]
+members = [
+  "practice-tool", 
+  "hudhook",
+  "imgui-dx11",
+]
 
-[features]
-# Focus/blur for mouse interactions
-focus = []
-item_spawn = []
-
-[[bin]]
-name = "jdsd_dsiii_practice_tool"
-path = "src/main.rs"
-
-# [[bin]]
-# name = "jdsd_dsiii_config_editor"
-# path = "src/bin/config_editor.rs"
-# 
-# [[bin]]
-# name = "jdsd_dsiii_savefile_manager"
-# path = "src/bin/savefile_manager.rs"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
-name = "libjdsd_dsiii_practice_tool"
+[profile.dev]
+opt-level = 2
 
 [profile.release]
 lto = true
 codegen-units = 1
 opt-level = 3
-
-[dependencies]
-hudhook = { path = "../hudhook", version = "0.1.5" }
-log = "0.4.8"
-simplelog = "0.8.0"
-log-panics = "2.0.0"
-lazy_static = "1.4.0"
-toml = "0.5.6"
-serde = { version = "1.0.115", features = ["derive"] }
-serde_json = "1.0.57"
-pkg-version = "1.0.0"
-ureq = { version = "1.4.1", features = ["json"] }
-winapi = { version = "0.3.9", features = ["winuser", "minwindef", "windef", "xinput"] }
-open = "1.4.0"
-semver = "0.11.0"
-libloading = "0.6"
-clap = "2.33.3"
-glutin = "0.26.0"
-# imgui-winit-support = "0.7.0"
-# imgui-glium-renderer = "0.7.0"
-glium = "0.29.0"
-clipboard = "0.5"
-dynasm = "1.0.0"
-dynasmrt = "1.0.0"
-regex = "1"
-chrono = "0.4.19"
-walkdir = "2.3.2"

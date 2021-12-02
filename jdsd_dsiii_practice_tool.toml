@@ -1,141 +1,34 @@
+commands = [
+  { savefile_manager = "o", hotkey_back = "q", hotkey_close = "escape" },
+  { item_spawner = "u", hotkey_back = "q", hotkey_close = "escape" },
+  { flag = "all_no_damage", hotkey = "1" },
+  { flag = "inf_stamina", hotkey = "2" },
+  { flag = "inf_focus", hotkey = "3" },
+  { flag = "inf_consumables", hotkey = "4" },
+  { flag = "deathcam", hotkey = "5" },
+  { flag = "no_death", hotkey = "6" },
+  { flag = "one_shot", hotkey = "7" },
+  { flag = "evt_draw", hotkey = "F1" },
+  { flag = "evt_disable", hotkey = "F2" },
+  { flag = "ai_disable", hotkey = "F3" },
+  { flag = "rend_chr", hotkey = "F4" },
+  { flag = "rend_obj", hotkey = "F5" },
+  { flag = "rend_map", hotkey = "F6" },
+  { flag = "rend_mesh_hi", hotkey = "F7" },
+  { flag = "rend_mesh_lo", hotkey = "F8" },
+  { flag = "all_draw_hit", hotkey = "F9" },
+  { flag = "ik_foot_ray", hotkey = "F9" },
+  { flag = "debug_sphere_1", hotkey = "F9" },
+  { flag = "debug_sphere_2", hotkey = "F9" },
+  { flag = "gravity", hotkey = "F10" },
+  { position = "H", modifier = "rshift" },
+  { position = "J", modifier = "rshift" },
+  { position = "K", modifier = "rshift" },
+  { cycle_speed = [1, 3], hotkey = "8" },
+  { souls = 10000, hotkey = "9" },
+  { quitout = "P" }
+]
+
 [settings]
 log_level = "DEBUG"
 display = "0"
-focus = "O"
-down = "VK_DOWN"
-up = "VK_UP"
-left = "VK_LEFT"
-right = "VK_RIGHT"
-
-[[command]]
-cmd = "savefile_manager"
-hotkey = "VK_OEM_3"
-
-[[command]]
-cmd = "item_spawn"
-item_id = 305419896
-hotkey = "I"
-
-[[command]]
-cmd = "toggle"
-flag = "all_no_damage"
-hotkey = "1"
-
-[[command]]
-cmd = "toggle"
-flag = "inf_stamina"
-hotkey = "2"
-
-[[command]]
-cmd = "toggle"
-flag = "inf_focus"
-hotkey = "3"
-
-[[command]]
-cmd = "toggle"
-flag = "inf_consumables"
-hotkey = "4"
-
-[[command]]
-cmd = "toggle"
-flag = "deathcam"
-hotkey = "5"
-
-[[command]]
-cmd = "toggle"
-flag = "no_death"
-hotkey = "6"
-
-[[command]]
-cmd = "toggle"
-flag = "one_shot"
-hotkey = "7"
-
-[[command]]
-cmd = "toggle"
-flag = "evt_draw"
-hotkey = "VK_F1"
-
-[[command]]
-cmd = "toggle"
-flag = "evt_disable"
-hotkey = "VK_F2"
-
-[[command]]
-cmd = "toggle"
-flag = "ai_disable"
-hotkey = "VK_F3"
-
-[[command]]
-cmd = "toggle"
-flag = "rend_chr"
-hotkey = "VK_F4"
-
-[[command]]
-cmd = "toggle"
-flag = "rend_obj"
-hotkey = "VK_F5"
-
-[[command]]
-cmd = "toggle"
-flag = "rend_map"
-hotkey = "VK_F6"
-
-[[command]]
-cmd = "toggle"
-flag = "rend_mesh_hi"
-hotkey = "VK_F7"
-
-[[command]]
-cmd = "toggle"
-flag = "rend_mesh_lo"
-hotkey = "VK_F8"
-
-[[command]]
-cmd = "toggle"
-flag = "all_draw_hit"
-hotkey = "VK_OEM_4"
-
-[[command]]
-cmd = "toggle"
-flag = "ik_foot_ray"
-hotkey = "VK_OEM_4"
-
-[[command]]
-cmd = "toggle"
-flag = "debug_sphere_1"
-hotkey = "VK_OEM_4"
-
-[[command]]
-cmd = "toggle"
-flag = "debug_sphere_2"
-hotkey = "VK_OEM_4"
-
-[[command]]
-cmd = "toggle"
-flag = "gravity"
-hotkey = "VK_F9"
-
-[[command]]
-cmd = "position"
-hotkey_save = "H"
-hotkey_load = "K"
-
-[[command]]
-cmd = "position"
-hotkey_save = "J"
-hotkey_load = "L"
-
-[[command]]
-cmd = "cycle_speed"
-values = [1, 3]
-hotkey = "8"
-
-[[command]]
-cmd = "souls"
-quantity = 10000
-hotkey = "9"
-
-[[command]]
-cmd = "quitout"
-hotkey = "P"

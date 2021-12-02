@@ -1,74 +1,35 @@
 # darksoulsiii-practice-tool
 
-A tool intended for practicing speedruns. It is compatible with all the major
-speedrunning-related patches: 1.04 (Any%), 1.08 (Any% NTD), 1.12 (All Bosses)
-and 1.15 (current patch).
+A tool for practicing speedruns. It is compatible with the major speedrunning-related patches.
 
-The project is comprised of a `.dll` file, an `.exe` file and an optional
-configuration file (see next section). To run it, just start the game and
-double-click the`.exe` file. The tool window will automatically appear,
-and it can be toggled by pressing `0`.
+To run the tool, extract all files from the zip archive and double-click the `.exe` file.
+The tool will automatically appear over the game, and it can be toggled by pressing `0`.
 
 You can download the latest release [here](https://github.com/veeenu/darksoulsiii-practice-tool/releases).
 
-If you are in need of help, please read the [FAQ](#troubleshooting--faq) section
-for potential fixes or ways to get in touch.
-
-## Settings
-
-Settings are stored in a file named `jdsd_dsiii_practice_tool.toml` in the same
-directory as the tool It is bundled with the release zip file. If the file is
-not present, a [default configuration](jdsd_dsiii_practice_tool.toml) is loaded.
-
+If you need help, please read the [FAQ](#troubleshooting--faq) section for
+solutions or ways to get in touch.
 
 ## Troubleshooting / FAQ
-
-### How does it work?
-
-In a nutshell:
-
-- Start the game, then start the tool.
-- **Turn the interface on/off** with `F1`. The tool keeps working even when hidden.
-- **Move down/up** the list of commands with `J` / `K`.
-- **Activate/deactivate** the highlighted command with `I`.
 
 ### Where are all the key bindings?
 
 You can customize the default ones or add your own by editing
-`jdsd_dsiii_practice_tool.toml` with an editor such as Notepad, or using the
-bundled `jdsd_dsiii_config_editor.exe` (the preferred way).
+`jdsd_dsiii_practice_tool.toml` with your favorite text editor.
 
-The bundled file contains all possible settings with predefined hotkeys. You can
-either edit the hotkeys via the provided configuration tool, or manually edit
-the `jdsd_dsiii_practice_tool.toml` file.
+The bundled file contains all possible settings with predefined hotkeys and is mostly
+self-explanatory.
 
-Most commands have a similar structure, but a few commands have extra configurations.
-Refer to the default configuration file for the complete list of configurations
-and commands. Here's a few examples:
+You can find a list of supported hotkey codes [here](https://github.com/veeenu/darksoulsiii-practice-tool/blob/7aa6ac33c6f155d35d0fa99ab100c8caa13913f9/practice-tool/src/util/vk.rs#L15-L186).
 
-```toml
-[[command]]
-cmd = "toggle"
-flag = "gravity"
-hotkey = "VK_F9"
+### What versions of the game are supported?
 
-[[command]]
-cmd = "position"
-hotkey_save = "J"
-hotkey_load = "L"
-
-[[command]]
-cmd = "cycle_speed"
-values = [1, 3]
-hotkey = "8"
-
-[[command]]
-cmd = "souls"
-quantity = 10000
-hotkey = "9"
-```
-
-You can find a list of hotkey codes [here](https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes).
+| Version | Category |
+| --- | --- |
+| 1.04 | Any% |
+| 1.08 | Any% NTD |
+| 1.12 | All Bosses | 
+| 1.15 | Current patch |
 
 ### I found a bug. What do I do?
 
@@ -79,28 +40,32 @@ You can find a list of hotkey codes [here](https://docs.microsoft.com/en-us/wind
   and submit a new issue, explaining the problem and attaching the
   `jdsd_dsiii_practice_tool.log` file.
 
-I'll do my best to get back to you and fix the bug. You can also contact
-me on Discord (`johndisandonato#4484`) but I'd prefer an issue to be filed.
+I'll do my best to get back to you and fix the bug.
 
-## To-do list and known issues
+### I want to talk to you!
 
-- Investigate special characters in the DLL path preventing injection.
-- Implement good UX for the item spawner.
-- Implement a non-circumventable activity indicator (i.e. ingame font color).
-- Implement custom keybindings for the savefile manager.
+You can contact me on Discord at `johndisandonato#4484` or on [Twitter](https://twitter.com/johndisandonato).
 
-## Building
+## Credits
 
-Production (artifacts in `target/release`):
+- The Cheat Engine table maintained by [The Grand Archives](https://github.com/inunorii/Dark-Souls-III-CT-TGA)
+  provided the research base for many of the pointers used in the tool.
+- NamelessHoodie[2] and Amir's work on [HoodieScript](https://github.com/NamelessHoodie/HoodieScript)
+  for insights about the game's inner workings.
 
-```
-$ cargo build --release
-```
+## Development
 
-Package (creates a .zip file in the repo directory):
+All you need for building the project is a nightly version of Rust.
 
 ```
-$ python package.py
+cargo +nightly build --release
+```
+
+In order to create a release package, run the bundled Python build script.
+This will create a `jdsd_dsiii_practice_tool.zip` file in the project root.
+
+```
+python build.py package
 ```
 
 ## Writeup
