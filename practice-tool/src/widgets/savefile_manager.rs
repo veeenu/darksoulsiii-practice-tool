@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, WindowFlags};
 
-use crate::util::KeyState;
+use crate::util::{get_key_code, KeyState};
 
 use super::Widget;
 
@@ -32,6 +32,9 @@ pub(crate) struct SavefileManager {
     key_back: KeyState,
     key_close: KeyState,
     key_load: KeyState,
+    key_down: KeyState,
+    key_up: KeyState,
+    key_enter: KeyState,
     dir_stack: DirStack,
     savefile_path: PathBuf,
     breadcrumbs: String,
@@ -71,6 +74,9 @@ impl SavefileManager {
             key_back,
             key_close,
             key_load,
+            key_down: KeyState::new(get_key_code("down").unwrap()),
+            key_up: KeyState::new(get_key_code("up").unwrap()),
+            key_enter: KeyState::new(get_key_code("return").unwrap()),
             dir_stack,
             savefile_path,
             log: None,
@@ -129,6 +135,20 @@ impl Widget for SavefileManager {
                     ui.set_scroll_x(ui.scroll_max_x());
                 });
 
+            let center_scroll_y = if self.key_down.keyup() {
+                self.dir_stack.next();
+                true
+            } else if self.key_up.keyup() {
+                self.dir_stack.prev();
+                true
+            } else {
+                false
+            };
+
+            if self.key_enter.keyup() {
+                self.dir_stack.enter();
+            }
+
             ListBox::new(SFM_TAG).size([240., 100.]).build(ui, || {
                 if Selectable::new(format!(".. Up one dir ({})", self.key_back)).build(ui) {
                     self.dir_stack.exit();
@@ -138,6 +158,10 @@ impl Widget for SavefileManager {
                 for (idx, is_selected, i) in self.dir_stack.values() {
                     if Selectable::new(i).selected(is_selected).build(ui) {
                         goto = Some(idx);
+                    }
+
+                    if center_scroll_y && is_selected {
+                        ui.set_scroll_here_y();
                     }
                 }
 
@@ -230,6 +254,14 @@ impl DirEntry {
             self.cursor = idx;
         }
     }
+
+    fn prev(&mut self) {
+        self.cursor = self.cursor.saturating_sub(1);
+    }
+
+    fn next(&mut self) {
+        self.cursor = usize::min(self.cursor + 1, self.list.len() - 1);
+    }
 }
 
 #[derive(Debug)]
@@ -291,6 +323,14 @@ impl DirStack {
 
     fn goto(&mut self, idx: usize) {
         self.stack.last_mut().unwrap().goto(idx);
+    }
+
+    fn prev(&mut self) {
+        self.stack.last_mut().unwrap().prev();
+    }
+
+    fn next(&mut self) {
+        self.stack.last_mut().unwrap().next();
     }
 
     // TODO SAFETY

@@ -10,7 +10,7 @@ use serde::{Deserialize, Deserializer};
 use winapi::um::{errhandlingapi, memoryapi, processthreadsapi, synchapi};
 
 use crate::memedit::Bitflag;
-use crate::util::KeyState;
+use crate::util::{get_key_code, KeyState};
 
 use super::Widget;
 
@@ -91,9 +91,37 @@ impl<'a> Stack<'a> {
         }
     }
 
+    fn enter_here(&mut self) {
+        let (last_tree, last_idx) = self.stack.last_mut().unwrap();
+        let idx = *last_idx;
+        match last_tree {
+            ItemIDTree::Node { children, .. } => {
+                if let ItemIDTree::Node { .. } = children[idx] {
+                    self.stack.push((&children[idx], 0));
+                }
+            }
+            ItemIDTree::Leaf { .. } => unreachable!(),
+        }
+    }
+
     fn exit(&mut self) {
         if self.stack.len() > 1 {
             self.stack.pop();
+        }
+    }
+
+    fn prev(&mut self) {
+        let (_, last_idx) = self.stack.last_mut().unwrap();
+        *last_idx = last_idx.saturating_sub(1);
+    }
+
+    fn next(&mut self) {
+        let (last_tree, last_idx) = self.stack.last_mut().unwrap();
+        match last_tree {
+            ItemIDTree::Node { children, .. } => {
+                *last_idx = usize::min(*last_idx + 1, children.len() - 1);
+            }
+            ItemIDTree::Leaf { .. } => unreachable!(),
         }
     }
 
@@ -144,6 +172,9 @@ pub(crate) struct ItemSpawner<'a> {
     key_back: KeyState,
     key_close: KeyState,
     key_load: KeyState,
+    key_down: KeyState,
+    key_enter: KeyState,
+    key_up: KeyState,
     stack: Stack<'a>,
     breadcrumbs: String,
     spawn_instance: ItemSpawnInstance,
@@ -178,6 +209,9 @@ impl<'a> ItemSpawner<'a> {
             key_back,
             key_close,
             key_load,
+            key_down: KeyState::new(get_key_code("down").unwrap()),
+            key_up: KeyState::new(get_key_code("up").unwrap()),
+            key_enter: KeyState::new(get_key_code("return").unwrap()),
             stack,
             log: None,
             breadcrumbs: " /".to_string(),
@@ -264,6 +298,20 @@ impl<'a> Widget for ItemSpawner<'a> {
                         self.stack.exit();
                     }
 
+                    let center_scroll_y = if self.key_down.keyup() {
+                        self.stack.next();
+                        true
+                    } else if self.key_up.keyup() {
+                        self.stack.prev();
+                        true
+                    } else {
+                        false
+                    };
+
+                    if self.key_enter.keyup() {
+                        self.stack.enter_here();
+                    }
+
                     let mut goto: Option<usize> = None;
                     for (idx, is_selected, i) in self.stack.values() {
                         let repr = match i {
@@ -272,6 +320,10 @@ impl<'a> Widget for ItemSpawner<'a> {
                         };
                         if Selectable::new(repr).selected(is_selected).build(ui) {
                             goto = Some(idx);
+                        }
+
+                        if center_scroll_y && is_selected {
+                            ui.set_scroll_here_y();
                         }
                     }
 
