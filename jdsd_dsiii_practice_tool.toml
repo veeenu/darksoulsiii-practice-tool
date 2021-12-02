@@ -20,7 +20,7 @@ commands = [
   { flag = "ik_foot_ray", hotkey = "F9" },
   { flag = "debug_sphere_1", hotkey = "F9" },
   { flag = "debug_sphere_2", hotkey = "F9" },
-  { flag = "gravity", hotkey = "F10" },
+  # { flag = "gravity", hotkey = "F10" },
   { position = "H", modifier = "rshift" },
   { position = "J", modifier = "rshift" },
   { position = "K", modifier = "rshift" },

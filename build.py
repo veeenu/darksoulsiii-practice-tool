@@ -45,7 +45,7 @@ def package():
 
     subprocess.run(['cargo', 'build', '--release'], env=env)
     update_icon('target/release/jdsd_dsiii_practice_tool.exe',
-                'src/sidherald.ico')
+                'practice-tool/src/sidherald.ico')
     # update_icon('target/release/jdsd_dsiii_savefile_manager.exe',
     #             'src/sidherald.ico')
     # update_icon('target/release/jdsd_dsiii_config_editor.exe',
