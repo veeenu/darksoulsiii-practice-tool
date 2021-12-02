@@ -22,7 +22,7 @@ impl Quitout {
 
 impl Widget for Quitout {
     fn render(&mut self, ui: &imgui::Ui) {
-        ui.button(&self.label);
+        ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]);
     }
 
     fn interact(&mut self) {
@@ -31,7 +31,7 @@ impl Widget for Quitout {
         }
     }
 
-    fn interact_ui(&mut self) {
-        self.ptr.write(1);
-    }
+    // fn interact_ui(&mut self) {
+    //     self.ptr.write(1);
+    // }
 }

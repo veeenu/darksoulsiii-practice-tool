@@ -41,7 +41,7 @@ impl Widget for Flag {
         }
     }
 
-    fn interact_ui(&mut self) {
-        // self.bitflag.toggle();
-    }
+    // fn interact_ui(&mut self) {
+    //     // self.bitflag.toggle();
+    // }
 }

@@ -7,21 +7,19 @@ mod style;
 mod util;
 mod widgets;
 
-use std::sync::Arc;
 use std::time::Instant;
 
 use imgui::*;
 
 use hudhook::hooks::dx11::ImguiRenderLoop;
-use parking_lot::Mutex;
 
 use crate::pointers::PointerChains;
 use crate::util::GlobalKeys;
-use crate::widgets::{Widget, WidgetList};
 
 struct PracticeTool {
     config: config::Config,
-    widgets_stack: Vec<Arc<Mutex<Box<dyn widgets::Widget>>>>,
+    // widgets_stack: Vec<Arc<Mutex<Box<dyn widgets::Widget>>>>,
+    widgets: Vec<Box<dyn widgets::Widget>>,
     pointers: PointerChains,
     keys: GlobalKeys,
     log: Vec<(Instant, String)>,
@@ -101,22 +99,26 @@ impl PracticeTool {
             .expect("Couldn't detect version!")
             .into();
 
-        let root_widget = {
-            let widgets = config.make_commands(&pointers);
-            debug!("Config: {:?}", config);
-            debug!("Widgets: {:?}", widgets);
-            Arc::new(Mutex::new(
-                Box::new(WidgetList::new(widgets)) as Box<dyn Widget>
-            ))
-        };
+        let widgets = config.make_commands(&pointers);
+        debug!("Config: {:?}", config);
+        debug!("Widgets: {:?}", widgets);
 
-        let widgets_stack = vec![Arc::clone(&root_widget)];
+        // let root_widget = {
+        //     let widgets = config.make_commands(&pointers);
+        //     debug!("Config: {:?}", config);
+        //     debug!("Widgets: {:?}", widgets);
+        //     Arc::new(Mutex::new(
+        //         Box::new(WidgetList::new(widgets)) as Box<dyn Widget>
+        //     ))
+        // };
+
+        // let widgets_stack = vec![Arc::clone(&root_widget)];
 
         log_panics::init();
         PracticeTool {
             config,
             pointers,
-            widgets_stack,
+            widgets,
             keys: GlobalKeys::new(),
             is_shown: false,
             log: Vec::new(),
@@ -124,7 +126,6 @@ impl PracticeTool {
     }
 
     fn render_visible(&mut self, ui: &mut imgui::Ui) {
-        self.pointers.mouse_enable.write(1u8);
         imgui::Window::new("##tool_window")
             .position([16., 16.], Condition::Always)
             .bg_alpha(0.8)
@@ -137,43 +138,49 @@ impl PracticeTool {
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
             .build(ui, || {
-                let want_exit = { self.widgets_stack.last_mut().unwrap().lock().want_exit() };
-                let want_enter = { self.widgets_stack.last_mut().unwrap().lock().want_enter() };
+                for w in self.widgets.iter_mut() {
+                    w.interact();
+                }
+                for w in self.widgets.iter_mut() {
+                    w.render(ui);
+                }
+                // let want_exit = { self.widgets_stack.last_mut().unwrap().lock().want_exit() };
+                // let want_enter = { self.widgets_stack.last_mut().unwrap().lock().want_enter() };
 
-                if self.keys.down.keyup() {
-                    // Send cursor down event to current widget
-                    self.widgets_stack.last_mut().unwrap().lock().cursor_down();
-                } else if self.keys.up.keyup() {
-                    // Send cursor up event to current widget
-                    self.widgets_stack.last_mut().unwrap().lock().cursor_up();
-                } else if (self.keys.esc.keyup() || want_exit) && self.widgets_stack.len() > 1 {
-                    // Exit event: pop a widget from the stack
-                    self.widgets_stack.pop();
-                } else if self.keys.enter.keyup() || want_enter {
-                    // Send enter event to current widget, interact if event is ignored
-                    let child = {
-                        self.widgets_stack
-                            .last_mut()
-                            .unwrap()
-                            .lock()
-                            .enter(ui)
-                            .clone()
-                    };
-                    if let Some(child) = child {
-                        self.widgets_stack.push(child);
-                    } else {
-                        self.widgets_stack.last_mut().unwrap().lock().interact_ui();
-                    }
-                }
+                // if self.keys.down.keyup() {
+                //     // Send cursor down event to current widget
+                //     self.widgets_stack.last_mut().unwrap().lock().cursor_down();
+                // } else if self.keys.up.keyup() {
+                //     // Send cursor up event to current widget
+                //     self.widgets_stack.last_mut().unwrap().lock().cursor_up();
+                // } else if (self.keys.esc.keyup() || want_exit) && self.widgets_stack.len() > 1 {
+                //     // Exit event: pop a widget from the stack
+                //     self.widgets_stack.pop();
+                // } else if self.keys.enter.keyup() || want_enter {
+                //     // Send enter event to current widget, interact if event is ignored
+                //     let child = {
+                //         self.widgets_stack
+                //             .last_mut()
+                //             .unwrap()
+                //             .lock()
+                //             .enter(ui)
+                //             .clone()
+                //     };
+                //     if let Some(child) = child {
+                //         self.widgets_stack.push(child);
+                //     } else {
+                //         self.widgets_stack.last_mut().unwrap().lock().interact_ui();
+                //     }
+                // }
 
-                {
-                    for w in self.widgets_stack.iter().rev() {
-                        w.lock().interact();
-                    }
-                }
-                for w in &mut self.widgets_stack {
-                    w.lock().render(ui);
-                }
+                // {
+                //     for w in self.widgets_stack.iter().rev() {
+                //         w.lock().interact();
+                //     }
+                // }
+                // for w in &mut self.widgets_stack {
+                //     w.lock().render(ui);
+                // }
             });
     }
 
@@ -196,9 +203,13 @@ impl PracticeTool {
             .build(ui, || {
                 ui.text("johndisandonato's Dark Souls III Practice Tool is active");
 
-                for w in self.widgets_stack.iter().rev() {
-                    w.lock().interact();
+                for w in self.widgets.iter_mut() {
+                    w.interact();
                 }
+
+                // for w in self.widgets_stack.iter().rev() {
+                //     w.lock().interact();
+                // }
             });
 
         for st in stack_tokens.into_iter().rev() {
@@ -250,22 +261,35 @@ impl ImguiRenderLoop for PracticeTool {
     fn render(&mut self, ui: &mut imgui::Ui) {
         if self.config.settings.display.keyup() {
             self.is_shown = !self.is_shown;
+            if !self.is_shown {
+                self.pointers.mouse_enable.write(0u8);
+            }
         }
 
         if self.is_shown {
+            self.pointers.mouse_enable.write(1u8);
             self.render_visible(ui);
         } else {
             self.render_closed(ui);
         }
 
-        for w in &mut self.widgets_stack {
-            if let Some(logs) = w.lock().log() {
+        for w in &mut self.widgets {
+            if let Some(logs) = w.log() {
                 let now = Instant::now();
                 self.log.extend(logs.into_iter().map(|l| (now.clone(), l)));
             }
             self.log
                 .retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
         }
+
+        // for w in &mut self.widgets_stack {
+        //     if let Some(logs) = w.lock().log() {
+        //         let now = Instant::now();
+        //         self.log.extend(logs.into_iter().map(|l| (now.clone(), l)));
+        //     }
+        //     self.log
+        //         .retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
+        // }
 
         self.render_logs(ui);
     }

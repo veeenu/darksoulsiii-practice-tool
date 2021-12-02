@@ -41,15 +41,15 @@ impl CycleSpeed {
 impl Widget for CycleSpeed {
     fn render(&mut self, ui: &imgui::Ui) {
         let speed = self.ptr.read();
-        let _token = ui.begin_disabled(speed.is_some());
+        let _token = ui.begin_disabled(speed.is_none());
 
-        ui.button(&self.label);
+        ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]);
         ui.same_line();
 
         if let Some(speed) = speed {
-            ui.text(format!("[{:4.2}]", speed));
+            ui.text(format!("[{:10.2}]", speed));
         } else {
-            ui.text("[    ]");
+            ui.text("[          ]");
         }
     }
 
@@ -59,7 +59,7 @@ impl Widget for CycleSpeed {
         }
     }
 
-    fn interact_ui(&mut self) {
-        self.cycle();
-    }
+    // fn interact_ui(&mut self) {
+    //     self.cycle();
+    // }
 }

@@ -41,31 +41,33 @@ impl SavefileManager {
 impl Widget for SavefileManager {
     fn render(&mut self, ui: &imgui::Ui) {
         self.want_enter = false;
-        if ui.button(&self.label) {
-            self.want_enter = true;
+        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
+            ui.open_popup(SFM_TAG);
         }
         let [cx, cy] = ui.cursor_pos();
         let [wx, wy] = ui.window_pos();
         *self.next_pos.lock() = [cx + wx, cy + wy];
+
+        self.inner.lock().render(ui);
     }
 
     fn interact(&mut self) {
         self.inner.lock().interact();
     }
 
-    fn interact_ui(&mut self) {
-        self.inner.lock().interact_ui();
-    }
+    // fn interact_ui(&mut self) {
+    //     self.inner.lock().interact_ui();
+    // }
 
-    fn enter(&self, ui: &imgui::Ui) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
-        ui.open_popup(SFM_TAG);
+    // fn enter(&self, ui: &imgui::Ui) -> Option<Arc<Mutex<Box<(dyn Widget + 'static)>>>> {
+    //     ui.open_popup(SFM_TAG);
 
-        Some(self.inner.clone())
-    }
+    //     Some(self.inner.clone())
+    // }
 
-    fn want_enter(&mut self) -> bool {
-        self.want_enter
-    }
+    // fn want_enter(&mut self) -> bool {
+    //     self.want_enter
+    // }
 
     fn log(&mut self) -> Option<Vec<String>> {
         self.inner.lock().log()
@@ -98,7 +100,6 @@ pub(crate) struct SavefileManagerInner {
     savefile_path: PathBuf,
     breadcrumbs: String,
     next_pos: Arc<Mutex<[f32; 2]>>,
-    want_exit: bool,
     log: Option<String>,
 }
 
@@ -124,7 +125,6 @@ impl SavefileManagerInner {
             dir_stack,
             savefile_path,
             next_pos,
-            want_exit: false,
             log: None,
             breadcrumbs: " /".to_string(),
         })
@@ -157,7 +157,7 @@ impl Widget for SavefileManagerInner {
         };
 
         let style_tokens = [
-            ui.push_style_color(imgui::StyleColor::ChildBg, style::DARK_ORANGE),
+            // ui.push_style_color(imgui::StyleColor::ChildBg, style::DARK_ORANGE),
             ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, [0., 0., 0., 0.]),
         ];
 
@@ -188,9 +188,6 @@ impl Widget for SavefileManagerInner {
                     if Selectable::new(i).selected(is_selected).build(ui) {
                         goto = Some(idx);
                     }
-                    if is_selected {
-                        ui.set_scroll_here_y();
-                    }
                 }
 
                 if let Some(idx) = goto {
@@ -200,51 +197,46 @@ impl Widget for SavefileManagerInner {
                 }
             });
 
-            if ui.button_with_size(format!("Enter directory ({})", self.key_enter), [240., 20.]) {
-                self.dir_stack.enter();
-                self.breadcrumbs = self.dir_stack.breadcrumbs();
-            }
             if ui.button_with_size(format!("Load savefile ({})", self.key_load), [240., 20.]) {
                 self.load_savefile();
             }
 
             if ui.button_with_size(format!("Close ({})", GlobalKeys::esc()), [240., 20.]) {
                 ui.close_current_popup();
-                self.want_exit = true;
             }
         }
 
         style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
-    fn interact_ui(&mut self) {
-        self.dir_stack.enter();
-        self.breadcrumbs = self.dir_stack.breadcrumbs();
-    }
+    // fn interact_ui(&mut self) {
+    //     self.dir_stack.enter();
+    //     self.breadcrumbs = self.dir_stack.breadcrumbs();
+    // }
 
     fn interact(&mut self) {
         if self.key_enter.keyup() {
         } else if self.key_exit.keyup() {
-            self.want_exit = self.dir_stack.exit();
+            self.dir_stack.exit();
             self.breadcrumbs = self.dir_stack.breadcrumbs();
         } else if self.key_load.keyup() {
             self.load_savefile();
         }
     }
 
-    fn want_exit(&mut self) -> bool {
-        let w = self.want_exit;
-        self.want_exit = false;
-        w
-    }
+    // fn want_exit(&mut self) -> bool {
+    //     let w = self.want_exit;
+    //     self.want_exit = false;
+    //     w
+    // }
 
-    fn cursor_down(&mut self) {
-        self.dir_stack.next();
-    }
+    // fn cursor_down(&mut self) {
+    //     self.dir_stack.next();
+    // }
 
-    fn cursor_up(&mut self) {
-        self.dir_stack.prev();
-    }
+    // fn cursor_up(&mut self) {
+    //     self.dir_stack.prev();
+    // }
 
     fn log(&mut self) -> Option<Vec<String>> {
         let log_entry = self.log.take();
@@ -300,13 +292,13 @@ impl DirEntry {
         &self.list[self.cursor].0
     }
 
-    fn next(&mut self) {
-        self.cursor = usize::min(self.cursor + 1, self.list.len() - 1);
-    }
+    // fn next(&mut self) {
+    //     self.cursor = usize::min(self.cursor + 1, self.list.len() - 1);
+    // }
 
-    fn prev(&mut self) {
-        self.cursor = self.cursor.saturating_sub(1);
-    }
+    // fn prev(&mut self) {
+    //     self.cursor = self.cursor.saturating_sub(1);
+    // }
 
     fn goto(&mut self, idx: usize) {
         if idx < self.list.len() {
@@ -372,13 +364,13 @@ impl DirStack {
         self.stack.last().unwrap().current()
     }
 
-    fn next(&mut self) {
-        self.stack.last_mut().unwrap().next();
-    }
+    // fn next(&mut self) {
+    //     self.stack.last_mut().unwrap().next();
+    // }
 
-    fn prev(&mut self) {
-        self.stack.last_mut().unwrap().prev();
-    }
+    // fn prev(&mut self) {
+    //     self.stack.last_mut().unwrap().prev();
+    // }
 
     fn goto(&mut self, idx: usize) {
         self.stack.last_mut().unwrap().goto(idx);

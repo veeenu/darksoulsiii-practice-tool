@@ -34,9 +34,9 @@ impl Souls {
 impl Widget for Souls {
     fn render(&mut self, ui: &imgui::Ui) {
         let souls = self.ptr.read();
-        let _token = ui.begin_disabled(souls.is_some());
+        let _token = ui.begin_disabled(souls.is_none());
 
-        ui.button(&self.label);
+        ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]);
         ui.same_line();
 
         if let Some(souls) = souls {
@@ -50,9 +50,5 @@ impl Widget for Souls {
         if self.hotkey.keyup() {
             self.add();
         }
-    }
-
-    fn interact_ui(&mut self) {
-        self.add();
     }
 }
