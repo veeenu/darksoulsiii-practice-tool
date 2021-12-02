@@ -5,12 +5,14 @@ pub mod inject;
 pub mod mh;
 
 pub mod utils {
+    /// Allocate a Windows console.
     pub fn alloc_console() {
         unsafe {
             winapi::um::consoleapi::AllocConsole();
         }
     }
 
+    /// Initialize `simplelog` with sane defaults.
     pub fn simplelog() {
         use log::*;
         use simplelog::*;
@@ -24,6 +26,7 @@ pub mod utils {
         .ok();
     }
 
+    /// Free the previously allocated Windows console.
     pub fn free_console() {
         unsafe {
             winapi::um::wincon::FreeConsole();
@@ -42,27 +45,16 @@ pub use winapi::um::winnt::{
 /// ```
 /// pub struct MyRenderLoop;
 /// impl RenderLoop for MyRenderLoop {
-///   fn render(&self, frame: imgui::Ui) { ... }
+///   fn render(&self, frame: imgui::Ui, flags: &ImguiRenderLoopFlags) { ... }
 /// }
 ///
-/// hudhook!(
-///     {
-///         println!("Initialization code (logging, ...) in this block!");
-///         hudhook::init::alloc_console();
-///         hudhook::init::simplelog();
-///     },
-///     // {
-///     //     hudhook::deinit::free_console();
-///     // }
-///     [
-///         hudhook::hooks::dx11::hook_imgui(RenderLoop {}),
-///     ]
-/// );
+/// hudhook!(|| {
+///     [hudhook::hooks::dx11::hook_imgui(RenderLoop {}),]
+/// });
 /// ```
 #[macro_export]
 macro_rules! hudhook {
-    // ($init:block, $deinit:block, $hooks:expr) => {
-    ($init:block, $hooks:expr) => {
+    ($hooks:expr) => {
         use hudhook::*;
         use hudhook::log::*;
 
@@ -78,20 +70,13 @@ macro_rules! hudhook {
             static mut HOOKS: OnceCell<mh::Hooks> = OnceCell::new();
 
             if reason == DLL_PROCESS_ATTACH {
-                $init
-
                 trace!("DllMain()");
                 std::thread::spawn(move || {
-                    let hooks = hudhook::mh::Hooks::new(|| { $hooks });
+                    let hooks = hudhook::mh::Hooks::new($hooks);
                     HOOKS.set(hooks).ok();
                 });
             } else if reason == DLL_PROCESS_DETACH {
                 // TODO figure out a way to trigger drops on exit
-                // In this branch, logging panics
-
-                // $deinit
-
-                // drop(HOOKS.take());
             }
         }
     };

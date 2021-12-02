@@ -56,6 +56,8 @@ extern "system" {
     pub fn MH_ApplyQueued() -> MH_STATUS;
 }
 
+/// Structure that holds original address, hook function address, and trampoline address
+/// for a given hook.
 pub struct Hook {
     addr: *mut c_void,
     hook_impl: *mut c_void,
@@ -86,6 +88,7 @@ impl Hook {
     }
 }
 
+/// Wrapper for a queue of hooks to be applied via Minhook.
 pub struct Hooks(Vec<Hook>);
 unsafe impl Send for Hooks {}
 unsafe impl Sync for Hooks {}

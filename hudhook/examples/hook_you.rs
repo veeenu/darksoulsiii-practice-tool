@@ -1,11 +1,21 @@
 #![feature(once_cell)]
 
-use hudhook::hooks::dx11::ImguiRenderLoop;
+use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
 use imgui_dx11::imgui::{Condition, Window};
-struct HookYou {}
+struct HookYou;
+
+impl HookYou {
+    fn new() -> Self {
+        println!("Initializing");
+        hudhook::utils::alloc_console();
+        hudhook::utils::simplelog();
+
+        HookYou
+    }
+}
 
 impl ImguiRenderLoop for HookYou {
-    fn render(&mut self, ui: &mut imgui_dx11::imgui::Ui) {
+    fn render(&mut self, ui: &mut imgui_dx11::imgui::Ui, _: &ImguiRenderLoopFlags) {
         Window::new("Hello world")
             .size([300.0, 110.0], Condition::FirstUseEver)
             .build(ui, || {
@@ -22,11 +32,4 @@ impl ImguiRenderLoop for HookYou {
     }
 }
 
-hudhook::hudhook!(
-    {
-        println!("Initializing");
-        hudhook::utils::alloc_console();
-        hudhook::utils::simplelog();
-    },
-    [hudhook::hooks::dx11::hook_imgui(HookYou {})]
-);
+hudhook::hudhook!(|| { [hudhook::hooks::dx11::hook_imgui(HookYou::new())] });

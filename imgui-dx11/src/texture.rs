@@ -12,8 +12,6 @@ pub(crate) struct Texture {
     tex: NonNull<ID3D11Texture2D>,
     tex_view: NonNull<ID3D11ShaderResourceView>,
     font_sampler: NonNull<ID3D11SamplerState>,
-    // data: Vec<u8>,
-    // version: u64,
 }
 
 impl Texture {
@@ -24,7 +22,6 @@ impl Texture {
         let mut tex_view = null_mut();
         let mut font_sampler = null_mut();
         let data = texture.data.to_vec();
-        // let version = 0;
 
         check_hresult(unsafe {
             dasc.dev().CreateTexture2D(
@@ -91,14 +88,8 @@ impl Texture {
             tex: NonNull::new(tex).expect("Null texture"),
             tex_view: NonNull::new(tex_view).expect("Null texture view"),
             font_sampler: NonNull::new(font_sampler).expect("Null font sampler"),
-            // data,
-            // version,
         }
     }
-
-    // pub(crate) fn tex(&self) -> *mut ID3D11Texture2D {
-    //     self.tex.as_ptr()
-    // }
 
     pub(crate) fn tex_view(&self) -> *mut ID3D11ShaderResourceView {
         self.tex_view.as_ptr()

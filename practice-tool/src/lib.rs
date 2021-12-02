@@ -161,7 +161,7 @@ impl PracticeTool {
         }
     }
 
-    fn render_logs(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
+    fn render_logs(&mut self, ui: &mut imgui::Ui, _flags: &ImguiRenderLoopFlags) {
         let io = ui.io();
 
         let [dw, dh] = io.display_size;
@@ -230,11 +230,4 @@ impl ImguiRenderLoop for PracticeTool {
     }
 }
 
-fn init() {}
-
-hudhook::hudhook!(
-    {
-        init();
-    },
-    [hudhook::hooks::dx11::hook_imgui(PracticeTool::new())]
-);
+hudhook::hudhook!(|| { [hudhook::hooks::dx11::hook_imgui(PracticeTool::new())] });

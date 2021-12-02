@@ -188,10 +188,6 @@ impl DeviceAndSwapChain {
         unsafe { self.swap_chain.as_ref() }
     }
 
-    // pub(crate) fn back_buffer(&self) -> *mut ID3D11RenderTargetView {
-    //     self.back_buffer.as_ptr()
-    // }
-
     pub(crate) fn with_mapped<T, F>(&self, ptr: NonNull<T>, f: F)
     where
         F: FnOnce(&D3D11_MAPPED_SUBRESOURCE),

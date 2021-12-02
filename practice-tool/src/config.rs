@@ -156,11 +156,6 @@ impl Default for Config {
             settings: Settings {
                 log_level: LevelFilterSerde(LevelFilter::Debug),
                 display: KeyState::new(util::get_key_code("0").unwrap()),
-                // down: KeyState::new(util::get_key_code("down").unwrap()),
-                // up: KeyState::new(util::get_key_code("up").unwrap()),
-                // left: KeyState::new(util::get_key_code("left").unwrap()),
-                // right: KeyState::new(util::get_key_code("right").unwrap()),
-                // interact: KeyState::new(util::get_key_code("return").unwrap()),
             },
             commands: Vec::new(),
         }

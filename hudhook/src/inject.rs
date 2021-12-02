@@ -14,6 +14,7 @@ use winapi::um::winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, PR
 use winapi::um::winuser::{FindWindowA, GetWindowThreadProcessId};
 use winapi::um::{memoryapi, processthreadsapi};
 
+/// Inject the DLL stored at `dll_path` in the process that owns the window with title `title`.
 pub fn inject(title: &str, dll_path: PathBuf) {
     let title = CString::new(title).unwrap();
     let hwnd = unsafe { FindWindowA(null_mut(), title.as_ptr() as *const i8) };

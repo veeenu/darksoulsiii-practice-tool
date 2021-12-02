@@ -49,8 +49,6 @@ impl Buffers {
         }
     }
 
-    // pub(crate) fn bind(&self, dasc: &DeviceAndSwapChain) {}
-
     pub(crate) fn set_constant_buffer(&mut self, dasc: &DeviceAndSwapChain, rect: [f32; 4]) {
         let [l, t, r, b] = rect;
 
