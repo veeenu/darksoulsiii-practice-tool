@@ -10,7 +10,7 @@ use std::time::Instant;
 
 use imgui::*;
 
-use hudhook::hooks::dx11::ImguiRenderLoop;
+use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
 
 use crate::pointers::PointerChains;
 
@@ -96,8 +96,6 @@ impl PracticeTool {
             .into();
 
         let widgets = config.make_commands(&pointers);
-        debug!("Config: {:?}", config);
-        debug!("Widgets: {:?}", widgets);
 
         log_panics::init();
         PracticeTool {
@@ -109,11 +107,10 @@ impl PracticeTool {
         }
     }
 
-    fn render_visible(&mut self, ui: &mut imgui::Ui) {
+    fn render_visible(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
         imgui::Window::new("##tool_window")
             .position([16., 16.], Condition::Always)
             .bg_alpha(0.8)
-            .nav_inputs(true)
             .flags({
                 WindowFlags::NO_TITLE_BAR
                     | WindowFlags::NO_RESIZE
@@ -122,8 +119,10 @@ impl PracticeTool {
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
             .build(ui, || {
-                for w in self.widgets.iter_mut() {
-                    w.interact();
+                if flags.focused {
+                    for w in self.widgets.iter_mut() {
+                        w.interact();
+                    }
                 }
                 for w in self.widgets.iter_mut() {
                     w.render(ui);
@@ -131,7 +130,7 @@ impl PracticeTool {
             });
     }
 
-    fn render_closed(&mut self, ui: &mut imgui::Ui) {
+    fn render_closed(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
         let stack_tokens = vec![
             ui.push_style_var(StyleVar::WindowRounding(0.)),
             ui.push_style_var(StyleVar::FrameBorderSize(0.)),
@@ -150,8 +149,10 @@ impl PracticeTool {
             .build(ui, || {
                 ui.text("johndisandonato's Dark Souls III Practice Tool is active");
 
-                for w in self.widgets.iter_mut() {
-                    w.interact();
+                if flags.focused {
+                    for w in self.widgets.iter_mut() {
+                        w.interact();
+                    }
                 }
             });
 
@@ -160,7 +161,7 @@ impl PracticeTool {
         }
     }
 
-    fn render_logs(&mut self, ui: &mut imgui::Ui) {
+    fn render_logs(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
         let io = ui.io();
 
         let [dw, dh] = io.display_size;
@@ -201,7 +202,7 @@ impl PracticeTool {
 }
 
 impl ImguiRenderLoop for PracticeTool {
-    fn render(&mut self, ui: &mut imgui::Ui) {
+    fn render(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
         if self.config.settings.display.keyup() {
             self.is_shown = !self.is_shown;
             if !self.is_shown {
@@ -211,9 +212,9 @@ impl ImguiRenderLoop for PracticeTool {
 
         if self.is_shown {
             self.pointers.mouse_enable.write(1u8);
-            self.render_visible(ui);
+            self.render_visible(ui, flags);
         } else {
-            self.render_closed(ui);
+            self.render_closed(ui, flags);
         }
 
         for w in &mut self.widgets {
@@ -225,16 +226,7 @@ impl ImguiRenderLoop for PracticeTool {
                 .retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
         }
 
-        // for w in &mut self.widgets_stack {
-        //     if let Some(logs) = w.lock().log() {
-        //         let now = Instant::now();
-        //         self.log.extend(logs.into_iter().map(|l| (now.clone(), l)));
-        //     }
-        //     self.log
-        //         .retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
-        // }
-
-        self.render_logs(ui);
+        self.render_logs(ui, flags);
     }
 }
 

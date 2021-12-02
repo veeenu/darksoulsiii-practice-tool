@@ -37,15 +37,15 @@ pub(crate) struct PointerChains {
 
 pub(crate) struct BaseAddresses {
     // offsets from base_b
-    pub base_b: usize,
+    pub world_chr_man: usize,
     pub base_d: usize,
-    pub base_f: usize,
+    pub sprj_debug_event: usize,
     pub debug: usize,
     pub grend: usize,
     pub xa: u32,
 
     // hitbox things
-    pub base_z: u64,
+    pub world_chr_man_dbg: u64,
     pub base_hbd: u64,
 
     pub offs_deathcam: u64,
@@ -72,49 +72,49 @@ pub(crate) struct BaseAddresses {
 }
 
 const VER104: BaseAddresses = BaseAddresses {
-    base_b: 0x1446c5dc8,
+    world_chr_man: 0x1446c5dc8,
     base_d: 0x1446a09f8,
-    base_f: 0x144697d88,
+    sprj_debug_event: 0x144697d88,
     debug: 0x1446c5eb8,
     grend: 0x1444bb000,
     xa: 0x1f70,
-    base_z: 0x1446C5EE8,
+    world_chr_man_dbg: 0x1446C5EE8,
     base_hbd: 0x1446C3AD0,
 
     offs_deathcam: 0x88,           // deathcam
     offs_no_goods_consume: 0x1ECA, // no goods consume
     offs_speed: 0xA38,             // speed
-    offs_player_exterminate: 1,    // player exterminate
-    offs_all_no_damage: 9,         // all no damage
-    offs_no_update_ai: 9 + 4,      // no update ai
+    offs_player_exterminate: 0x1,  // player exterminate
+    offs_all_no_damage: 0x9,       // all no damage
+    offs_no_update_ai: 0xD,        // no update ai
 
     mesh_lo: 0x1446C3BBC,            // mesh (low hit)
     mesh_hi: 0x1446C3BBD,            // mesh (high hit)
     instaqo: 0x1446A9280,            // insta qo
     version_string_ptr: 0x14288C422, // version string
     base_souls: 0x144704268,         // souls base ptr
-    item_spawn: (0x1407abc00, 0x1446af280, 0),
+    item_spawn: (0x1407abc00, 0x1446af280, 0x1446c5dc8),
     mouse_enable: (0x1446A9280, 0x54),
     version: "1.04",
     format_string: 0x142952940,
 };
 
 const VER108: BaseAddresses = BaseAddresses {
-    base_b: 0x14472CF58,
+    world_chr_man: 0x14472CF58,
     base_d: 0x144707b58,
-    base_f: 0x1446fee88,
+    sprj_debug_event: 0x1446fee88,
     debug: 0x14472d049,
     grend: 0x14451b608,
     xa: 0x1f80,
-    base_z: 0x14472D078,
+    world_chr_man_dbg: 0x14472D078,
     base_hbd: 0x14472AC60,
 
     offs_deathcam: 0x88,             // deathcam
     offs_no_goods_consume: 0x1EDA,   // no goods consume
     offs_speed: 0xA38,               // speed
     offs_player_exterminate: 1,      // player exterminate
-    offs_all_no_damage: 9,           // all no damage
-    offs_no_update_ai: 9 + 3,        // no update ai
+    offs_all_no_damage: 0x9,         // all no damage
+    offs_no_update_ai: 0xD,          // no update ai
     mesh_lo: 0x14472AD4C,            // mesh (low hit)
     mesh_hi: 0x14472AD4D,            // mesh (high hit)
     instaqo: 0x1447103D8,            // insta qo
@@ -127,21 +127,21 @@ const VER108: BaseAddresses = BaseAddresses {
 };
 
 const VER112: BaseAddresses = BaseAddresses {
-    base_b: 0x144763518,
+    world_chr_man: 0x144763518,
     base_d: 0x14473e120,
-    base_f: 0x144735418,
+    sprj_debug_event: 0x144735418,
     debug: 0x144763608,
     grend: 0x144550cf0,
     xa: 0x1f88,
-    base_z: 0x144763638,
+    world_chr_man_dbg: 0x144763638,
     base_hbd: 0x144761220,
 
     offs_deathcam: 0x90,             // deathcam
     offs_no_goods_consume: 0x1EE2,   // no goods consume
     offs_speed: 0xA58,               // speed
     offs_player_exterminate: 1,      // player exterminate
-    offs_all_no_damage: 9,           // all no damage
-    offs_no_update_ai: 9 + 4,        // no update ai
+    offs_all_no_damage: 0x9,         // all no damage
+    offs_no_update_ai: 0xD,          // no update ai
     mesh_lo: 0x14476130C,            // mesh (low hit)
     mesh_hi: 0x14476130D,            // mesh (high hit)
     instaqo: 0x144746988,            // insta qo
@@ -154,21 +154,21 @@ const VER112: BaseAddresses = BaseAddresses {
 };
 
 const VER115: BaseAddresses = BaseAddresses {
-    base_b: 0x144768e78,
+    world_chr_man: 0x144768e78,
     base_d: 0x144743a80,
-    base_f: 0x14473ad78,
+    sprj_debug_event: 0x14473ad78,
     debug: 0x144768f68,
     grend: 0x144555cf0,
     xa: 0x1f90,
-    base_z: 0x144768F98,
+    world_chr_man_dbg: 0x144768F98,
     base_hbd: 0x144766B80,
 
     offs_deathcam: 0x90,             // deathcam
     offs_no_goods_consume: 0x1EEA,   // no goods consume
     offs_speed: 0xA58,               // speed
     offs_player_exterminate: 1,      // player exterminate
-    offs_all_no_damage: 9,           // all no damage
-    offs_no_update_ai: 9 + 4,        // no update ai
+    offs_all_no_damage: 0x9,         // all no damage
+    offs_no_update_ai: 0xD,          // no update ai
     mesh_lo: 0x144766C6C,            // mesh (low hit)
     mesh_hi: 0x144766C6D,            // mesh (high hit)
     instaqo: 0x14474C2E8,            // insta qo
@@ -212,13 +212,13 @@ pub(crate) fn detect_version() -> Option<BaseAddresses> {
 impl From<BaseAddresses> for PointerChains {
     fn from(b: BaseAddresses) -> Self {
         let BaseAddresses {
-            base_b,
+            world_chr_man,
             base_d,
-            base_f,
+            sprj_debug_event,
             debug,
             grend,
             xa,
-            base_z,
+            world_chr_man_dbg,
             base_hbd,
             base_souls,
             item_spawn,
@@ -240,29 +240,30 @@ impl From<BaseAddresses> for PointerChains {
 
         PointerChains {
             all_no_damage: bitflag!(0b1; debug + offs_all_no_damage as usize),
-            no_death: bitflag!(0b10; base_b, 0x80, xa as _, 0x18, 0x1c0),
+            no_death: bitflag!(0b100; world_chr_man, 0x80, xa as _, 0x18, 0x1c0),
             one_shot: bitflag!(0b1; debug + offs_player_exterminate as usize),
-            inf_stamina: bitflag!(0b10000; base_b, 0x80, xa as _, 0x18, 0x1c0),
-            inf_focus: bitflag!(0b100000; base_b, 0x80, xa as _, 0x18, 0x1c0),
-            inf_consumables: bitflag!(0b1000; base_b, 0x80, offs_no_goods_consume as _),
-            deathcam: bitflag!(0b1; base_b, offs_deathcam as usize),
-            evt_draw: bitflag!(0b1; base_f, 0xa8),
-            evt_disable: bitflag!(0b1; base_f, 0xd4),
+            inf_stamina: bitflag!(0b10000; world_chr_man, 0x80, xa as _, 0x18, 0x1c0),
+            inf_focus: bitflag!(0b100000; world_chr_man, 0x80, xa as _, 0x18, 0x1c0),
+            inf_consumables: bitflag!(0b1000; world_chr_man, 0x80, offs_no_goods_consume as _),
+            deathcam: bitflag!(0b1; world_chr_man, offs_deathcam as usize),
+            evt_draw: bitflag!(0b1; sprj_debug_event, 0xa8),
+            evt_disable: bitflag!(0b1; sprj_debug_event, 0xd4),
             ai_disable: bitflag!(0b1; debug + offs_no_update_ai as usize),
             rend_chr: bitflag!(0b1; grend + 2),
             rend_obj: bitflag!(0b1; grend + 1),
             rend_map: bitflag!(0b1; grend),
             rend_mesh_hi: bitflag!(0b1; mesh_hi as usize),
             rend_mesh_lo: bitflag!(0b1; mesh_lo as usize),
-            all_draw_hit: bitflag!(0b1; base_z as usize, 0x66),
-            ik_foot_ray: bitflag!(0b1; base_z as usize, 0x6B),
+            all_draw_hit: bitflag!(0b1; world_chr_man_dbg as usize, 0x66),
+            ik_foot_ray: bitflag!(0b1; world_chr_man_dbg as usize, 0x6B),
             debug_sphere_1: bitflag!(0b1; base_hbd as usize, 0x30),
             debug_sphere_2: bitflag!(0b1; base_hbd as usize, 0x31),
-            gravity: bitflag!(0b1; base_d, 0x60, 0x48),
-            speed: pointer_chain!(base_b, 0x80, xa as _, 0x28, offs_speed as _),
+            // gravity: bitflag!(0b1; base_d, 0x60, 0x48),
+            gravity: bitflag!(0b1000000; world_chr_man, 0x80, 0x1a08),
+            speed: pointer_chain!(world_chr_man, 0x80, xa as _, 0x28, offs_speed as _),
             position: (
-                pointer_chain!(base_b, 0x40, 0x28, 0x74),
-                pointer_chain!(base_b, 0x40, 0x28, 0x80),
+                pointer_chain!(world_chr_man, 0x40, 0x28, 0x74),
+                pointer_chain!(world_chr_man, 0x40, 0x28, 0x80),
             ),
             souls: pointer_chain!(base_souls as _, 0x3d0, 0x74),
             item_spawn,

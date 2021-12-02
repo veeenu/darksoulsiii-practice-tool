@@ -38,7 +38,7 @@ trait Renderer {
 }
 
 pub trait ImguiRenderLoop {
-    fn render(&mut self, ui: &mut imgui_dx11::imgui::Ui);
+    fn render(&mut self, ui: &mut imgui_dx11::imgui::Ui, flags: &ImguiRenderLoopFlags);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,10 +88,13 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
             imgui_ctx.io_mut().nav_active = true;
             imgui_ctx.io_mut().nav_visible = true;
 
+            let flags = ImguiRenderLoopFlags { focused: true };
+
             Mutex::new(Box::new(ImguiRenderer {
                 engine,
                 render_loop,
                 wnd_proc,
+                flags,
             }))
         })
         .lock();
@@ -222,6 +225,14 @@ unsafe extern "system" fn imgui_wnd_proc(
                 io.mouse_wheel_h += (GET_WHEEL_DELTA_WPARAM(wparam) as f32) / (WHEEL_DELTA as f32);
             }
             WM_CHAR => io.add_input_character(wparam as u8 as char),
+            WM_ACTIVATE => {
+                debug!("WM_ACTIVATE {:x} {:x}", wparam, lparam);
+                if LOWORD(wparam as _) == WA_INACTIVE {
+                    imgui_renderer.flags.focused = false;
+                } else {
+                    imgui_renderer.flags.focused = true;
+                }
+            }
             _ => {}
         }
 
@@ -243,11 +254,15 @@ struct ImguiRenderer {
     engine: imgui_dx11::RenderEngine,
     render_loop: Box<dyn ImguiRenderLoop>,
     wnd_proc: WndProcType,
+    flags: ImguiRenderLoopFlags,
 }
 
 impl ImguiRenderer {
     fn render(&mut self) {
-        if let Err(e) = self.engine.render(|ui| self.render_loop.render(ui)) {
+        if let Err(e) = self
+            .engine
+            .render(|ui| self.render_loop.render(ui, &self.flags))
+        {
             error!("ImGui renderer error: {:?}", e);
         }
     }
@@ -259,6 +274,10 @@ impl ImguiRenderer {
 
 unsafe impl Send for ImguiRenderer {}
 unsafe impl Sync for ImguiRenderer {}
+
+pub struct ImguiRenderLoopFlags {
+    pub focused: bool,
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Function address finders
