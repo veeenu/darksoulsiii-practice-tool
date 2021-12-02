@@ -1,3 +1,4 @@
+// An attempt at hooking DirectInput8 for redirecting input
 use std::ffi::c_void;
 use std::ptr::null_mut;
 

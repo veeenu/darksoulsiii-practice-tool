@@ -1,3 +1,5 @@
+# Parse the item ID tree and store the data structure into a JSON file.
+
 import json
 import pprint
 
