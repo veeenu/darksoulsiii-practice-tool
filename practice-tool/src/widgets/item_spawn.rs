@@ -1,106 +1,234 @@
-use std::cmp::Ordering;
-use std::path::PathBuf;
+use std::borrow::Cow;
+use std::fmt::Display;
+use std::lazy::SyncLazy;
 
-use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, WindowFlags};
+use dynasmrt::{dynasm, DynasmApi};
+use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, Slider, WindowFlags};
+use log::{debug, error};
+use serde::de::Visitor;
+use serde::{Deserialize, Deserializer};
+use winapi::um::{errhandlingapi, memoryapi, processthreadsapi, synchapi};
 
-use crate::util::{get_key_code, KeyState};
+use crate::memedit::Bitflag;
+use crate::util::KeyState;
 
 use super::Widget;
 
-const SFM_TAG: &'static str = "##savefile-manager";
+const ISP_TAG: &'static str = "##item-spawn";
+static ITEM_ID_TREE: SyncLazy<ItemIDTree> =
+    SyncLazy::new(|| serde_json::from_str(include_str!("item_ids.json")).unwrap());
 
-#[derive(Debug)]
-pub(crate) struct ErroredSavefileManagerInner {
-    error: String,
+static INFUSION_TYPES: [(u32, &'static str); 16] = [
+    (0, "Normal"),
+    (100, "Heavy"),
+    (200, "Sharp"),
+    (300, "Refined"),
+    (400, "Simple"),
+    (500, "Crystal"),
+    (600, "Fire"),
+    (700, "Chaos"),
+    (800, "Lightning"),
+    (900, "Deep"),
+    (1000, "Dark"),
+    (1100, "Poison"),
+    (1200, "Blood"),
+    (1300, "Raw"),
+    (1400, "Blessed"),
+    (1500, "Hollow"),
+];
+
+static UPGRADES: [(u32, &'static str); 11] = [
+    (0, "+0"),
+    (1, "+1"),
+    (2, "+2"),
+    (3, "+3"),
+    (4, "+4"),
+    (5, "+5"),
+    (6, "+6"),
+    (7, "+7"),
+    (8, "+8"),
+    (9, "+9"),
+    (10, "+10"),
+];
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum ItemIDTree {
+    Node {
+        node: String,
+        children: Vec<ItemIDTree>,
+    },
+    Leaf {
+        id: HexU32,
+        desc: String,
+    },
 }
 
-impl ErroredSavefileManagerInner {
-    pub fn new(error: String) -> Self {
-        ErroredSavefileManagerInner { error }
+#[derive(Debug)]
+struct Stack<'a> {
+    stack: Vec<(&'a ItemIDTree, usize)>,
+}
+
+impl<'a> Stack<'a> {
+    fn new(tree: &'a ItemIDTree) -> Self {
+        Stack {
+            stack: vec![(tree, 0)],
+        }
+    }
+
+    fn enter(&mut self, idx: usize) {
+        let (last_tree, last_idx) = self.stack.last_mut().unwrap();
+        match last_tree {
+            ItemIDTree::Node { children, .. } => {
+                if idx < children.len() {
+                    *last_idx = idx;
+                    if let ItemIDTree::Node { .. } = children[idx] {
+                        self.stack.push((&children[idx], 0));
+                    }
+                }
+            }
+            ItemIDTree::Leaf { .. } => unreachable!(),
+        }
+    }
+
+    fn exit(&mut self) {
+        if self.stack.len() > 1 {
+            self.stack.pop();
+        }
+    }
+
+    fn current(&self) -> Option<&ItemIDTree> {
+        match self.stack.last()? {
+            &(ItemIDTree::Node { children, .. }, idx) => {
+                if idx >= children.len() {
+                    None
+                } else {
+                    Some(&children[idx])
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn values(&self) -> impl IntoIterator<Item = (usize, bool, &ItemIDTree)> {
+        let (last_tree, last_idx) = self.stack.last().unwrap();
+        match last_tree {
+            ItemIDTree::Node { children, .. } => children
+                .iter()
+                .enumerate()
+                .map(|(idx, node)| (idx, idx == *last_idx, node)),
+            ItemIDTree::Leaf { .. } => unreachable!(), // no Leaf is ever pushed on the stack
+        }
+    }
+
+    fn breadcrumbs(&self) -> String {
+        if self.stack.len() == 1 {
+            String::from(" / ")
+        } else {
+            let mut breadcrumbs = String::new();
+            for e in self.stack[..self.stack.len()].iter().skip(1) {
+                breadcrumbs.extend(" / ".chars());
+                breadcrumbs.extend(match e {
+                    (ItemIDTree::Node { node, .. }, _) => node.chars(),
+                    _ => unreachable!(),
+                });
+            }
+            breadcrumbs
+        }
     }
 }
 
-impl Widget for ErroredSavefileManagerInner {
-    fn render(&mut self, ui: &imgui::Ui) {
-        ui.text(&self.error);
-    }
-}
-
 #[derive(Debug)]
-pub(crate) struct SavefileManager {
+pub(crate) struct ItemSpawner<'a> {
     label: String,
     key_back: KeyState,
     key_close: KeyState,
     key_load: KeyState,
-    dir_stack: DirStack,
-    savefile_path: PathBuf,
+    stack: Stack<'a>,
     breadcrumbs: String,
-    log: Option<String>,
+    spawn_instance: ItemSpawnInstance,
+    sentinel: Bitflag<u8>,
+    infusion_idx: usize,
+    upgrade_idx: usize,
+    log: Option<Vec<String>>,
 }
 
-impl SavefileManager {
+impl<'a> ItemSpawner<'a> {
     pub(crate) fn new(
+        addrs: (u64, u64, u64),
+        sentinel: Bitflag<u8>,
         key_load: KeyState,
         key_back: KeyState,
         key_close: KeyState,
-    ) -> Box<dyn Widget> {
-        match SavefileManager::new_inner(key_load, key_back, key_close) {
-            Ok(i) => Box::new(i) as _,
-            Err(i) => Box::new(i) as _,
-        }
-    }
+    ) -> Self {
+        let label = format!("Item Spawn (spawn with {})", key_load);
+        let stack = Stack::new(&ITEM_ID_TREE);
 
-    fn new_inner(
-        key_load: KeyState,
-        key_back: KeyState,
-        key_close: KeyState,
-    ) -> Result<Self, ErroredSavefileManagerInner> {
-        let label = format!("Savefile manager ({})", key_load);
-        let mut savefile_path = get_savefile_path().map_err(|e| {
-            ErroredSavefileManagerInner::new(format!("Could not find savefile path: {}", e))
-        })?;
+        let spawn_instance = ItemSpawnInstance {
+            addrs,
+            qty: 1,
+            durability: 100,
+            item_id: 0,
+            infusion: 0,
+            upgrade: 0,
+        };
 
-        let dir_stack = DirStack::new(&savefile_path).map_err(|e| {
-            ErroredSavefileManagerInner::new(format!("Couldn't construct file browser: {}", e))
-        })?;
-
-        savefile_path.push("DS30000.sl2");
-
-        Ok(SavefileManager {
+        ItemSpawner {
             label,
             key_back,
             key_close,
             key_load,
-            dir_stack,
-            savefile_path,
+            stack,
             log: None,
             breadcrumbs: " /".to_string(),
-        })
+            spawn_instance,
+            sentinel,
+            infusion_idx: 0,
+            upgrade_idx: 0,
+        }
     }
 
-    fn load_savefile(&mut self) {
-        let src_path = self.dir_stack.current();
-        if src_path.is_file() {
-            self.log = match load_savefile(src_path, &self.savefile_path) {
-                Ok(()) => Some(format!(
-                    "Loaded {} / {}",
-                    self.breadcrumbs,
-                    src_path.file_name().unwrap().to_str().unwrap()
-                )),
-                Err(e) => Some(format!("Error loading savefile: {}", e)),
-            };
+    fn spawn_item(&mut self) {
+        let id = if let Some(ItemIDTree::Leaf { id, desc }) = self.stack.current() {
+            Some((id.0, desc.clone()))
+        } else {
+            None
+        };
+
+        if self.sentinel.get().is_none() {
+            self.write_log("Not spawning item when not in game".into());
+            return;
         }
+
+        if let Some((id, desc)) = id {
+            self.spawn_instance.item_id = id;
+            self.spawn_instance.infusion = INFUSION_TYPES[self.infusion_idx].0;
+            self.spawn_instance.upgrade = UPGRADES[self.upgrade_idx].0;
+            self.write_log(format!("Spawning {}: {}", desc, self.spawn_instance));
+            self.spawn_instance.spawn();
+        }
+    }
+
+    fn write_log(&mut self, log: String) {
+        let logs = self.log.take();
+        self.log = match logs {
+            Some(mut v) => {
+                v.push(log);
+                Some(v)
+            }
+            None => Some(vec![log]),
+        };
     }
 }
 
-impl Widget for SavefileManager {
+impl<'a> Widget for ItemSpawner<'a> {
     fn render(&mut self, ui: &imgui::Ui) {
         if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
-            ui.open_popup(SFM_TAG);
+            ui.open_popup(ISP_TAG);
         }
         let [cx, cy] = ui.cursor_pos();
         let [wx, wy] = ui.window_pos();
-        let [x, y] = [cx + wx, cy + wy];
+        let [x, y] = [cx + wx, cy + wy - super::BUTTON_HEIGHT];
         unsafe {
             imgui_sys::igSetNextWindowPos(
                 imgui_sys::ImVec2 { x, y },
@@ -112,7 +240,7 @@ impl Widget for SavefileManager {
         let style_tokens =
             [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, [0., 0., 0., 0.])];
 
-        if let Some(_token) = PopupModal::new(SFM_TAG)
+        if let Some(_token) = PopupModal::new(ISP_TAG)
             .flags(
                 WindowFlags::NO_TITLE_BAR
                     | WindowFlags::NO_RESIZE
@@ -122,38 +250,64 @@ impl Widget for SavefileManager {
             )
             .begin_popup(ui)
         {
-            ChildWindow::new("##savefile-manager-breadcrumbs")
+            ChildWindow::new("##item-spawn-breadcrumbs")
                 .size([240., 14.])
                 .build(ui, || {
                     ui.text(&self.breadcrumbs);
                     ui.set_scroll_x(ui.scroll_max_x());
                 });
 
-            ListBox::new(SFM_TAG).size([240., 100.]).build(ui, || {
-                if Selectable::new(format!(".. Up one dir ({})", self.key_back)).build(ui) {
-                    self.dir_stack.exit();
-                }
-
-                let mut goto: Option<usize> = None;
-                for (idx, is_selected, i) in self.dir_stack.values() {
-                    if Selectable::new(i).selected(is_selected).build(ui) {
-                        goto = Some(idx);
+            ListBox::new("##item-spawn-list")
+                .size([240., 100.])
+                .build(ui, || {
+                    if Selectable::new(format!(".. Up one dir ({})", self.key_back)).build(ui) {
+                        self.stack.exit();
                     }
-                }
 
-                if let Some(idx) = goto {
-                    self.dir_stack.goto(idx);
-                    self.dir_stack.enter();
-                    self.breadcrumbs = self.dir_stack.breadcrumbs();
-                }
-            });
+                    let mut goto: Option<usize> = None;
+                    for (idx, is_selected, i) in self.stack.values() {
+                        let repr = match i {
+                            ItemIDTree::Node { node, .. } => node,
+                            ItemIDTree::Leaf { desc, .. } => desc,
+                        };
+                        if Selectable::new(repr).selected(is_selected).build(ui) {
+                            goto = Some(idx);
+                        }
+                    }
 
-            if ui.button_with_size(format!("Load savefile ({})", self.key_load), [240., 20.]) {
-                self.load_savefile();
+                    if let Some(idx) = goto {
+                        self.stack.enter(idx);
+                        self.breadcrumbs = self.stack.breadcrumbs();
+                    }
+                });
+
+            Slider::new("Qty", 0, 256).build(ui, &mut self.spawn_instance.qty);
+            Slider::new("Dur", 0, 9999).build(ui, &mut self.spawn_instance.durability);
+
+            ui.set_next_item_width(240.);
+
+            ui.combo(
+                "##item-spawn-infusion",
+                &mut self.infusion_idx,
+                &INFUSION_TYPES,
+                |(_, label)| Cow::Borrowed(label),
+            );
+
+            ui.set_next_item_width(240.);
+
+            ui.combo(
+                "##item-spawn-upgrade",
+                &mut self.upgrade_idx,
+                &UPGRADES,
+                |(_, label)| Cow::Borrowed(label),
+            );
+
+            if ui.button_with_size(format!("Spawn item ({})", self.key_load), [240., 20.]) {
+                self.spawn_item();
             }
 
-            if ui.button_with_size(format!("Close ({})", self.key_close), [240., 20.])
-                || self.key_close.keyup()
+            if self.key_close.keyup()
+                || ui.button_with_size(format!("Close ({})", self.key_close), [240., 20.])
             {
                 ui.close_current_popup();
             }
@@ -164,169 +318,190 @@ impl Widget for SavefileManager {
 
     fn interact(&mut self) {
         if self.key_back.keyup() {
-            self.dir_stack.exit();
-            self.breadcrumbs = self.dir_stack.breadcrumbs();
+            self.stack.exit();
+            self.breadcrumbs = self.stack.breadcrumbs();
         } else if self.key_load.keyup() {
-            self.load_savefile();
+            self.spawn_item();
         }
     }
 
     fn log(&mut self) -> Option<Vec<String>> {
-        let log_entry = self.log.take();
-        log_entry.map(|e| vec![e])
+        self.log.take()
     }
 }
 
 #[derive(Debug)]
-struct DirEntry {
-    list: Vec<(PathBuf, String)>,
-    cursor: usize,
+struct HexU32(u32);
+
+impl Display for HexU32 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "0x{:x}", self.0)
+    }
 }
 
-impl DirEntry {
-    fn new(path: &PathBuf) -> DirEntry {
-        let mut list = DirStack::ls(path).unwrap();
+impl<'de> Deserialize<'de> for HexU32 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct HexVisitor;
 
-        list.sort_by(|a, b| {
-            let (ad, bd) = (a.is_dir(), b.is_dir());
+        impl<'de> Visitor<'de> for HexVisitor {
+            type Value = HexU32;
 
-            if ad == bd {
-                a.cmp(b)
-            } else if ad && !bd {
-                Ordering::Less
-            } else {
-                Ordering::Greater
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a 4-byte (8 chars) hexadecimal string")
+            }
+
+            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                if v.len() != 8 {
+                    return Err(E::custom(format!(
+                        "Invalid hex string length {}: {}",
+                        v.len(),
+                        v
+                    )));
+                }
+
+                let mut bytes = [0u8; 4];
+                hex::decode_to_slice(v, &mut bytes[..])
+                    .map_err(|e| E::custom(format!("Hex decode error for {}: {}", v, e)))?;
+                Ok(HexU32(u32::from_be_bytes(bytes)))
+            }
+        }
+
+        deserializer.deserialize_any(HexVisitor)
+    }
+}
+
+#[derive(Debug)]
+struct ItemSpawnInstance {
+    addrs: (u64, u64, u64),
+    qty: u32,
+    durability: u32,
+    item_id: u32,
+    infusion: u32,
+    upgrade: u32,
+}
+
+impl Display for ItemSpawnInstance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:08x} (qty={}, dur={}, infusion={}, upgrade={})",
+            self.item_id, self.qty, self.durability, self.infusion, self.upgrade
+        )
+    }
+}
+
+impl ItemSpawnInstance {
+    fn spawn(&self) {
+        let mut ops = dynasmrt::x64::Assembler::new().unwrap();
+        let item_id = self.item_id + self.infusion + self.upgrade;
+        dynasm!(ops
+            ; .arch x64
+            ; sub rsp, 0x48
+            ; lea r8d, [rsp + 0x20]
+            ; lea rdx, [rsp + 0x30]
+            ; mov eax, DWORD self.qty as _
+            ; mov ebx, DWORD item_id as _
+            ; mov esi, DWORD self.durability as _
+            ; mov DWORD [rsp + 0x30], 1u32 as _
+            ; mov [rsp + 0x3c], esi
+            ; mov [rsp + 0x34], ebx
+            ; mov [rsp + 0x38], eax
+            ; mov rax, QWORD self.addrs.1 as i64
+            ; mov rax, [rax]
+            ; mov rbx, rax
+            ; mov rax, QWORD self.addrs.2 as i64
+            ; mov rax, [rax]
+            ; mov rbp, [rax + 0x80]
+            ; mov rcx, rbx
+            ; mov rsi, QWORD self.addrs.0 as _
+            ; call rsi
+            ; add rsp, BYTE 0x48
+            ; ret
+        );
+
+        std::thread::spawn(move || {
+            let buf = ops.finalize().unwrap();
+            let bufp: &[u8] = &buf;
+            debug!(
+                "Buffer: {}",
+                (0..105)
+                    .into_iter()
+                    .map(|i| format!("{:02x}", bufp[i]))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            );
+            let hproc = unsafe { processthreadsapi::GetCurrentProcess() };
+            let addr = unsafe {
+                memoryapi::VirtualAllocEx(
+                    hproc,
+                    std::ptr::null_mut(),
+                    buf.size(),
+                    0x1000 | 0x2000, // MEM_COMMIT | MEM_RESERVE
+                    0x40,            // PAGE_EXECUTE_READWRITE
+                )
+            };
+
+            if addr == std::ptr::null_mut() {
+                error!("VirtualAllocEx: {:x}", unsafe {
+                    errhandlingapi::GetLastError()
+                });
+                return;
+            }
+
+            let mut bw = 0usize;
+            let ret = unsafe {
+                memoryapi::WriteProcessMemory(
+                    hproc,
+                    addr,
+                    std::mem::transmute(bufp.as_ptr()),
+                    buf.size(),
+                    &mut bw,
+                )
+            };
+
+            if ret == 0 {
+                error!("WriteProcessMemory: {:x}", unsafe {
+                    errhandlingapi::GetLastError()
+                });
+                return;
+            }
+
+            let thread = unsafe {
+                processthreadsapi::CreateRemoteThreadEx(
+                    hproc,
+                    std::ptr::null_mut(),
+                    256,
+                    Some(std::mem::transmute(addr)),
+                    std::ptr::null_mut(),
+                    0,
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                )
+            };
+
+            if thread == std::ptr::null_mut() {
+                error!("CreateRemoteThreadEx: {:x}", unsafe {
+                    errhandlingapi::GetLastError()
+                });
+                return;
+            }
+
+            unsafe { synchapi::WaitForSingleObject(thread, 0xffffffff) };
+
+            let ret = unsafe { memoryapi::VirtualFreeEx(hproc, addr, 0, 0x8000) };
+
+            if ret == 0 {
+                error!("VirtualFreeEx: {:x}", unsafe {
+                    errhandlingapi::GetLastError()
+                });
+                return;
             }
         });
-
-        let list = list
-            .into_iter()
-            .map(|a| {
-                let repr = if a.is_dir() {
-                    format!("+  {}", a.file_name().unwrap().to_str().unwrap())
-                } else {
-                    format!("   {}", a.file_name().unwrap().to_str().unwrap())
-                };
-                (a, repr)
-            })
-            .collect();
-
-        DirEntry { list, cursor: 0 }
     }
-
-    fn values(&self) -> impl IntoIterator<Item = (usize, bool, &str)> {
-        self.list
-            .iter()
-            .enumerate()
-            .map(|(i, f)| (i, i == self.cursor, f.1.as_str()))
-    }
-
-    fn current(&self) -> &PathBuf {
-        &self.list[self.cursor].0
-    }
-
-    fn goto(&mut self, idx: usize) {
-        if idx < self.list.len() {
-            self.cursor = idx;
-        }
-    }
-}
-
-#[derive(Debug)]
-struct DirStack {
-    stack: Vec<DirEntry>,
-}
-
-impl DirStack {
-    fn new(path: &PathBuf) -> Result<Self, String> {
-        let stack = vec![DirEntry::new(path)];
-
-        Ok(DirStack { stack })
-    }
-
-    fn enter(&mut self) {
-        let new_entry = {
-            let current_entry = self.stack.last().unwrap().current();
-            if current_entry.is_dir() {
-                Some(DirEntry::new(&current_entry))
-            } else {
-                None
-            }
-        };
-
-        if let Some(e) = new_entry {
-            self.stack.push(e);
-        }
-    }
-
-    fn exit(&mut self) -> bool {
-        if self.stack.len() <= 1 {
-            true
-        } else {
-            self.stack.pop().unwrap();
-            false
-        }
-    }
-
-    fn breadcrumbs(&self) -> String {
-        if self.stack.len() == 1 {
-            String::from(" / ")
-        } else {
-            let mut breadcrumbs = String::new();
-            for e in self.stack[..self.stack.len() - 1].iter() {
-                breadcrumbs.extend(" / ".chars());
-                breadcrumbs.extend(e.current().file_name().unwrap().to_str().unwrap().chars());
-            }
-            breadcrumbs
-        }
-    }
-
-    fn values(&self) -> impl IntoIterator<Item = (usize, bool, &str)> {
-        self.stack.last().unwrap().values()
-    }
-
-    fn current(&self) -> &PathBuf {
-        self.stack.last().unwrap().current()
-    }
-
-    fn goto(&mut self, idx: usize) {
-        self.stack.last_mut().unwrap().goto(idx);
-    }
-
-    // TODO SAFETY
-    // FS errors would be permission denied (which shouldn't happen but should be reported)
-    // and not a directory (which doesn't happen because we checked for is_dir).
-    // For the moment, I just unwrap.
-    fn ls(path: &PathBuf) -> Result<Vec<PathBuf>, String> {
-        Ok(std::fs::read_dir(path)
-            .map_err(|e| format!("{}", e))?
-            .filter_map(Result::ok)
-            .map(|f| f.path())
-            .collect())
-    }
-}
-
-fn get_savefile_path() -> Result<PathBuf, String> {
-    let re = regex::Regex::new(r"^[a-f0-9]+$").unwrap();
-    let savefile_path: PathBuf = [
-        std::env::var("APPDATA")
-            .map_err(|e| format!("{}", e))?
-            .as_str(),
-        "DarkSoulsIII",
-    ]
-    .iter()
-    .collect();
-    std::fs::read_dir(&savefile_path)
-        .map_err(|e| format!("{}", e))?
-        .filter_map(|e| e.ok())
-        .find(|e| re.is_match(&e.file_name().to_string_lossy()) && e.path().is_dir())
-        .map(|e| e.path())
-        .map(PathBuf::from)
-        .ok_or_else(|| String::from("Couldn't find savefile path"))
-}
-
-fn load_savefile(src: &PathBuf, dest: &PathBuf) -> Result<(), std::io::Error> {
-    let buf = std::fs::read(src)?;
-    std::fs::write(dest, &buf)?;
-    Ok(())
 }

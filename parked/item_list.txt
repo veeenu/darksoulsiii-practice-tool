@@ -168,19 +168,19 @@ Melee weapons
 
   Greathammers
     Dragon Tooth:007E09A0
-    GARGOYLE FLAME HAMMER?:00000000
+    Gargoyle Flame Hammer (missing!):00000000
     Great Club:007B4A80
     Great Mace:007BBFB0
     Great Wooden Hammer:007C8300
     Large Club:007AFC60
     Ledo's Great Hammer:007EF400
     Morne's Great Hammer:007E7ED0
-    OLD KING'S GREAT HAMMER?:00000000
+    Old King's Great Hammer (missing!):00000000
     Pickaxe:007DE290
     Quakestone Hammer:007ECCF0
     Smough's Great Hammer:007E30B0
     Spiked Mace:007EA5E0
-    VORDT'S GREAT HAMMER?:00000000
+    Vordt's Great Hammer (missing!):00000000
 
   Spears and Pikes
     Arstor's Spear:008BEC50
@@ -376,7 +376,9 @@ Shields
     Stone Greatshield:0151D460
     Twin Dragon Greatshield:01513820
     Wolf Knight's Greatshield:01511110
-    YHORM'S GREATSHIELD?:00000000
+    Yhorm's Greatshield (missing!):00000000
+
+Armor
 
   A-C
     Alva Helm:14C4B400

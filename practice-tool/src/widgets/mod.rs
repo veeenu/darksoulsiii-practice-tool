@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use parking_lot::Mutex;
 
-pub(crate) const BUTTON_WIDTH: f32 = 180.;
+pub(crate) const BUTTON_WIDTH: f32 = 200.;
 pub(crate) const BUTTON_HEIGHT: f32 = 0.;
 
 pub(crate) mod cycle_speed;

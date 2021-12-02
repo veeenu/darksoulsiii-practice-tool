@@ -1,5 +1,6 @@
 commands = [
   { savefile_manager = "o", hotkey_back = "q", hotkey_close = "escape" },
+  { item_spawner = "u", hotkey_back = "q", hotkey_close = "escape" },
   { flag = "all_no_damage", hotkey = "1" },
   { flag = "inf_stamina", hotkey = "2" },
   { flag = "inf_focus", hotkey = "3" },

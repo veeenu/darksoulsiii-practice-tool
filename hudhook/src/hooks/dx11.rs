@@ -88,10 +88,6 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
             imgui_ctx.io_mut().nav_active = true;
             imgui_ctx.io_mut().nav_visible = true;
 
-            info!(
-                "WndProc {:?}",
-                std::mem::transmute::<_, *const c_void>(wnd_proc)
-            );
             Mutex::new(Box::new(ImguiRenderer {
                 engine,
                 render_loop,

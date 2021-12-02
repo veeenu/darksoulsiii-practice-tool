@@ -9,6 +9,7 @@ use crate::util;
 use crate::util::KeyState;
 use crate::widgets::cycle_speed::CycleSpeed;
 use crate::widgets::flag::Flag;
+use crate::widgets::item_spawn::ItemSpawner;
 use crate::widgets::position::SavePosition;
 use crate::widgets::quitout::Quitout;
 use crate::widgets::savefile_manager::SavefileManager;
@@ -32,6 +33,12 @@ pub(crate) struct Settings {
 enum CfgCommand {
     SavefileManager {
         #[serde(rename = "savefile_manager")]
+        hotkey_load: KeyState,
+        hotkey_back: KeyState,
+        hotkey_close: KeyState,
+    },
+    ItemSpawner {
+        #[serde(rename = "item_spawner")]
         hotkey_load: KeyState,
         hotkey_back: KeyState,
         hotkey_close: KeyState,
@@ -105,6 +112,17 @@ impl Config {
                     hotkey_back.clone(),
                     hotkey_close.clone(),
                 )),
+                CfgCommand::ItemSpawner {
+                    hotkey_load,
+                    hotkey_back,
+                    hotkey_close,
+                } => Some(Box::new(ItemSpawner::new(
+                    chains.item_spawn,
+                    chains.gravity.clone(),
+                    hotkey_load.clone(),
+                    hotkey_back.clone(),
+                    hotkey_close.clone(),
+                ))),
                 CfgCommand::Position { hotkey, modifier } => Some(Box::new(SavePosition::new(
                     chains.position.clone(),
                     hotkey.clone(),

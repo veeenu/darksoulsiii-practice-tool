@@ -55,7 +55,7 @@ impl SavefileManager {
         key_back: KeyState,
         key_close: KeyState,
     ) -> Result<Self, ErroredSavefileManagerInner> {
-        let label = format!("Savefile manager ({})", key_load);
+        let label = format!("Savefiles (load with {})", key_load);
         let mut savefile_path = get_savefile_path().map_err(|e| {
             ErroredSavefileManagerInner::new(format!("Could not find savefile path: {}", e))
         })?;
