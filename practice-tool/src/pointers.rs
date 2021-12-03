@@ -29,10 +29,13 @@ pub(crate) struct PointerChains {
     pub(crate) speed: PointerChain<f32>,
     pub(crate) position: (PointerChain<f32>, PointerChain<[f32; 3]>),
     pub(crate) souls: PointerChain<u32>,
-    pub(crate) item_spawn: (u64, u64, u64),
     pub(crate) quitout: PointerChain<u8>,
     pub(crate) mouse_enable: PointerChain<u8>,
     pub(crate) format_string: PointerChain<[u16; 90]>,
+
+    pub(crate) world_chr_man: usize,
+    pub(crate) map_item_man: u64,
+    pub(crate) spawn_item_func_ptr: u64,
 }
 
 pub(crate) struct BaseAddresses {
@@ -62,13 +65,15 @@ pub(crate) struct BaseAddresses {
     pub instaqo: u64,
     pub version_string_ptr: u64,
     pub base_souls: u64,
-    pub item_spawn: (u64, u64, u64),
     pub mouse_enable: (u64, u64),
 
     pub version: &'static str,
 
     // other static pointers
     pub format_string: u64,
+
+    pub map_item_man: u64,
+    pub spawn_item_func_ptr: u64,
 }
 
 const VER104: BaseAddresses = BaseAddresses {
@@ -93,10 +98,11 @@ const VER104: BaseAddresses = BaseAddresses {
     instaqo: 0x1446A9280,            // insta qo
     version_string_ptr: 0x14288C422, // version string
     base_souls: 0x144704268,         // souls base ptr
-    item_spawn: (0x1407abc00, 0x1446af280, 0x1446c5dc8),
     mouse_enable: (0x1446A9280, 0x54),
     version: "1.04",
     format_string: 0x142952940,
+    spawn_item_func_ptr: 0x1407abc00,
+    map_item_man: 0x1446af280,
 };
 
 const VER108: BaseAddresses = BaseAddresses {
@@ -120,10 +126,11 @@ const VER108: BaseAddresses = BaseAddresses {
     instaqo: 0x1447103D8,            // insta qo
     version_string_ptr: 0x1428D3F92, // version string
     base_souls: 0x1446FEE88,         // souls base ptr
-    item_spawn: (0x1407B6230, 0x1447163f0, 0x14472cf58),
     mouse_enable: (0x1447103D8, 0x54),
     version: "1.08",
     format_string: 0x142952940,
+    spawn_item_func_ptr: 0x1407B6230,
+    map_item_man: 0x1447163f0,
 };
 
 const VER112: BaseAddresses = BaseAddresses {
@@ -147,10 +154,11 @@ const VER112: BaseAddresses = BaseAddresses {
     instaqo: 0x144746988,            // insta qo
     version_string_ptr: 0x1428FD262, // version string
     base_souls: 0x144704268,         // souls base ptr
-    item_spawn: (0x1407BB750, 0x14474c9a0, 0x144763518),
     mouse_enable: (0x144746988, 0x54),
     version: "1.12",
     format_string: 0x142952940,
+    spawn_item_func_ptr: 0x1407BB750,
+    map_item_man: 0x14474c9a0,
 };
 
 const VER115: BaseAddresses = BaseAddresses {
@@ -174,10 +182,11 @@ const VER115: BaseAddresses = BaseAddresses {
     instaqo: 0x14474C2E8,            // insta qo
     version_string_ptr: 0x142900782, // version string
     base_souls: 0x144704268,         // souls base ptr
-    item_spawn: (0x1407BBA70, 0x144752300, 0x144768E78),
     mouse_enable: (0x14474C2E8, 0x54),
     version: "1.15",
     format_string: 0x142952940,
+    spawn_item_func_ptr: 0x1407BBA70,
+    map_item_man: 0x144752300,
 };
 
 fn vercmp(ptr: usize, ver: &str) -> bool {
@@ -221,7 +230,6 @@ impl From<BaseAddresses> for PointerChains {
             world_chr_man_dbg,
             base_hbd,
             base_souls,
-            item_spawn,
             offs_all_no_damage,
             offs_player_exterminate,
             offs_no_goods_consume,
@@ -233,10 +241,10 @@ impl From<BaseAddresses> for PointerChains {
             instaqo,
             format_string,
             mouse_enable,
+            spawn_item_func_ptr,
+            map_item_man,
             ..
         } = b;
-
-        let item_spawn = (item_spawn.0, item_spawn.1, item_spawn.2);
 
         PointerChains {
             all_no_damage: bitflag!(0b1; debug + offs_all_no_damage as usize),
@@ -266,7 +274,9 @@ impl From<BaseAddresses> for PointerChains {
                 pointer_chain!(world_chr_man, 0x40, 0x28, 0x80),
             ),
             souls: pointer_chain!(base_souls as _, 0x3d0, 0x74),
-            item_spawn,
+            map_item_man,
+            spawn_item_func_ptr,
+            world_chr_man,
             mouse_enable: pointer_chain!(mouse_enable.0 as _, mouse_enable.1 as _),
             quitout: pointer_chain!(instaqo as _, 0x250),
             format_string: pointer_chain!(format_string as _),

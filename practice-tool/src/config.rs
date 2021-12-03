@@ -117,7 +117,8 @@ impl Config {
                     hotkey_back,
                     hotkey_close,
                 } => Some(Box::new(ItemSpawner::new(
-                    chains.item_spawn,
+                    chains.spawn_item_func_ptr,
+                    chains.map_item_man,
                     chains.gravity.clone(),
                     hotkey_load.clone(),
                     hotkey_back.clone(),
