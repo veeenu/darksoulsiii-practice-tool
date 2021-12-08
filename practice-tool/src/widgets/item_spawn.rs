@@ -3,12 +3,9 @@ use std::ffi::c_void;
 use std::fmt::Display;
 use std::lazy::SyncLazy;
 
-use dynasmrt::{dynasm, DynasmApi};
 use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, Slider, WindowFlags};
-use log::{debug, error};
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer};
-use winapi::um::{errhandlingapi, memoryapi, processthreadsapi, synchapi};
 
 use crate::memedit::Bitflag;
 use crate::util::{get_key_code, KeyState};

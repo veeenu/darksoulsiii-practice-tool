@@ -52,8 +52,7 @@ static TRAMPOLINE: OnceCell<DXGISwapChainPresentType> = OnceCell::new();
 // Hook entry points
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static mut IMGUI_RENDER_LOOP: OnceCell<Mutex<Box<dyn ImguiRenderLoop + Send + Sync>>> =
-    OnceCell::new();
+static mut IMGUI_RENDER_LOOP: OnceCell<Box<dyn ImguiRenderLoop + Send + Sync>> = OnceCell::new();
 static IMGUI_RENDERER: OnceCell<Mutex<Box<ImguiRenderer>>> = OnceCell::new();
 
 unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
@@ -77,7 +76,7 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
             check_hresult((*p_this).GetDesc(&mut sd as *mut _));
 
             let mut engine = imgui_dx11::RenderEngine::new_with_ptrs(dev, dev_ctx, &mut *p_this);
-            let render_loop = IMGUI_RENDER_LOOP.take().unwrap().into_inner();
+            let render_loop = IMGUI_RENDER_LOOP.take().unwrap();
             let wnd_proc = std::mem::transmute::<_, WndProcType>(SetWindowLongPtrA(
                 sd.OutputWindow,
                 GWLP_WNDPROC,
@@ -131,6 +130,7 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
     }
 
     (*renderer).render();
+    drop(renderer);
 
     trampoline(p_this, sync_interval, flags)
 }
@@ -141,95 +141,105 @@ unsafe extern "system" fn imgui_wnd_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> isize {
-    if let Some(mut imgui_renderer) = IMGUI_RENDERER.get().map(Mutex::lock) {
-        let ctx = imgui_renderer.ctx();
-        let mut io = ctx.io_mut();
+    match IMGUI_RENDERER.get().map(Mutex::try_lock) {
+        Some(Some(mut imgui_renderer)) => {
+            let ctx = imgui_renderer.ctx();
+            let mut io = ctx.io_mut();
 
-        match umsg {
-            WM_KEYDOWN | WM_SYSKEYDOWN => {
-                if wparam < 256 {
-                    io.keys_down[wparam] = true;
+            match umsg {
+                WM_KEYDOWN | WM_SYSKEYDOWN => {
+                    if wparam < 256 {
+                        io.keys_down[wparam] = true;
+                    }
                 }
-            }
-            WM_KEYUP | WM_SYSKEYUP => {
-                if wparam < 256 {
-                    io.keys_down[wparam] = false;
+                WM_KEYUP | WM_SYSKEYUP => {
+                    if wparam < 256 {
+                        io.keys_down[wparam] = false;
+                    }
                 }
-            }
-            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK => {
-                // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
-                io.mouse_down[0] = true;
-                // return 1;
-            }
-            WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => {
-                // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
-                io.mouse_down[1] = true;
-                // return 1;
-            }
-            WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => {
-                // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
-                io.mouse_down[2] = true;
-                // return 1;
-            }
-            WM_XBUTTONDOWN | WM_XBUTTONDBLCLK => {
-                let btn = if GET_XBUTTON_WPARAM(wparam) == XBUTTON1 {
-                    3
-                } else {
-                    4
-                };
-                // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
-                io.mouse_down[btn] = true;
-                // return 1;
-            }
-            WM_LBUTTONUP => {
-                io.mouse_down[0] = false;
-                // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
-                // return 1;
-            }
-            WM_RBUTTONUP => {
-                io.mouse_down[1] = false;
-                // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
-                // return 1;
-            }
-            WM_MBUTTONUP => {
-                io.mouse_down[2] = false;
-                // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
-                // return 1;
-            }
-            WM_XBUTTONUP => {
-                let btn = if GET_XBUTTON_WPARAM(wparam) == XBUTTON1 {
-                    3
-                } else {
-                    4
-                };
-                io.mouse_down[btn] = false;
-                // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
-            }
-            WM_MOUSEWHEEL => {
-                io.mouse_wheel += (GET_WHEEL_DELTA_WPARAM(wparam) as f32) / (WHEEL_DELTA as f32);
-            }
-            WM_MOUSEHWHEEL => {
-                io.mouse_wheel_h += (GET_WHEEL_DELTA_WPARAM(wparam) as f32) / (WHEEL_DELTA as f32);
-            }
-            WM_CHAR => io.add_input_character(wparam as u8 as char),
-            WM_ACTIVATE => {
-                debug!("WM_ACTIVATE {:x} {:x}", wparam, lparam);
-                if LOWORD(wparam as _) == WA_INACTIVE {
-                    imgui_renderer.flags.focused = false;
-                } else {
-                    imgui_renderer.flags.focused = true;
+                WM_LBUTTONDOWN | WM_LBUTTONDBLCLK => {
+                    // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                    io.mouse_down[0] = true;
+                    // return 1;
                 }
+                WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => {
+                    // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                    io.mouse_down[1] = true;
+                    // return 1;
+                }
+                WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => {
+                    // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                    io.mouse_down[2] = true;
+                    // return 1;
+                }
+                WM_XBUTTONDOWN | WM_XBUTTONDBLCLK => {
+                    let btn = if GET_XBUTTON_WPARAM(wparam) == XBUTTON1 {
+                        3
+                    } else {
+                        4
+                    };
+                    // set_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                    io.mouse_down[btn] = true;
+                    // return 1;
+                }
+                WM_LBUTTONUP => {
+                    io.mouse_down[0] = false;
+                    // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                    // return 1;
+                }
+                WM_RBUTTONUP => {
+                    io.mouse_down[1] = false;
+                    // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                    // return 1;
+                }
+                WM_MBUTTONUP => {
+                    io.mouse_down[2] = false;
+                    // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                    // return 1;
+                }
+                WM_XBUTTONUP => {
+                    let btn = if GET_XBUTTON_WPARAM(wparam) == XBUTTON1 {
+                        3
+                    } else {
+                        4
+                    };
+                    io.mouse_down[btn] = false;
+                    // release_capture(&hook.imgui_ctx.io().mouse_down, hwnd);
+                }
+                WM_MOUSEWHEEL => {
+                    io.mouse_wheel +=
+                        (GET_WHEEL_DELTA_WPARAM(wparam) as f32) / (WHEEL_DELTA as f32);
+                }
+                WM_MOUSEHWHEEL => {
+                    io.mouse_wheel_h +=
+                        (GET_WHEEL_DELTA_WPARAM(wparam) as f32) / (WHEEL_DELTA as f32);
+                }
+                WM_CHAR => io.add_input_character(wparam as u8 as char),
+                WM_ACTIVATE => {
+                    debug!("WM_ACTIVATE {:x} {:x}", wparam, lparam);
+                    if LOWORD(wparam as _) == WA_INACTIVE {
+                        imgui_renderer.flags.focused = false;
+                    } else {
+                        imgui_renderer.flags.focused = true;
+                    }
+                    return 1;
+                }
+                _ => {}
             }
-            _ => {}
+
+            let wnd_proc = imgui_renderer.wnd_proc;
+            drop(imgui_renderer);
+
+            CallWindowProcW(Some(wnd_proc), hwnd, umsg, wparam, lparam)
         }
-
-        let wnd_proc = imgui_renderer.wnd_proc;
-        drop(imgui_renderer);
-
-        CallWindowProcW(Some(wnd_proc), hwnd, umsg, wparam, lparam)
-    } else {
-        debug!("WndProc called before hook was set");
-        0
+        Some(None) => {
+            debug!("Could not lock in WndProc");
+            DefWindowProcW(hwnd, umsg, wparam, lparam)
+        }
+        None => {
+            debug!("WndProc called before hook was set");
+            DefWindowProcW(hwnd, umsg, wparam, lparam)
+        }
     }
 }
 
@@ -382,7 +392,7 @@ where
         )
     );
 
-    IMGUI_RENDER_LOOP.get_or_init(|| Mutex::new(Box::new(t)));
+    IMGUI_RENDER_LOOP.get_or_init(|| Box::new(t));
     TRAMPOLINE.get_or_init(|| std::mem::transmute(trampoline));
 
     mh::Hook::new(
