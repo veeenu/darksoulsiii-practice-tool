@@ -55,8 +55,8 @@ pub use winapi::um::winnt::{
 #[macro_export]
 macro_rules! hudhook {
     ($hooks:expr) => {
-        use hudhook::*;
         use hudhook::log::*;
+        use hudhook::*;
 
         use std::lazy::OnceCell;
 

@@ -4,10 +4,6 @@ version = "1.2.0"
 authors = ["Andrea Venuta <venutawebdesign@gmail.com>"]
 edition = "2021"
 
-[features]
-focus = []
-item_spawn = []
-
 [[bin]]
 name = "jdsd_dsiii_practice_tool"
 path = "src/main.rs"

@@ -3,6 +3,7 @@ members = [
   "practice-tool", 
   "hudhook",
   "imgui-dx11",
+  "ccs-mod",
 ]
 
 [profile.dev]

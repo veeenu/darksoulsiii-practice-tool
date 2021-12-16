@@ -109,7 +109,7 @@ impl TryFrom<String> for KeyState {
 //     pub(crate) enter: KeyState,
 //     pub(crate) esc: KeyState,
 // }
-// 
+//
 // impl GlobalKeys {
 //     pub(crate) fn new() -> GlobalKeys {
 //         GlobalKeys {
@@ -121,27 +121,27 @@ impl TryFrom<String> for KeyState {
 //             esc: KeyState::new(get_key_code(GlobalKeys::esc()).unwrap()),
 //         }
 //     }
-// 
+//
 //     pub(crate) fn up() -> &'static str {
 //         "up"
 //     }
-// 
+//
 //     pub(crate) fn down() -> &'static str {
 //         "down"
 //     }
-// 
+//
 //     pub(crate) fn left() -> &'static str {
 //         "up"
 //     }
-// 
+//
 //     pub(crate) fn right() -> &'static str {
 //         "down"
 //     }
-// 
+//
 //     pub(crate) fn enter() -> &'static str {
 //         "return"
 //     }
-// 
+//
 //     pub(crate) fn esc() -> &'static str {
 //         "escape"
 //     }
