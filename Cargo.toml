@@ -1,9 +1,11 @@
 [workspace]
 members = [
   "practice-tool", 
-  "hudhook",
-  "imgui-dx11",
+  "lib/hudhook",
+  "lib/imgui-dx11",
+  "lib/libds3",
   "ccs-mod",
+  "xtask",
 ]
 
 [profile.dev]

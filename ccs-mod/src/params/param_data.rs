@@ -213,7 +213,7 @@ pub(crate) struct AtkParam_Npc {
     pub(crate) pad2: [u8; 12],
 }
 
-impl AtkParam_Npc { 
+impl AtkParam_Npc {
     #[allow(unused)]
     pub(crate) fn set_disable_guard(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -621,7 +621,6 @@ impl AtkParam_Npc {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield2 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -797,7 +796,7 @@ pub(crate) struct AtkParam_Pc {
     pub(crate) pad2: [u8; 12],
 }
 
-impl AtkParam_Pc { 
+impl AtkParam_Pc {
     #[allow(unused)]
     pub(crate) fn set_disable_guard(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -1205,7 +1204,6 @@ impl AtkParam_Pc {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield2 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -1265,7 +1263,7 @@ pub(crate) struct AttackElementCorrectParam {
     pub(crate) pad1: [u8; 24],
 }
 
-impl AttackElementCorrectParam { 
+impl AttackElementCorrectParam {
     #[allow(unused)]
     pub(crate) fn set_field0x00(&mut self, state: bool) {
         const FIELD_INDEX: u32 = 1 << 0;
@@ -1809,7 +1807,6 @@ impl AttackElementCorrectParam {
         const FIELD_INDEX: u32 = 1 << 31;
         (self.bitfield0 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -1976,7 +1973,7 @@ pub(crate) struct Bullet {
     pub(crate) pad2: [u8; 40],
 }
 
-impl Bullet { 
+impl Bullet {
     #[allow(unused)]
     pub(crate) fn set_follow_type0(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -2520,7 +2517,6 @@ impl Bullet {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield3 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -2850,7 +2846,7 @@ pub(crate) struct DecalParam {
     pub(crate) pad1: [u8; 8],
 }
 
-impl DecalParam { 
+impl DecalParam {
     #[allow(unused)]
     pub(crate) fn set_random_variation_num0(&mut self, state: bool) {
         const FIELD_INDEX: u32 = 1 << 0;
@@ -3938,7 +3934,6 @@ impl DecalParam {
         const FIELD_INDEX: u32 = 1 << 31;
         (self.bitfield1 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -4002,7 +3997,7 @@ pub(crate) struct EquipParamAccessory {
     pub(crate) pad3: [u8; 8],
 }
 
-impl EquipParamAccessory { 
+impl EquipParamAccessory {
     #[allow(unused)]
     pub(crate) fn set_is_deposit(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -4138,7 +4133,6 @@ impl EquipParamAccessory {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield0 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -4198,7 +4192,7 @@ pub(crate) struct EquipParamGoods {
     pub(crate) pad2: [u8; 8],
 }
 
-impl EquipParamGoods { 
+impl EquipParamGoods {
     #[allow(unused)]
     pub(crate) fn set_vow_type0(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -5150,7 +5144,6 @@ impl EquipParamGoods {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield6 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -5363,7 +5356,7 @@ pub(crate) struct EquipParamProtector {
     pub(crate) mask97: u8,
 }
 
-impl EquipParamProtector { 
+impl EquipParamProtector {
     #[allow(unused)]
     pub(crate) fn set_is_deposit(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -6451,7 +6444,6 @@ impl EquipParamProtector {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield7 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -6657,7 +6649,7 @@ pub(crate) struct EquipParamWeapon {
     pub(crate) pad1: [u8; 38],
 }
 
-impl EquipParamWeapon { 
+impl EquipParamWeapon {
     #[allow(unused)]
     pub(crate) fn set_right_hand_equipable(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -7473,7 +7465,6 @@ impl EquipParamWeapon {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield5 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -8154,7 +8145,7 @@ pub(crate) struct GemCategoryParam {
     pub(crate) affinity_modify_rate_3: f32,
 }
 
-impl GemCategoryParam { 
+impl GemCategoryParam {
     #[allow(unused)]
     pub(crate) fn set_is_negative(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -8290,7 +8281,6 @@ impl GemCategoryParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield0 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -8658,7 +8648,7 @@ pub(crate) struct HitMtrlParam {
     pub(crate) pad1: [u8; 20],
 }
 
-impl HitMtrlParam { 
+impl HitMtrlParam {
     #[allow(unused)]
     pub(crate) fn set_foot_effect_height_type0(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -8794,7 +8784,6 @@ impl HitMtrlParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield0 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -8887,7 +8876,7 @@ pub(crate) struct ItemLotParam {
     pub(crate) pad1: [u8; 3],
 }
 
-impl ItemLotParam { 
+impl ItemLotParam {
     #[allow(unused)]
     pub(crate) fn set_enable_luck01(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -9159,7 +9148,6 @@ impl ItemLotParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield1 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -9279,7 +9267,8 @@ pub(crate) struct LockCamParam {
     pub(crate) attack_auto_acquisition_angle_range_left: f32,
     pub(crate) melee_attack_auto_acquisition_character_range_maximum_radius: f32,
     pub(crate) melee_attack_auto_acquisition_dark_character_range_maximum_radius: f32,
-    pub(crate) proximity_attack_auto_acquisition_character_range_for_pure_darkness_maximum_radius: f32,
+    pub(crate) proximity_attack_auto_acquisition_character_range_for_pure_darkness_maximum_radius:
+        f32,
     pub(crate) bullet_auto_capture_character_range_maximum_radius: f32,
     pub(crate) bullet_auto_capture_dark_character_range_maximum_radius: f32,
     pub(crate) bullet_automatic_capture_character_range_ror_pure_darkness_maximum_radius: f32,
@@ -9408,7 +9397,7 @@ pub(crate) struct Magic {
     pub(crate) pad1: [u8; 12],
 }
 
-impl Magic { 
+impl Magic {
     #[allow(unused)]
     pub(crate) fn set_vow_type0(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -9952,7 +9941,6 @@ impl Magic {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield3 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -10219,7 +10207,7 @@ pub(crate) struct NetworkAreaParam {
     pub(crate) pad2: [u8; 3],
 }
 
-impl NetworkAreaParam { 
+impl NetworkAreaParam {
     #[allow(unused)]
     pub(crate) fn set_is_enable00(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -10355,7 +10343,6 @@ impl NetworkAreaParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield0 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -10632,7 +10619,7 @@ pub(crate) struct NpcParam {
     pub(crate) pad2: [u8; 4],
 }
 
-impl NpcParam { 
+impl NpcParam {
     #[allow(unused)]
     pub(crate) fn set_use_ragdoll_cam_hit(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -11720,7 +11707,6 @@ impl NpcParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield7 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -11804,7 +11790,7 @@ pub(crate) struct NpcThinkParam {
     pub(crate) pad: [u8; 12],
 }
 
-impl NpcThinkParam { 
+impl NpcThinkParam {
     #[allow(unused)]
     pub(crate) fn set_enable_navi_flg_edge(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -11940,7 +11926,6 @@ impl NpcThinkParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield0 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -12069,7 +12054,7 @@ pub(crate) struct ObjectParam {
     pub(crate) pad1: [u8; 68],
 }
 
-impl ObjectParam { 
+impl ObjectParam {
     #[allow(unused)]
     pub(crate) fn set_is_cam_hit(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -12341,7 +12326,6 @@ impl ObjectParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield1 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -12399,7 +12383,7 @@ pub(crate) struct PlayRegionParam {
     pub(crate) pad1: [u8; 31],
 }
 
-impl PlayRegionParam { 
+impl PlayRegionParam {
     #[allow(unused)]
     pub(crate) fn set_is_enable_event(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -12671,7 +12655,6 @@ impl PlayRegionParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield1 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -13114,7 +13097,7 @@ pub(crate) struct SpEffectParam {
     pub(crate) pad: [u8; 14],
 }
 
-impl SpEffectParam { 
+impl SpEffectParam {
     #[allow(unused)]
     pub(crate) fn set_effect_target_self(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -14474,7 +14457,6 @@ impl SpEffectParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield9 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -14533,7 +14515,7 @@ pub(crate) struct SpEffectVfxParam {
     pub(crate) pad1: [u8; 8],
 }
 
-impl SpEffectVfxParam { 
+impl SpEffectVfxParam {
     #[allow(unused)]
     pub(crate) fn set_exist_effect_for_large(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -14805,7 +14787,6 @@ impl SpEffectVfxParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield1 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -14920,7 +14901,7 @@ pub(crate) struct ThrowParam {
     pub(crate) pad1: [u8; 32],
 }
 
-impl ThrowParam { 
+impl ThrowParam {
     #[allow(unused)]
     pub(crate) fn set_is_turn_atker(&mut self, state: bool) {
         const FIELD_INDEX: u8 = 1 << 0;
@@ -15056,7 +15037,6 @@ impl ThrowParam {
         const FIELD_INDEX: u8 = 1 << 7;
         (self.bitfield0 & FIELD_INDEX) != 0
     }
-
 }
 
 #[derive(Debug)]
@@ -15232,47 +15212,65 @@ pub(crate) struct Wind {
 
 impl Params {
     #[allow(unused)]
-    pub(crate) unsafe fn get_action_button_param(&self) -> Option<impl Iterator<Item = Param<ActionButtonParam>>> {
+    pub(crate) unsafe fn get_action_button_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ActionButtonParam>>> {
         self.iter_param::<ActionButtonParam>("ActionButtonParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_ai_sound_param(&self) -> Option<impl Iterator<Item = Param<AiSoundParam>>> {
+    pub(crate) unsafe fn get_ai_sound_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<AiSoundParam>>> {
         self.iter_param::<AiSoundParam>("AiSoundParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_atk_param_npc(&self) -> Option<impl Iterator<Item = Param<AtkParam_Npc>>> {
+    pub(crate) unsafe fn get_atk_param_npc(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<AtkParam_Npc>>> {
         self.iter_param::<AtkParam_Npc>("AtkParam_Npc")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_atk_param_pc(&self) -> Option<impl Iterator<Item = Param<AtkParam_Pc>>> {
+    pub(crate) unsafe fn get_atk_param_pc(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<AtkParam_Pc>>> {
         self.iter_param::<AtkParam_Pc>("AtkParam_Pc")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_attack_element_correct_param(&self) -> Option<impl Iterator<Item = Param<AttackElementCorrectParam>>> {
+    pub(crate) unsafe fn get_attack_element_correct_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<AttackElementCorrectParam>>> {
         self.iter_param::<AttackElementCorrectParam>("AttackElementCorrectParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_behavior_param(&self) -> Option<impl Iterator<Item = Param<BehaviorParam>>> {
+    pub(crate) unsafe fn get_behavior_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<BehaviorParam>>> {
         self.iter_param::<BehaviorParam>("BehaviorParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_behavior_param_pc(&self) -> Option<impl Iterator<Item = Param<BehaviorParam_PC>>> {
+    pub(crate) unsafe fn get_behavior_param_pc(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<BehaviorParam_PC>>> {
         self.iter_param::<BehaviorParam_PC>("BehaviorParam_PC")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_bonfire_warp_param(&self) -> Option<impl Iterator<Item = Param<BonfireWarpParam>>> {
+    pub(crate) unsafe fn get_bonfire_warp_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<BonfireWarpParam>>> {
         self.iter_param::<BonfireWarpParam>("BonfireWarpParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_budget_param(&self) -> Option<impl Iterator<Item = Param<BudgetParam>>> {
+    pub(crate) unsafe fn get_budget_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<BudgetParam>>> {
         self.iter_param::<BudgetParam>("BudgetParam")
     }
 
@@ -15282,12 +15280,16 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_bullet_create_limit_param(&self) -> Option<impl Iterator<Item = Param<BulletCreateLimitParam>>> {
+    pub(crate) unsafe fn get_bullet_create_limit_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<BulletCreateLimitParam>>> {
         self.iter_param::<BulletCreateLimitParam>("BulletCreateLimitParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_calc_correct_graph(&self) -> Option<impl Iterator<Item = Param<CalcCorrectGraph>>> {
+    pub(crate) unsafe fn get_calc_correct_graph(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<CalcCorrectGraph>>> {
         self.iter_param::<CalcCorrectGraph>("CalcCorrectGraph")
     }
 
@@ -15297,37 +15299,51 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_character_load_param(&self) -> Option<impl Iterator<Item = Param<CharacterLoadParam>>> {
+    pub(crate) unsafe fn get_character_load_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<CharacterLoadParam>>> {
         self.iter_param::<CharacterLoadParam>("CharacterLoadParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_chara_init_param(&self) -> Option<impl Iterator<Item = Param<CharaInitParam>>> {
+    pub(crate) unsafe fn get_chara_init_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<CharaInitParam>>> {
         self.iter_param::<CharaInitParam>("CharaInitParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_char_make_menu_list_item_param(&self) -> Option<impl Iterator<Item = Param<CharMakeMenuListItemParam>>> {
+    pub(crate) unsafe fn get_char_make_menu_list_item_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<CharMakeMenuListItemParam>>> {
         self.iter_param::<CharMakeMenuListItemParam>("CharMakeMenuListItemParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_char_make_menu_top_param(&self) -> Option<impl Iterator<Item = Param<CharMakeMenuTopParam>>> {
+    pub(crate) unsafe fn get_char_make_menu_top_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<CharMakeMenuTopParam>>> {
         self.iter_param::<CharMakeMenuTopParam>("CharMakeMenuTopParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_clear_count_correct_param(&self) -> Option<impl Iterator<Item = Param<ClearCountCorrectParam>>> {
+    pub(crate) unsafe fn get_clear_count_correct_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ClearCountCorrectParam>>> {
         self.iter_param::<ClearCountCorrectParam>("ClearCountCorrectParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_cool_time_param(&self) -> Option<impl Iterator<Item = Param<CoolTimeParam>>> {
+    pub(crate) unsafe fn get_cool_time_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<CoolTimeParam>>> {
         self.iter_param::<CoolTimeParam>("CoolTimeParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_cult_setting_param(&self) -> Option<impl Iterator<Item = Param<CultSettingParam>>> {
+    pub(crate) unsafe fn get_cult_setting_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<CultSettingParam>>> {
         self.iter_param::<CultSettingParam>("CultSettingParam")
     }
 
@@ -15337,37 +15353,51 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_direction_camera_param(&self) -> Option<impl Iterator<Item = Param<DirectionCameraParam>>> {
+    pub(crate) unsafe fn get_direction_camera_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<DirectionCameraParam>>> {
         self.iter_param::<DirectionCameraParam>("DirectionCameraParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_equip_mtrl_set_param(&self) -> Option<impl Iterator<Item = Param<EquipMtrlSetParam>>> {
+    pub(crate) unsafe fn get_equip_mtrl_set_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<EquipMtrlSetParam>>> {
         self.iter_param::<EquipMtrlSetParam>("EquipMtrlSetParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_equip_param_accessory(&self) -> Option<impl Iterator<Item = Param<EquipParamAccessory>>> {
+    pub(crate) unsafe fn get_equip_param_accessory(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<EquipParamAccessory>>> {
         self.iter_param::<EquipParamAccessory>("EquipParamAccessory")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_equip_param_goods(&self) -> Option<impl Iterator<Item = Param<EquipParamGoods>>> {
+    pub(crate) unsafe fn get_equip_param_goods(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<EquipParamGoods>>> {
         self.iter_param::<EquipParamGoods>("EquipParamGoods")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_equip_param_protector(&self) -> Option<impl Iterator<Item = Param<EquipParamProtector>>> {
+    pub(crate) unsafe fn get_equip_param_protector(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<EquipParamProtector>>> {
         self.iter_param::<EquipParamProtector>("EquipParamProtector")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_equip_param_weapon(&self) -> Option<impl Iterator<Item = Param<EquipParamWeapon>>> {
+    pub(crate) unsafe fn get_equip_param_weapon(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<EquipParamWeapon>>> {
         self.iter_param::<EquipParamWeapon>("EquipParamWeapon")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_face_gen_param(&self) -> Option<impl Iterator<Item = Param<FaceGenParam>>> {
+    pub(crate) unsafe fn get_face_gen_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<FaceGenParam>>> {
         self.iter_param::<FaceGenParam>("FaceGenParam")
     }
 
@@ -15377,102 +15407,142 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_face_range_param(&self) -> Option<impl Iterator<Item = Param<FaceRangeParam>>> {
+    pub(crate) unsafe fn get_face_range_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<FaceRangeParam>>> {
         self.iter_param::<FaceRangeParam>("FaceRangeParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_foot_sfx_param(&self) -> Option<impl Iterator<Item = Param<FootSfxParam>>> {
+    pub(crate) unsafe fn get_foot_sfx_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<FootSfxParam>>> {
         self.iter_param::<FootSfxParam>("FootSfxParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_game_area_param(&self) -> Option<impl Iterator<Item = Param<GameAreaParam>>> {
+    pub(crate) unsafe fn get_game_area_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<GameAreaParam>>> {
         self.iter_param::<GameAreaParam>("GameAreaParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_game_progress_param(&self) -> Option<impl Iterator<Item = Param<GameProgressParam>>> {
+    pub(crate) unsafe fn get_game_progress_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<GameProgressParam>>> {
         self.iter_param::<GameProgressParam>("GameProgressParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_gem_category_param(&self) -> Option<impl Iterator<Item = Param<GemCategoryParam>>> {
+    pub(crate) unsafe fn get_gem_category_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<GemCategoryParam>>> {
         self.iter_param::<GemCategoryParam>("GemCategoryParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_gem_drop_doping_param(&self) -> Option<impl Iterator<Item = Param<GemDropDopingParam>>> {
+    pub(crate) unsafe fn get_gem_drop_doping_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<GemDropDopingParam>>> {
         self.iter_param::<GemDropDopingParam>("GemDropDopingParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_gem_drop_modify_param(&self) -> Option<impl Iterator<Item = Param<GemDropModifyParam>>> {
+    pub(crate) unsafe fn get_gem_drop_modify_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<GemDropModifyParam>>> {
         self.iter_param::<GemDropModifyParam>("GemDropModifyParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_gemeffect_param(&self) -> Option<impl Iterator<Item = Param<GemeffectParam>>> {
+    pub(crate) unsafe fn get_gemeffect_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<GemeffectParam>>> {
         self.iter_param::<GemeffectParam>("GemeffectParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_gem_gen_param(&self) -> Option<impl Iterator<Item = Param<GemGenParam>>> {
+    pub(crate) unsafe fn get_gem_gen_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<GemGenParam>>> {
         self.iter_param::<GemGenParam>("GemGenParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_hit_effect_se_param(&self) -> Option<impl Iterator<Item = Param<HitEffectSeParam>>> {
+    pub(crate) unsafe fn get_hit_effect_se_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<HitEffectSeParam>>> {
         self.iter_param::<HitEffectSeParam>("HitEffectSeParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_hit_effect_sfx_concept_param(&self) -> Option<impl Iterator<Item = Param<HitEffectSfxConceptParam>>> {
+    pub(crate) unsafe fn get_hit_effect_sfx_concept_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<HitEffectSfxConceptParam>>> {
         self.iter_param::<HitEffectSfxConceptParam>("HitEffectSfxConceptParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_hit_effect_sfx_param(&self) -> Option<impl Iterator<Item = Param<HitEffectSfxParam>>> {
+    pub(crate) unsafe fn get_hit_effect_sfx_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<HitEffectSfxParam>>> {
         self.iter_param::<HitEffectSfxParam>("HitEffectSfxParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_hit_mtrl_param(&self) -> Option<impl Iterator<Item = Param<HitMtrlParam>>> {
+    pub(crate) unsafe fn get_hit_mtrl_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<HitMtrlParam>>> {
         self.iter_param::<HitMtrlParam>("HitMtrlParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_h_pestus_flask_recovery_param(&self) -> Option<impl Iterator<Item = Param<HPEstusFlaskRecoveryParam>>> {
+    pub(crate) unsafe fn get_h_pestus_flask_recovery_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<HPEstusFlaskRecoveryParam>>> {
         self.iter_param::<HPEstusFlaskRecoveryParam>("HPEstusFlaskRecoveryParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_item_lot_param(&self) -> Option<impl Iterator<Item = Param<ItemLotParam>>> {
+    pub(crate) unsafe fn get_item_lot_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ItemLotParam>>> {
         self.iter_param::<ItemLotParam>("ItemLotParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_knock_back_param(&self) -> Option<impl Iterator<Item = Param<KnockBackParam>>> {
+    pub(crate) unsafe fn get_knock_back_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<KnockBackParam>>> {
         self.iter_param::<KnockBackParam>("KnockBackParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_knowledge_load_screen_item_param(&self) -> Option<impl Iterator<Item = Param<KnowledgeLoadScreenItemParam>>> {
+    pub(crate) unsafe fn get_knowledge_load_screen_item_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<KnowledgeLoadScreenItemParam>>> {
         self.iter_param::<KnowledgeLoadScreenItemParam>("KnowledgeLoadScreenItemParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_load_balancer_draw_dist_scale_param(&self) -> Option<impl Iterator<Item = Param<LoadBalancerDrawDistScaleParam>>> {
+    pub(crate) unsafe fn get_load_balancer_draw_dist_scale_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<LoadBalancerDrawDistScaleParam>>> {
         self.iter_param::<LoadBalancerDrawDistScaleParam>("LoadBalancerDrawDistScaleParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_load_balancer_param(&self) -> Option<impl Iterator<Item = Param<LoadBalancerParam>>> {
+    pub(crate) unsafe fn get_load_balancer_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<LoadBalancerParam>>> {
         self.iter_param::<LoadBalancerParam>("LoadBalancerParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_lock_cam_param(&self) -> Option<impl Iterator<Item = Param<LockCamParam>>> {
+    pub(crate) unsafe fn get_lock_cam_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<LockCamParam>>> {
         self.iter_param::<LockCamParam>("LockCamParam")
     }
 
@@ -15482,12 +15552,16 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_lod_param_ps4(&self) -> Option<impl Iterator<Item = Param<LodParam_ps4>>> {
+    pub(crate) unsafe fn get_lod_param_ps4(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<LodParam_ps4>>> {
         self.iter_param::<LodParam_ps4>("LodParam_ps4")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_lod_param_xb1(&self) -> Option<impl Iterator<Item = Param<LodParam_xb1>>> {
+    pub(crate) unsafe fn get_lod_param_xb1(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<LodParam_xb1>>> {
         self.iter_param::<LodParam_xb1>("LodParam_xb1")
     }
 
@@ -15497,32 +15571,44 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_map_mimicry_establishment_param(&self) -> Option<impl Iterator<Item = Param<MapMimicryEstablishmentParam>>> {
+    pub(crate) unsafe fn get_map_mimicry_establishment_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<MapMimicryEstablishmentParam>>> {
         self.iter_param::<MapMimicryEstablishmentParam>("MapMimicryEstablishmentParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_menu_offscr_rend_param(&self) -> Option<impl Iterator<Item = Param<MenuOffscrRendParam>>> {
+    pub(crate) unsafe fn get_menu_offscr_rend_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<MenuOffscrRendParam>>> {
         self.iter_param::<MenuOffscrRendParam>("MenuOffscrRendParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_menu_property_layout_param(&self) -> Option<impl Iterator<Item = Param<MenuPropertyLayoutParam>>> {
+    pub(crate) unsafe fn get_menu_property_layout_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<MenuPropertyLayoutParam>>> {
         self.iter_param::<MenuPropertyLayoutParam>("MenuPropertyLayoutParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_menu_property_spec_param(&self) -> Option<impl Iterator<Item = Param<MenuPropertySpecParam>>> {
+    pub(crate) unsafe fn get_menu_property_spec_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<MenuPropertySpecParam>>> {
         self.iter_param::<MenuPropertySpecParam>("MenuPropertySpecParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_menu_value_table_param(&self) -> Option<impl Iterator<Item = Param<MenuValueTableParam>>> {
+    pub(crate) unsafe fn get_menu_value_table_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<MenuValueTableParam>>> {
         self.iter_param::<MenuValueTableParam>("MenuValueTableParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_model_sfx_param(&self) -> Option<impl Iterator<Item = Param<ModelSfxParam>>> {
+    pub(crate) unsafe fn get_model_sfx_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ModelSfxParam>>> {
         self.iter_param::<ModelSfxParam>("ModelSfxParam")
     }
 
@@ -15532,52 +15618,72 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_m_pestus_flask_recovery_param(&self) -> Option<impl Iterator<Item = Param<MPEstusFlaskRecoveryParam>>> {
+    pub(crate) unsafe fn get_m_pestus_flask_recovery_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<MPEstusFlaskRecoveryParam>>> {
         self.iter_param::<MPEstusFlaskRecoveryParam>("MPEstusFlaskRecoveryParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_multi_hpestus_flask_bonus_param(&self) -> Option<impl Iterator<Item = Param<MultiHPEstusFlaskBonusParam>>> {
+    pub(crate) unsafe fn get_multi_hpestus_flask_bonus_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<MultiHPEstusFlaskBonusParam>>> {
         self.iter_param::<MultiHPEstusFlaskBonusParam>("MultiHPEstusFlaskBonusParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_multi_mpestus_flask_bonus_param(&self) -> Option<impl Iterator<Item = Param<MultiMPEstusFlaskBonusParam>>> {
+    pub(crate) unsafe fn get_multi_mpestus_flask_bonus_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<MultiMPEstusFlaskBonusParam>>> {
         self.iter_param::<MultiMPEstusFlaskBonusParam>("MultiMPEstusFlaskBonusParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_multi_play_correction_param(&self) -> Option<impl Iterator<Item = Param<MultiPlayCorrectionParam>>> {
+    pub(crate) unsafe fn get_multi_play_correction_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<MultiPlayCorrectionParam>>> {
         self.iter_param::<MultiPlayCorrectionParam>("MultiPlayCorrectionParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_multi_soul_bonus_rate_param(&self) -> Option<impl Iterator<Item = Param<MultiSoulBonusRateParam>>> {
+    pub(crate) unsafe fn get_multi_soul_bonus_rate_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<MultiSoulBonusRateParam>>> {
         self.iter_param::<MultiSoulBonusRateParam>("MultiSoulBonusRateParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_network_area_param(&self) -> Option<impl Iterator<Item = Param<NetworkAreaParam>>> {
+    pub(crate) unsafe fn get_network_area_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<NetworkAreaParam>>> {
         self.iter_param::<NetworkAreaParam>("NetworkAreaParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_network_msg_param(&self) -> Option<impl Iterator<Item = Param<NetworkMsgParam>>> {
+    pub(crate) unsafe fn get_network_msg_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<NetworkMsgParam>>> {
         self.iter_param::<NetworkMsgParam>("NetworkMsgParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_network_param(&self) -> Option<impl Iterator<Item = Param<NetworkParam>>> {
+    pub(crate) unsafe fn get_network_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<NetworkParam>>> {
         self.iter_param::<NetworkParam>("NetworkParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_new_menu_color_table_param(&self) -> Option<impl Iterator<Item = Param<NewMenuColorTableParam>>> {
+    pub(crate) unsafe fn get_new_menu_color_table_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<NewMenuColorTableParam>>> {
         self.iter_param::<NewMenuColorTableParam>("NewMenuColorTableParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_npc_ai_action_param(&self) -> Option<impl Iterator<Item = Param<NpcAiActionParam>>> {
+    pub(crate) unsafe fn get_npc_ai_action_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<NpcAiActionParam>>> {
         self.iter_param::<NpcAiActionParam>("NpcAiActionParam")
     }
 
@@ -15587,52 +15693,72 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_npc_think_param(&self) -> Option<impl Iterator<Item = Param<NpcThinkParam>>> {
+    pub(crate) unsafe fn get_npc_think_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<NpcThinkParam>>> {
         self.iter_param::<NpcThinkParam>("NpcThinkParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_obj_act_param(&self) -> Option<impl Iterator<Item = Param<ObjActParam>>> {
+    pub(crate) unsafe fn get_obj_act_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ObjActParam>>> {
         self.iter_param::<ObjActParam>("ObjActParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_object_material_sfx_param(&self) -> Option<impl Iterator<Item = Param<ObjectMaterialSfxParam>>> {
+    pub(crate) unsafe fn get_object_material_sfx_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ObjectMaterialSfxParam>>> {
         self.iter_param::<ObjectMaterialSfxParam>("ObjectMaterialSfxParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_object_param(&self) -> Option<impl Iterator<Item = Param<ObjectParam>>> {
+    pub(crate) unsafe fn get_object_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ObjectParam>>> {
         self.iter_param::<ObjectParam>("ObjectParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_phantom_param(&self) -> Option<impl Iterator<Item = Param<PhantomParam>>> {
+    pub(crate) unsafe fn get_phantom_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<PhantomParam>>> {
         self.iter_param::<PhantomParam>("PhantomParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_play_region_param(&self) -> Option<impl Iterator<Item = Param<PlayRegionParam>>> {
+    pub(crate) unsafe fn get_play_region_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<PlayRegionParam>>> {
         self.iter_param::<PlayRegionParam>("PlayRegionParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_protector_gen_param(&self) -> Option<impl Iterator<Item = Param<ProtectorGenParam>>> {
+    pub(crate) unsafe fn get_protector_gen_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ProtectorGenParam>>> {
         self.iter_param::<ProtectorGenParam>("ProtectorGenParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_ragdoll_param(&self) -> Option<impl Iterator<Item = Param<RagdollParam>>> {
+    pub(crate) unsafe fn get_ragdoll_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<RagdollParam>>> {
         self.iter_param::<RagdollParam>("RagdollParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_reinforce_param_protector(&self) -> Option<impl Iterator<Item = Param<ReinforceParamProtector>>> {
+    pub(crate) unsafe fn get_reinforce_param_protector(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ReinforceParamProtector>>> {
         self.iter_param::<ReinforceParamProtector>("ReinforceParamProtector")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_reinforce_param_weapon(&self) -> Option<impl Iterator<Item = Param<ReinforceParamWeapon>>> {
+    pub(crate) unsafe fn get_reinforce_param_weapon(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ReinforceParamWeapon>>> {
         self.iter_param::<ReinforceParamWeapon>("ReinforceParamWeapon")
     }
 
@@ -15642,32 +15768,44 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_se_material_convert_param(&self) -> Option<impl Iterator<Item = Param<SeMaterialConvertParam>>> {
+    pub(crate) unsafe fn get_se_material_convert_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<SeMaterialConvertParam>>> {
         self.iter_param::<SeMaterialConvertParam>("SeMaterialConvertParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_shop_lineup_param(&self) -> Option<impl Iterator<Item = Param<ShopLineupParam>>> {
+    pub(crate) unsafe fn get_shop_lineup_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ShopLineupParam>>> {
         self.iter_param::<ShopLineupParam>("ShopLineupParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_skeleton_param(&self) -> Option<impl Iterator<Item = Param<SkeletonParam>>> {
+    pub(crate) unsafe fn get_skeleton_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<SkeletonParam>>> {
         self.iter_param::<SkeletonParam>("SkeletonParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_sp_effect_param(&self) -> Option<impl Iterator<Item = Param<SpEffectParam>>> {
+    pub(crate) unsafe fn get_sp_effect_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<SpEffectParam>>> {
         self.iter_param::<SpEffectParam>("SpEffectParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_sp_effect_vfx_param(&self) -> Option<impl Iterator<Item = Param<SpEffectVfxParam>>> {
+    pub(crate) unsafe fn get_sp_effect_vfx_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<SpEffectVfxParam>>> {
         self.iter_param::<SpEffectVfxParam>("SpEffectVfxParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_sword_arts_param(&self) -> Option<impl Iterator<Item = Param<SwordArtsParam>>> {
+    pub(crate) unsafe fn get_sword_arts_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<SwordArtsParam>>> {
         self.iter_param::<SwordArtsParam>("SwordArtsParam")
     }
 
@@ -15677,7 +15815,9 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_throw_direction_sfx_param(&self) -> Option<impl Iterator<Item = Param<ThrowDirectionSfxParam>>> {
+    pub(crate) unsafe fn get_throw_direction_sfx_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ThrowDirectionSfxParam>>> {
         self.iter_param::<ThrowDirectionSfxParam>("ThrowDirectionSfxParam")
     }
 
@@ -15687,32 +15827,44 @@ impl Params {
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_toughness_param(&self) -> Option<impl Iterator<Item = Param<ToughnessParam>>> {
+    pub(crate) unsafe fn get_toughness_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<ToughnessParam>>> {
         self.iter_param::<ToughnessParam>("ToughnessParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_upper_arm_param(&self) -> Option<impl Iterator<Item = Param<UpperArmParam>>> {
+    pub(crate) unsafe fn get_upper_arm_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<UpperArmParam>>> {
         self.iter_param::<UpperArmParam>("UpperArmParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_weapon_gen_param(&self) -> Option<impl Iterator<Item = Param<WeaponGenParam>>> {
+    pub(crate) unsafe fn get_weapon_gen_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<WeaponGenParam>>> {
         self.iter_param::<WeaponGenParam>("WeaponGenParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_wep_absorp_pos_param(&self) -> Option<impl Iterator<Item = Param<WepAbsorpPosParam>>> {
+    pub(crate) unsafe fn get_wep_absorp_pos_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<WepAbsorpPosParam>>> {
         self.iter_param::<WepAbsorpPosParam>("WepAbsorpPosParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_wet_aspect_param(&self) -> Option<impl Iterator<Item = Param<WetAspectParam>>> {
+    pub(crate) unsafe fn get_wet_aspect_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<WetAspectParam>>> {
         self.iter_param::<WetAspectParam>("WetAspectParam")
     }
 
     #[allow(unused)]
-    pub(crate) unsafe fn get_white_sign_cool_time_param(&self) -> Option<impl Iterator<Item = Param<WhiteSignCoolTimeParam>>> {
+    pub(crate) unsafe fn get_white_sign_cool_time_param(
+        &self,
+    ) -> Option<impl Iterator<Item = Param<WhiteSignCoolTimeParam>>> {
         self.iter_param::<WhiteSignCoolTimeParam>("WhiteSignCoolTimeParam")
     }
 

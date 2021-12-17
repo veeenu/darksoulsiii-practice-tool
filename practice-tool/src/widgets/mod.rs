@@ -8,6 +8,7 @@ pub(crate) const BUTTON_HEIGHT: f32 = 0.;
 pub(crate) mod cycle_speed;
 pub(crate) mod flag;
 pub(crate) mod item_spawn;
+pub(crate) mod param_edit;
 pub(crate) mod position;
 pub(crate) mod quitout;
 pub(crate) mod savefile_manager;

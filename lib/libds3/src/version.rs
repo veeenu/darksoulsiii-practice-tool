@@ -1,0 +1,40 @@
+use std::ffi::OsString;
+use std::lazy::SyncLazy;
+use std::os::windows::prelude::OsStringExt;
+
+#[derive(Clone, Copy)]
+pub enum Version {
+    Ver104,
+    Ver108,
+    Ver112,
+    Ver115,
+}
+
+pub static VERSION: SyncLazy<Option<Version>> = SyncLazy::new(|| unsafe { detect_version() });
+
+unsafe fn vercmp(ptr: *const [u16; 4], ver: &str) -> bool {
+    if let Some(ver_mem) = ptr.as_ref().map(|s| &s[..]).map(OsString::from_wide) {
+        ver_mem == ver
+    } else {
+        false
+    }
+}
+
+pub unsafe fn detect_version() -> Option<Version> {
+    const VERSION_PTR_104: *mut [u16; 4] = 0x14288C422usize as _;
+    const VERSION_PTR_108: *mut [u16; 4] = 0x1428D3F92usize as _;
+    const VERSION_PTR_112: *mut [u16; 4] = 0x1428FD262usize as _;
+    const VERSION_PTR_115: *mut [u16; 4] = 0x142900782usize as _;
+
+    if vercmp(VERSION_PTR_104, "1.04") {
+        Some(Version::Ver104)
+    } else if vercmp(VERSION_PTR_108, "1.08") {
+        Some(Version::Ver108)
+    } else if vercmp(VERSION_PTR_112, "1.12") {
+        Some(Version::Ver112)
+    } else if vercmp(VERSION_PTR_115, "1.15") {
+        Some(Version::Ver115)
+    } else {
+        None
+    }
+}

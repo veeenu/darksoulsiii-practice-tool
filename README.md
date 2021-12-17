@@ -52,6 +52,7 @@ You can contact me on Discord at `johndisandonato#4484` or on [Twitter](https://
   provided the research base for many of the pointers used in the tool.
 - NamelessHoodie[2] and Amir's work on [HoodieScript](https://github.com/NamelessHoodie/HoodieScript)
   for insights about the game's inner workings.
+- The Soulsmodding community for the [Param definitions](https://github.com/soulsmods/Paramdex).
 
 ## Development
 

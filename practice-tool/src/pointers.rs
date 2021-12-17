@@ -189,33 +189,29 @@ const VER115: BaseAddresses = BaseAddresses {
     map_item_man: 0x144752300,
 };
 
-fn vercmp(ptr: usize, ver: &str) -> bool {
-    let ver_mem = PointerChain::<[u16; 4]>::new(&[ptr]).read();
-
-    if let Some(ver_mem) = ver_mem {
-        let ver_memstr = OsString::from_wide(&ver_mem);
-        info!(
-            "Version string: matching {:?} against {:?}",
-            ver, ver_memstr
-        );
-        ver_memstr == *ver
-    } else {
-        false
-    }
-}
+// fn vercmp(ptr: usize, ver: &str) -> bool {
+//     let ver_mem = PointerChain::<[u16; 4]>::new(&[ptr]).read();
+//
+//     if let Some(ver_mem) = ver_mem {
+//         let ver_memstr = OsString::from_wide(&ver_mem);
+//         info!(
+//             "Version string: matching {:?} against {:?}",
+//             ver, ver_memstr
+//         );
+//         ver_memstr == *ver
+//     } else {
+//         false
+//     }
+// }
 
 pub(crate) fn detect_version() -> Option<BaseAddresses> {
-    if vercmp(VER104.version_string_ptr as _, "1.04") {
-        Some(VER104)
-    } else if vercmp(VER108.version_string_ptr as _, "1.08") {
-        Some(VER108)
-    } else if vercmp(VER112.version_string_ptr as _, "1.12") {
-        Some(VER112)
-    } else if vercmp(VER115.version_string_ptr as _, "1.15") {
-        Some(VER115)
-    } else {
-        None
-    }
+    use libds3::version::{detect_version, Version};
+    unsafe { detect_version() }.map(|ver| match ver {
+        Version::Ver104 => VER104,
+        Version::Ver108 => VER108,
+        Version::Ver112 => VER112,
+        Version::Ver115 => VER115,
+    })
 }
 
 impl From<BaseAddresses> for PointerChains {
@@ -266,7 +262,6 @@ impl From<BaseAddresses> for PointerChains {
             ik_foot_ray: bitflag!(0b1; world_chr_man_dbg as usize, 0x6B),
             debug_sphere_1: bitflag!(0b1; base_hbd as usize, 0x30),
             debug_sphere_2: bitflag!(0b1; base_hbd as usize, 0x31),
-            // gravity: bitflag!(0b1; base_d, 0x60, 0x48),
             gravity: bitflag!(0b1000000; world_chr_man, 0x80, 0x1a08),
             speed: pointer_chain!(world_chr_man, 0x80, xa as _, 0x28, offs_speed as _),
             position: (
