@@ -1,9 +1,10 @@
+mod codegen;
+
 use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::ptr::{null, null_mut};
 
 use widestring::U16CString;
 use winapi::ctypes::c_void;
@@ -25,6 +26,7 @@ fn main() -> Result<()> {
     let task = env::args().nth(1);
     match task.as_ref().map(|it| it.as_str()) {
         Some("dist") => dist()?,
+        Some("codegen") => codegen()?,
         Some("help") => print_help(),
         _ => print_help(),
     }
@@ -84,12 +86,19 @@ fn dist() -> Result<()> {
     Ok(())
 }
 
+fn codegen() -> Result<()> {
+    checkout_paramdex()?;
+
+    Ok(())
+}
+
 fn print_help() {
     eprintln!(
         r#"
 Tasks:
 
 dist .......... build distribution artifacts
+codegen ....... generate Rust code for the parameters
 help .......... print this help
 "#
     );
@@ -156,6 +165,21 @@ fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
         );
 
         EndUpdateResourceW(handle, FALSE);
+    }
+
+    Ok(())
+}
+
+fn checkout_paramdex() -> Result<()> {
+    let git = env::var("GIT").unwrap_or_else(|_| "git".to_string());
+    let status = Command::new(git)
+        .current_dir(project_root().join("target"))
+        .args(&["clone", "https://github.com/soulsmods/Paramdex.git"])
+        .status()
+        .map_err(|e| format!("git: {}", e))?;
+
+    if !status.success() {
+        Err("git clone failed")?;
     }
 
     Ok(())

@@ -9,3 +9,4 @@ edition = "2021"
 imgui = "0.8.0"
 log = "0.4.14"
 widestring = "0.5.1"
+macro-param = { path = "../macro-param" }

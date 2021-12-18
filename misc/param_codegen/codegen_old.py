@@ -10,23 +10,70 @@ SNAKECASE_RE = re.compile(r'(?!^)([A-Z]+)')
 SNAKECASE_CLEAN_RE = re.compile(r'_+')
 SLUG_RE = re.compile(r'([^a-zA-Z]+)')
 
-PARAM_VTABLE_TEMPLATE = '''
-pub static PARAM_VTABLE: SyncLazy<HashMap<String, Box<dyn Fn(*const c_void, &mut dyn ParamVisitor) + Send + Sync>>> = SyncLazy::new(|| {{
-    [\n{vtable_fields}
+MEME_VTABLE_TEMPLATE = '''
+pub static RENDER_VTABLE: SyncLazy<HashMap<String, Box<dyn Fn(*const c_void, &imgui::Ui) + Send + Sync>>> = SyncLazy::new(|| {{
+    [ {vtable_fields}
     ].into_iter().collect()
-}});'''
+}});
+'''
+
+MEME_VTABLE_FIELD_TEMPLATE = '''
+        ("{param_name}".to_string(), unsafe {{ get_render_lambda::<{param_name}>() }}),'''
 
 STRUCT_TEMPLATE = '''
-    #[derive(ParamStruct, Debug)]
+    #[derive(Debug)]
     #[repr(C)]
+    #[allow(non_camel_case_types)]
     pub struct {param_name} {{
         {fields}
     }}
 '''
 
+IMPL_STRUCT_TEMPLATE = '''
+    impl {param_name} {{ {methods}
+    }}
+'''
+
+IMPL_RENDERABLE_STRUCT_TEMPLATE = '''
+    impl RenderableParam for {param_name} {{
+        fn render_imgui(&mut self, ui: &imgui::Ui) {{ {fields_imgui}
+        }}
+    }}
+'''
+
+IMPL_PARAMS_TEMPLATE = '''
+    impl Params {{{impl_params}    }}
+'''
+
+IMPL_PARAM_TEMPLATE = '''
+        #[allow(unused)]
+        pub unsafe fn get_{name_snake_case}(&self) -> Option<impl Iterator<Item = Param<{param_name}>>> {{
+            self.iter_param::<{param_name}>("{param_name}")
+        }}
+'''
+
 FIELD_TEMPLATE = '''
         pub {field_name}: {field_type},
 '''.strip()
+
+BITFIELD_TEMPLATE = '''
+        #[allow(unused)]
+        pub fn set_{flag_name}(&mut self, state: bool) {{
+            const FIELD_INDEX: {field_type} = 1 << {field_index};
+            let val = self.{bitfield_name};
+            self.{bitfield_name} = if state {{
+                val | FIELD_INDEX
+            }} else {{
+                val & !FIELD_INDEX
+            }};
+        }}
+
+        #[allow(unused)]
+        pub fn {flag_name}(&mut self) -> bool {{
+            const FIELD_INDEX: {field_type} = 1 << {field_index};
+            (self.{bitfield_name} & FIELD_INDEX) != 0
+        }}
+'''
 
 def to_snake_case(s):
     return SNAKECASE_CLEAN_RE.sub('_', SNAKECASE_RE.sub(r'_\1', s).lower())
@@ -109,10 +156,35 @@ class ParamLayout:
 
     def get_struct(self):
         fields = '\n        '.join(
-            field.format()
+            FIELD_TEMPLATE.format(field_name=ParamLayout.fix_name(to_snake_case(field.name)), field_type=field.type)
             for field in self.fields
         )
         return STRUCT_TEMPLATE.format(param_name=self.name, fields=fields)
+
+    def get_impl_param(self):
+        return IMPL_PARAM_TEMPLATE.format(param_name=self.name, name_snake_case=self.name_snake_case)
+
+    def get_impls(self):
+        impls = []
+        for f in self.fields:
+            for i in f.get_impls():
+                impls.append(i)
+        imgui_impls = self.get_imgui()
+
+        if len(impls) > 0:
+            return IMPL_STRUCT_TEMPLATE.format(
+                param_name=self.name,
+                methods=''.join(impls)
+            ) + imgui_impls
+        else:
+            return imgui_impls
+
+    def get_imgui(self):
+        fields_imgui = ''.join(f.get_imgui() for f in self.fields)
+        return IMPL_RENDERABLE_STRUCT_TEMPLATE.format(
+            param_name=self.name,
+            fields_imgui=fields_imgui, 
+        )
 
     @staticmethod
     def fix_name(name: str):
@@ -120,7 +192,7 @@ class ParamLayout:
             return 'field' + name
 
         if name == 'type':
-            return 'ty'
+            return 'r#type'
 
         return name
 
@@ -159,15 +231,30 @@ class Bitfield:
         self.type = dtype
         self.fields = list(enumerate(ParamLayout.dedup_fields(fields)))
 
-    def format(self):
-        field_tpl = FIELD_TEMPLATE.format(
-            field_name=ParamLayout.fix_name(to_snake_case(self.name)),
-            field_type=self.type
-        )
-        return '\n        '.join(
-            '''#[bitflag({flag_name}, {idx})]'''.format(flag_name=ParamLayout.fix_name(flag.name), idx=idx)
+    def get_impls(self):
+        return [
+            BITFIELD_TEMPLATE.format(
+                bitfield_name=self.name,
+                flag_name=ParamLayout.fix_name(to_snake_case(flag.name)),
+                field_type=self.type,
+                field_index=idx
+            )
             for idx, flag in self.fields
-        ) + '\n        ' + field_tpl
+        ]
+
+    def get_imgui(self):
+        return ''.join(
+            '''
+            let mut b: bool = self.{flag_name}();
+            if ui.checkbox("{field_name}", &mut b) {{
+                self.set_{flag_name}(b);
+            }}
+            '''.format(
+                field_name=flag.name,
+                flag_name=ParamLayout.fix_name(to_snake_case(flag.name))
+            )
+            for idx, flag in self.fields
+        )
 
     def rename(self, idx):
         self.name = self.name + f'_{idx}'
@@ -215,11 +302,30 @@ class Field:
         else:
             raise ValueError(f'Couldn\'t parse: {definition}')
 
-    def format(self):
-        return FIELD_TEMPLATE.format(
-            field_name=ParamLayout.fix_name(to_snake_case(self.name)),
-            field_type=self.type
-        )
+    def get_imgui(self):
+        if self.kind == 'normal':
+            field_name = ParamLayout.fix_name(to_snake_case(self.name))
+            if self.type in ('u8', 'u16', 'u32', 'i8', 'i16', 'i32'):
+                return f'''
+            let mut i: i32 = self.{field_name} as _;
+            if ui.input_int("{self.name}", &mut i).build() {{
+                self.{field_name} = i as _;
+            }}
+                '''
+            elif self.type == 'f32':
+                return f'''
+            let mut i: f32 = self.{field_name};
+            if ui.input_float("{self.name}", &mut i).build() {{
+                self.{field_name} = i;
+            }}
+                '''
+            else:
+                return f'// unknown type for ui: {self.type}'
+        else:
+            return ''
+
+    def get_impls(self):
+        return []
 
     def rename(self, idx):
         self.name = self.name + f'_{idx}'
@@ -227,34 +333,23 @@ class Field:
 
 if __name__ == '__main__':
     layouts = build_param_layouts()
-    with open(HERE / '../../lib/libds3/src/params/param_data.rs', 'w') as fp:
+    # with open(HERE / '../../ccs-mod/src/params/param_data.rs', 'w') as fp:
+    with open(HERE / '../../libds3/src/params/param_data.rs', 'w') as fp:
         fp.write('// **********************************\n')
         fp.write('// *** AUTOGENERATED, DO NOT EDIT ***\n')
         fp.write('// **********************************\n')
         fp.write('use super::*;\n')
         fp.write('use std::collections::HashMap;\n')
         fp.write('use std::lazy::SyncLazy;\n')
-        fp.write('use crate::{ParamVisitor, ParamStruct};\n')
-        fp.write('use macro_param::ParamStruct;\n')
 
-        fp.write('''
-unsafe fn get_lambda<T: ParamStruct>(
-) -> Box<dyn Fn(*const c_void, &mut dyn ParamVisitor) + Send + Sync> {
-    Box::new(|ptr, v| {
-        if let Some(r) = (ptr as *mut T).as_mut() {
-            r.visit(&mut *v);
-        }
-    })
-}
-''')
-
-        fp.write(PARAM_VTABLE_TEMPLATE.format(
-            vtable_fields='\n        '.join(
-                '''("{param_name}".to_string(), unsafe {{ get_lambda::<{param_name}>() }}),'''
-                .format(param_name=l.name)
-                for l in layouts
-            )
-        ))
+        fp.write(dedent(MEME_VTABLE_TEMPLATE.format(
+            vtable_fields=''.join(MEME_VTABLE_FIELD_TEMPLATE.format(param_name=l.name) for l in layouts)
+        )))
 
         for l in layouts:
-            fp.write(l.get_struct())
+            fp.write(dedent(l.get_struct()))
+            fp.write(dedent(l.get_impls()))
+
+        fp.write(dedent(
+            IMPL_PARAMS_TEMPLATE.format(impl_params=''.join(l.get_impl_param() for l in layouts))
+        ))

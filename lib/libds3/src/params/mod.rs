@@ -12,7 +12,7 @@ use log::{error, info};
 use widestring::U16CStr;
 
 use crate::version::{Version, VERSION};
-use crate::wait_option;
+use crate::{wait_option, ParamVisitor, ParamStruct};
 
 pub static PARAMS: SyncLazy<Params> = SyncLazy::new(|| unsafe {
     wait_option(|| match Params::new() {
@@ -23,10 +23,6 @@ pub static PARAMS: SyncLazy<Params> = SyncLazy::new(|| unsafe {
         }
     })
 });
-
-trait RenderableParam {
-    fn render_imgui(&mut self, ui: &imgui::Ui);
-}
 
 #[repr(C)]
 struct ParamMaster {
@@ -258,11 +254,62 @@ impl Params {
                     if let Some(param_item) =
                         unsafe { self.get_param_idx_ptr(key, state.selected_id) }
                     {
-                        if let Some(lambda) = RENDER_VTABLE.get(key) {
+                        struct ImguiParamVisitor<'a>(&'a imgui::Ui<'a>);
+
+                        impl<'a> ParamVisitor for ImguiParamVisitor<'a> {
+                            fn visit_u8(&mut self, name: &str, v: &mut u8) {
+                                let mut i = *v as i32;
+                                self.0.input_int(name, &mut i).build();
+                                *v = i as _;
+                            }
+
+                            fn visit_u16(&mut self, name: &str, v: &mut u16) {
+                                let mut i = *v as i32;
+                                self.0.input_int(name, &mut i).build();
+                                *v = i as _;
+                            }
+
+                            fn visit_u32(&mut self, name: &str, v: &mut u32) {
+                                let mut i = *v as i32;
+                                self.0.input_int(name, &mut i).build();
+                                *v = i as _;
+                            }
+
+                            fn visit_i8(&mut self, name: &str, v: &mut i8) {
+                                let mut i = *v as i32;
+                                self.0.input_int(name, &mut i).build();
+                                *v = i as _;
+                            }
+
+                            fn visit_i16(&mut self, name: &str, v: &mut i16) {
+                                let mut i = *v as i32;
+                                self.0.input_int(name, &mut i).build();
+                                *v = i as _;
+                            }
+
+                            fn visit_i32(&mut self, name: &str, v: &mut i32) {
+                                let mut i = *v as i32;
+                                self.0.input_int(name, &mut i).build();
+                                *v = i as _;
+                            }
+
+                            fn visit_f32(&mut self, name: &str, v: &mut f32) {
+                                self.0.input_float(name, v).build();
+                            }
+
+                            fn visit_bool(&mut self, name: &str, v: &mut bool) {
+                                self.0.checkbox(name, v);
+                            }
+                        }
+
+                        if let Some(lambda) = PARAM_VTABLE.get(key) {
                             ListBox::new("##param_detail")
                                 .size([360., 240.])
                                 .build(ui, || {
-                                    lambda(param_item, ui);
+                                    lambda(param_item, &mut ImguiParamVisitor(ui));
+                                    // unsafe { (param_item as *mut ItemLotParam).as_mut() }
+                                    //     .unwrap()
+                                    //     .visit(&mut visitor);
                                 });
                         }
                     }
@@ -271,15 +318,6 @@ impl Params {
 
         drop(params);
     }
-}
-
-unsafe fn get_render_lambda<T: 'static + RenderableParam>(
-) -> Box<dyn Fn(*const c_void, &imgui::Ui) + Send + Sync> {
-    Box::new(|ptr, ui| {
-        if let Some(r) = (ptr as *mut T).as_mut() {
-            r.render_imgui(ui);
-        }
-    })
 }
 
 fn print_hex<T: Sized>(ptr: *const T) {
