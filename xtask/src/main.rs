@@ -24,7 +24,7 @@ type Result<T> = std::result::Result<T, DynError>;
 
 fn main() -> Result<()> {
     let task = env::args().nth(1);
-    match task.as_ref().map(|it| it.as_str()) {
+    match task.as_deref() {
         Some("dist") => dist()?,
         Some("codegen") => codegen::codegen()?,
         Some("help") => print_help(),
@@ -46,7 +46,7 @@ fn dist() -> Result<()> {
         .map_err(|e| format!("cargo: {}", e))?;
 
     if !status.success() {
-        Err("cargo build failed")?;
+        return Err("cargo build failed".into());
     }
 
     update_icon(
@@ -124,7 +124,7 @@ fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
     let mut group_header: &mut GroupHeader = unsafe {
         (buf.as_ptr() as *mut GroupHeader)
             .as_mut()
-            .ok_or_else(|| "Invalid pointer")?
+            .ok_or("Invalid pointer")?
     };
 
     let start: usize = group_header.offset as usize;

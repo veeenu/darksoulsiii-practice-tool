@@ -19,7 +19,7 @@ pub fn inject(title: &str, dll_path: PathBuf) {
     let title = CString::new(title).unwrap();
     let hwnd = unsafe { FindWindowA(null_mut(), title.as_ptr() as *const i8) };
 
-    if hwnd == null_mut() {
+    if hwnd.is_null() {
         error!("FindWindowA returned NULL: {}", unsafe { GetLastError() });
         return;
     }

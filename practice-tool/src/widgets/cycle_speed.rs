@@ -31,7 +31,7 @@ impl CycleSpeed {
                 .values
                 .iter()
                 .find(|&&x| x > speed)
-                .unwrap_or_else(|| self.values.iter().next().unwrap_or(&1.0))
+                .unwrap_or_else(|| self.values.get(0).unwrap_or(&1.0))
         });
         next.map(|speed| self.ptr.write(speed));
         next

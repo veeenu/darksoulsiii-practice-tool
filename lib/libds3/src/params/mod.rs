@@ -12,7 +12,7 @@ use log::{error, info};
 use widestring::U16CStr;
 
 use crate::version::{Version, VERSION};
-use crate::{wait_option, ParamVisitor, ParamStruct};
+use crate::{wait_option, ParamVisitor};
 
 pub static PARAMS: SyncLazy<Params> = SyncLazy::new(|| unsafe {
     wait_option(|| match Params::new() {
@@ -89,12 +89,15 @@ impl Params {
         Ok(p)
     }
 
+    /// # Safety
+    ///
+    /// Accesses raw pointers. Should never crash as the param pointers are static.
     pub unsafe fn refresh(&self) -> Result<(), String> {
         let version = VERSION.ok_or_else(|| String::from("Couldn't detect version"))?;
 
         let base: &ParamMaster = std::ptr::read(param_ptr(version) as *const *const ParamMaster)
             .as_ref()
-            .ok_or_else(|| format!("Invalid param base address"))?;
+            .ok_or_else(|| "Invalid param base address".to_string())?;
 
         let m = Params::param_entries_from_master(base)?;
         *self.0.write().unwrap() = m;
@@ -151,6 +154,10 @@ impl Params {
         self.0.read().unwrap().get(s).cloned()
     }
 
+    /// # Safety
+    ///
+    /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
+    /// params well-formed and loaded into memory) before invoking.
     pub unsafe fn iter_param_ids(&self, s: &str) -> Option<impl Iterator<Item = u64>> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
@@ -160,6 +167,10 @@ impl Params {
         Some(param_entries.iter().map(|ent| ent.param_id))
     }
 
+    /// # Safety
+    ///
+    /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
+    /// params well-formed and loaded into memory) before invoking.
     unsafe fn iter_param<T: 'static>(&self, s: &str) -> Option<impl Iterator<Item = Param<T>>> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
@@ -172,6 +183,10 @@ impl Params {
         }))
     }
 
+    /// # Safety
+    ///
+    /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
+    /// params well-formed and loaded into memory) before invoking.
     unsafe fn get_param_idx_ptr(&self, s: &str, i: usize) -> Option<*const c_void> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
@@ -185,6 +200,10 @@ impl Params {
         Some(param_ptr.offset(param_entries[i].param_offset) as *const c_void)
     }
 
+    /// # Safety
+    ///
+    /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
+    /// params well-formed and loaded into memory) before invoking.
     pub unsafe fn get_param_idx<T: 'static>(&self, s: &str, i: usize) -> Option<Param<T>> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
@@ -228,7 +247,7 @@ impl Params {
                 let selected_key = params.keys().nth(state.selected_param);
 
                 if let Some(param_entries) =
-                    selected_key.and_then(|k| unsafe { self.iter_param_ids(&k) })
+                    selected_key.and_then(|k| unsafe { self.iter_param_ids(k) })
                 {
                     let mut buf = String::new();
                     ListBox::new("##param_ids")
@@ -319,29 +338,3 @@ impl Params {
     }
 }
 
-fn print_hex<T: Sized>(ptr: *const T) {
-    let ptr = ptr as *const u8;
-
-    let bytes: Vec<u8> = (0..std::mem::size_of::<T>())
-        .map(|i| unsafe { *ptr.offset(i as _) })
-        .collect();
-
-    bytes.chunks(16).for_each(|bs| {
-        for i in bs {
-            print!("{:02x} ", i);
-        }
-
-        print!("  ");
-
-        for _ in bs.len()..16 {
-            print!("  ");
-        }
-
-        for i in bs {
-            let c = *i as char;
-            print!("{}", if c.is_ascii() { c } else { '.' });
-        }
-
-        println!("");
-    });
-}

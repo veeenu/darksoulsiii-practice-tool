@@ -12,7 +12,9 @@ SNAKECASE_CLEAN_RE = re.compile(r'_+')
 SLUG_RE = re.compile(r'([^a-zA-Z]+)')
 
 PARAM_VTABLE_TEMPLATE = '''
-pub static PARAM_VTABLE: SyncLazy<HashMap<String, Box<dyn Fn(*const c_void, &mut dyn ParamVisitor) + Send + Sync>>> = SyncLazy::new(|| {{
+type BoxedVisitorLambda = Box<dyn Fn(*const c_void, &mut dyn ParamVisitor) + Send + Sync>;
+
+pub static PARAM_VTABLE: SyncLazy<HashMap<String, BoxedVisitorLambda>> = SyncLazy::new(|| {{
     [
         {vtable_fields}
     ].into_iter().collect()
@@ -239,7 +241,7 @@ if __name__ == '__main__':
     print('use macro_param::ParamStruct;')
 
     print('''
-unsafe fn get_lambda<T: ParamStruct>() -> Box<dyn Fn(*const c_void, &mut dyn ParamVisitor) + Send + Sync> {
+unsafe fn get_lambda<T: ParamStruct>() -> BoxedVisitorLambda {
     Box::new(|ptr, v| {
         if let Some(r) = (ptr as *mut T).as_mut() {
             r.visit(&mut *v);

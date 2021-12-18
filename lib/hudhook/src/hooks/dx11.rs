@@ -80,7 +80,7 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
             let wnd_proc = std::mem::transmute::<_, WndProcType>(SetWindowLongPtrA(
                 sd.OutputWindow,
                 GWLP_WNDPROC,
-                imgui_wnd_proc as _,
+                imgui_wnd_proc as usize as isize,
             ));
 
             let imgui_ctx = engine.ctx();
@@ -371,6 +371,10 @@ fn get_present_addr() -> LPVOID {
 }
 
 /// Construct a `mh::Hook` that will render UI via the provided `ImguiRenderLoop`.
+///
+/// # Safety
+///
+/// yolo
 pub unsafe fn hook_imgui<T: 'static>(t: T) -> mh::Hook
 where
     T: ImguiRenderLoop + Send + Sync,

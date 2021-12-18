@@ -97,7 +97,7 @@ impl DeviceAndSwapChain {
 
             dev_ctx
                 .as_ref()
-                .OMSetRenderTargets(1, &mut back_buffer, null_mut());
+                .OMSetRenderTargets(1, &back_buffer, null_mut());
 
             back_buffer
         })

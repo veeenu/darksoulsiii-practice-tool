@@ -7,7 +7,7 @@ use std::lazy::SyncLazy;
 use crate::{ParamVisitor, ParamStruct};
 use macro_param::ParamStruct;
 
-unsafe fn get_lambda<T: ParamStruct>() -> Box<dyn Fn(*const c_void, &mut dyn ParamVisitor) + Send + Sync> {
+unsafe fn get_lambda<T: ParamStruct>() -> BoxedVisitorLambda {
     Box::new(|ptr, v| {
         if let Some(r) = (ptr as *mut T).as_mut() {
             r.visit(&mut *v);
@@ -15,7 +15,9 @@ unsafe fn get_lambda<T: ParamStruct>() -> Box<dyn Fn(*const c_void, &mut dyn Par
     })
 }
 
-pub static PARAM_VTABLE: SyncLazy<HashMap<String, Box<dyn Fn(*const c_void, &mut dyn ParamVisitor) + Send + Sync>>> = SyncLazy::new(|| {
+type BoxedVisitorLambda = Box<dyn Fn(*const c_void, &mut dyn ParamVisitor) + Send + Sync>;
+
+pub static PARAM_VTABLE: SyncLazy<HashMap<String, BoxedVisitorLambda>> = SyncLazy::new(|| {
     [
         ("ActionButtonParam".to_string(), unsafe { get_lambda::<ActionButtonParam>() }),
         ("AiSoundParam".to_string(), unsafe { get_lambda::<AiSoundParam>() }),

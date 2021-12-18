@@ -24,7 +24,7 @@ fn run_python_script() -> Result<()> {
         .map_err(|e| format!("python: {}", e))?;
 
     if !cmd.status.success() {
-        Err("python codegen failed")?;
+        return Err("python codegen failed".into());
     }
 
     File::create(project_root().join("lib/libds3/src/params/param_data.rs"))?
@@ -44,7 +44,7 @@ fn checkout_paramdex() -> Result<()> {
             .map_err(|e| format!("git: {}", e))?;
 
         if !status.success() {
-            Err("git fetch failed")?;
+            return Err("git fetch failed".into());
         }
 
         let status = Command::new(&git)
@@ -54,7 +54,7 @@ fn checkout_paramdex() -> Result<()> {
             .map_err(|e| format!("git: {}", e))?;
 
         if !status.success() {
-            Err("git pull failed")?;
+            return Err("git pull failed".into());
         }
     } else {
         let status = Command::new(&git)
@@ -64,7 +64,7 @@ fn checkout_paramdex() -> Result<()> {
             .map_err(|e| format!("git: {}", e))?;
 
         if !status.success() {
-            Err("git clone failed")?;
+            return Err("git clone failed".into());
         }
     }
 

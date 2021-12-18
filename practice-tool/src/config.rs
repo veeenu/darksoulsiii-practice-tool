@@ -97,55 +97,55 @@ impl Config {
     pub(crate) fn make_commands(&self, chains: &PointerChains) -> Vec<Box<dyn Widget>> {
         self.commands
             .iter()
-            .filter_map(|cmd| match cmd {
-                CfgCommand::Flag { flag, hotkey } => Some(Box::new(Flag::new(
+            .map(|cmd| match cmd {
+                CfgCommand::Flag { flag, hotkey } => Box::new(Flag::new(
                     &flag.label,
                     (flag.getter)(chains).clone(),
                     hotkey.clone(),
-                )) as Box<dyn Widget>),
+                )) as Box<dyn Widget>,
                 CfgCommand::SavefileManager {
                     hotkey_load,
                     hotkey_back,
                     hotkey_close,
-                } => Some(SavefileManager::new(
+                } => SavefileManager::new_widget(
                     hotkey_load.clone(),
                     hotkey_back.clone(),
                     hotkey_close.clone(),
-                )),
+                ),
                 CfgCommand::ItemSpawner {
                     hotkey_load,
                     hotkey_back,
                     hotkey_close,
-                } => Some(Box::new(ItemSpawner::new(
+                } => Box::new(ItemSpawner::new(
                     chains.spawn_item_func_ptr,
                     chains.map_item_man,
                     chains.gravity.clone(),
                     hotkey_load.clone(),
                     hotkey_back.clone(),
                     hotkey_close.clone(),
-                ))),
-                CfgCommand::Position { hotkey, modifier } => Some(Box::new(SavePosition::new(
+                )),
+                CfgCommand::Position { hotkey, modifier } => Box::new(SavePosition::new(
                     chains.position.clone(),
                     hotkey.clone(),
                     modifier.clone(),
-                ))),
+                )),
                 CfgCommand::CycleSpeed {
                     cycle_speed,
                     hotkey,
-                } => Some(Box::new(CycleSpeed::new(
+                } => Box::new(CycleSpeed::new(
                     cycle_speed,
                     chains.speed.clone(),
                     hotkey.clone(),
-                ))),
-                CfgCommand::Souls { amount, hotkey } => Some(Box::new(Souls::new(
+                )),
+                CfgCommand::Souls { amount, hotkey } => Box::new(Souls::new(
                     *amount,
                     chains.souls.clone(),
                     hotkey.clone(),
-                ))),
-                CfgCommand::Quitout { hotkey } => Some(Box::new(Quitout::new(
+                )),
+                CfgCommand::Quitout { hotkey } => Box::new(Quitout::new(
                     chains.quitout.clone(),
                     hotkey.clone(),
-                ))),
+                )),
             })
             .collect()
     }

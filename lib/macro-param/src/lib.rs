@@ -95,7 +95,7 @@ pub fn macro_param(t: TokenStream) -> TokenStream {
             } => {
                 let ty_ident = path.segments[0].ident.to_string();
                 match ty_ident.as_str() {
-                    "u8" if bitfield_spec.len() > 0 => {
+                    "u8" if !bitfield_spec.is_empty() => {
                         let bitfield_visit = bitfield_spec.iter().map(
                             |(bitfield_name, _, set_bitfield, get_bitfield)| {
                                 quote! {

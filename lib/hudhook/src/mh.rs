@@ -65,6 +65,9 @@ pub struct Hook {
 }
 
 impl Hook {
+    /// # Safety
+    ///
+    ///
     pub unsafe fn new(addr: *mut c_void, hook_impl: *mut c_void) -> Hook {
         Hook {
             addr,

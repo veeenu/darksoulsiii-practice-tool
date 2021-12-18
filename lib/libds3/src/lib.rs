@@ -30,3 +30,30 @@ pub trait ParamVisitor {
 pub trait ParamStruct {
     fn visit<T: ParamVisitor + ?Sized>(&mut self, t: &mut T);
 }
+
+pub fn print_hex<T: Sized>(ptr: *const T) {
+    let ptr = ptr as *const u8;
+
+    let bytes: Vec<u8> = (0..std::mem::size_of::<T>())
+        .map(|i| unsafe { *ptr.add(i) })
+        .collect();
+
+    bytes.chunks(16).for_each(|bs| {
+        for i in bs {
+            print!("{:02x} ", i);
+        }
+
+        print!("  ");
+
+        for _ in bs.len()..16 {
+            print!("  ");
+        }
+
+        for i in bs {
+            let c = *i as char;
+            print!("{}", if c.is_ascii() { c } else { '.' });
+        }
+
+        println!();
+    });
+}

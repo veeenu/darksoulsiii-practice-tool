@@ -36,7 +36,7 @@ impl PracticeTool {
                     path.push("jdsd_dsiii_practice_tool.toml");
                     path
                 })
-                .ok_or_else(|| format!("Couldn't find config file"))?;
+                .ok_or_else(|| "Couldn't find config file".to_string())?;
             let config_content = std::fs::read_to_string(config_path)
                 .map_err(|e| format!("Couldn't read config file: {:?}", e))?;
             println!("{}", config_content);
@@ -245,7 +245,7 @@ impl ImguiRenderLoop for PracticeTool {
         for w in &mut self.widgets {
             if let Some(logs) = w.log() {
                 let now = Instant::now();
-                self.log.extend(logs.into_iter().map(|l| (now.clone(), l)));
+                self.log.extend(logs.into_iter().map(|l| (now, l)));
             }
             self.log
                 .retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
