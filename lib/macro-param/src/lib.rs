@@ -148,6 +148,7 @@ pub fn macro_param(t: TokenStream) -> TokenStream {
         }
     };
 
+    let get_name_snake_case = format_ident!("get_{}", AsSnakeCase(name.to_string()).to_string());
     quote! {
         impl #name {
             #(#bitfield_methods)*
@@ -156,7 +157,12 @@ pub fn macro_param(t: TokenStream) -> TokenStream {
         impl ParamStruct for #name {
             #visit
         }
+
+        impl Params {
+            pub unsafe fn #get_name_snake_case(&self) -> Option<impl Iterator<Item = Param<#name>>> {
+                self.iter_param::<#name>(stringify!(#name))
+            }
+        }
     }
     .into()
-
 }

@@ -306,10 +306,9 @@ impl Params {
                             ListBox::new("##param_detail")
                                 .size([360., 240.])
                                 .build(ui, || {
+                                    let token = ui.push_item_width(120.);
                                     lambda(param_item, &mut ImguiParamVisitor(ui));
-                                    // unsafe { (param_item as *mut ItemLotParam).as_mut() }
-                                    //     .unwrap()
-                                    //     .visit(&mut visitor);
+                                    drop(token);
                                 });
                         }
                     }
