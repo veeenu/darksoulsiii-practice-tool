@@ -1,0 +1,23 @@
+GameDataMan:
+  versions:
+    1.04: 0x14469D118
+    1.08: 0x144704268
+    1.12: 0x14473A818
+    1.15: 0x144740148
+  offsets:
+    1.04:
+      IGT: 0x9c
+    1.08:
+      IGT: 0xa4
+    1.12:
+      IGT: 0xa4
+    1.15:
+      IGT: 0xa4
+
+# Find its vtable -> find its instance -> static
+Param: "class NS_SPRJ::CSRegulationManagerImp"
+
+# [param]+10 -> u64 start
+# [param]+18 -> u64 end
+# count = (end - start) / 8
+# param[i] = *(start + i * 8)

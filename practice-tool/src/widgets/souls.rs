@@ -24,9 +24,9 @@ impl Souls {
     fn add(&self) -> Option<u32> {
         let cur_souls = self.ptr.read();
 
-        cur_souls.and_then(|souls| {
+        cur_souls.map(|souls| {
             self.ptr.write(souls + self.amount);
-            Some(souls + self.amount)
+            souls + self.amount
         })
     }
 }

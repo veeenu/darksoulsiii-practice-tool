@@ -1,9 +1,4 @@
-use std::ffi::OsString;
-use std::os::windows::prelude::OsStringExt;
-
 use crate::memedit::*;
-
-use log::*;
 
 pub(crate) struct PointerChains {
     pub(crate) all_no_damage: Bitflag<u8>,
@@ -31,8 +26,8 @@ pub(crate) struct PointerChains {
     pub(crate) souls: PointerChain<u32>,
     pub(crate) quitout: PointerChain<u8>,
     pub(crate) mouse_enable: PointerChain<u8>,
-    pub(crate) format_string: PointerChain<[u16; 90]>,
 
+    #[allow(unused)]
     pub(crate) world_chr_man: usize,
     pub(crate) map_item_man: u64,
     pub(crate) spawn_item_func_ptr: u64,
@@ -41,7 +36,6 @@ pub(crate) struct PointerChains {
 pub(crate) struct BaseAddresses {
     // offsets from base_b
     pub world_chr_man: usize,
-    pub base_d: usize,
     pub sprj_debug_event: usize,
     pub debug: usize,
     pub grend: usize,
@@ -63,17 +57,22 @@ pub(crate) struct BaseAddresses {
     pub mesh_lo: u64,
     pub mesh_hi: u64,
     pub instaqo: u64,
-    pub version_string_ptr: u64,
     pub base_souls: u64,
     pub mouse_enable: (u64, u64),
 
-    pub version: &'static str,
-
     // other static pointers
-    pub format_string: u64,
 
     pub map_item_man: u64,
     pub spawn_item_func_ptr: u64,
+
+    #[allow(unused)]
+    pub version_string_ptr: usize,
+    #[allow(unused)]
+    pub version: &'static str,
+    #[allow(unused)]
+    pub format_string: u64,
+    #[allow(unused)]
+    pub base_d: usize,
 }
 
 const VER104: BaseAddresses = BaseAddresses {
@@ -189,40 +188,20 @@ const VER115: BaseAddresses = BaseAddresses {
     map_item_man: 0x144752300,
 };
 
-fn vercmp(ptr: usize, ver: &str) -> bool {
-    let ver_mem = PointerChain::<[u16; 4]>::new(&[ptr]).read();
-
-    if let Some(ver_mem) = ver_mem {
-        let ver_memstr = OsString::from_wide(&ver_mem);
-        info!(
-            "Version string: matching {:?} against {:?}",
-            ver, ver_memstr
-        );
-        ver_memstr == *ver
-    } else {
-        false
-    }
-}
-
 pub(crate) fn detect_version() -> Option<BaseAddresses> {
-    if vercmp(VER104.version_string_ptr as _, "1.04") {
-        Some(VER104)
-    } else if vercmp(VER108.version_string_ptr as _, "1.08") {
-        Some(VER108)
-    } else if vercmp(VER112.version_string_ptr as _, "1.12") {
-        Some(VER112)
-    } else if vercmp(VER115.version_string_ptr as _, "1.15") {
-        Some(VER115)
-    } else {
-        None
-    }
+    use libds3::version::{detect_version, Version};
+    unsafe { detect_version() }.map(|ver| match ver {
+        Version::Ver104 => VER104,
+        Version::Ver108 => VER108,
+        Version::Ver112 => VER112,
+        Version::Ver115 => VER115,
+    })
 }
 
 impl From<BaseAddresses> for PointerChains {
     fn from(b: BaseAddresses) -> Self {
         let BaseAddresses {
             world_chr_man,
-            base_d,
             sprj_debug_event,
             debug,
             grend,
@@ -239,7 +218,6 @@ impl From<BaseAddresses> for PointerChains {
             mesh_hi,
             mesh_lo,
             instaqo,
-            format_string,
             mouse_enable,
             spawn_item_func_ptr,
             map_item_man,
@@ -266,7 +244,6 @@ impl From<BaseAddresses> for PointerChains {
             ik_foot_ray: bitflag!(0b1; world_chr_man_dbg as usize, 0x6B),
             debug_sphere_1: bitflag!(0b1; base_hbd as usize, 0x30),
             debug_sphere_2: bitflag!(0b1; base_hbd as usize, 0x31),
-            // gravity: bitflag!(0b1; base_d, 0x60, 0x48),
             gravity: bitflag!(0b1000000; world_chr_man, 0x80, 0x1a08),
             speed: pointer_chain!(world_chr_man, 0x80, xa as _, 0x28, offs_speed as _),
             position: (
@@ -279,7 +256,6 @@ impl From<BaseAddresses> for PointerChains {
             world_chr_man,
             mouse_enable: pointer_chain!(mouse_enable.0 as _, mouse_enable.1 as _),
             quitout: pointer_chain!(instaqo as _, 0x250),
-            format_string: pointer_chain!(format_string as _),
         }
     }
 }

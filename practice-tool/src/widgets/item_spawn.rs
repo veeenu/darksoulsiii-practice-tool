@@ -12,11 +12,11 @@ use crate::util::{get_key_code, KeyState};
 
 use super::Widget;
 
-const ISP_TAG: &'static str = "##item-spawn";
+const ISP_TAG: &str = "##item-spawn";
 static ITEM_ID_TREE: SyncLazy<ItemIDTree> =
     SyncLazy::new(|| serde_json::from_str(include_str!("item_ids.json")).unwrap());
 
-static INFUSION_TYPES: [(u32, &'static str); 16] = [
+static INFUSION_TYPES: [(u32, &str); 16] = [
     (0, "Normal"),
     (100, "Heavy"),
     (200, "Sharp"),
@@ -35,7 +35,7 @@ static INFUSION_TYPES: [(u32, &'static str); 16] = [
     (1500, "Hollow"),
 ];
 
-static UPGRADES: [(u32, &'static str); 11] = [
+static UPGRADES: [(u32, &str); 11] = [
     (0, "+0"),
     (1, "+1"),
     (2, "+2"),
@@ -153,9 +153,9 @@ impl<'a> Stack<'a> {
         } else {
             let mut breadcrumbs = String::new();
             for e in self.stack[..self.stack.len()].iter().skip(1) {
-                breadcrumbs.extend(" / ".chars());
-                breadcrumbs.extend(match e {
-                    (ItemIDTree::Node { node, .. }, _) => node.chars(),
+                breadcrumbs.push_str(" / ");
+                breadcrumbs.push_str(match e {
+                    (ItemIDTree::Node { node, .. }, _) => node,
                     _ => unreachable!(),
                 });
             }

@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, WindowFlags};
 
@@ -7,7 +7,7 @@ use crate::util::{get_key_code, KeyState};
 
 use super::Widget;
 
-const SFM_TAG: &'static str = "##savefile-manager";
+const SFM_TAG: &str = "##savefile-manager";
 
 #[derive(Debug)]
 pub(crate) struct ErroredSavefileManagerInner {
@@ -42,7 +42,7 @@ pub(crate) struct SavefileManager {
 }
 
 impl SavefileManager {
-    pub(crate) fn new(
+    pub(crate) fn new_widget(
         key_load: KeyState,
         key_back: KeyState,
         key_close: KeyState,
@@ -208,7 +208,7 @@ struct DirEntry {
 }
 
 impl DirEntry {
-    fn new(path: &PathBuf) -> DirEntry {
+    fn new(path: &Path) -> DirEntry {
         let mut list = DirStack::ls(path).unwrap();
 
         list.sort_by(|a, b| {
@@ -270,7 +270,7 @@ struct DirStack {
 }
 
 impl DirStack {
-    fn new(path: &PathBuf) -> Result<Self, String> {
+    fn new(path: &Path) -> Result<Self, String> {
         let stack = vec![DirEntry::new(path)];
 
         Ok(DirStack { stack })
@@ -280,7 +280,7 @@ impl DirStack {
         let new_entry = {
             let current_entry = self.stack.last().unwrap().current();
             if current_entry.is_dir() {
-                Some(DirEntry::new(&current_entry))
+                Some(DirEntry::new(current_entry))
             } else {
                 None
             }
@@ -306,8 +306,8 @@ impl DirStack {
         } else {
             let mut breadcrumbs = String::new();
             for e in self.stack[..self.stack.len() - 1].iter() {
-                breadcrumbs.extend(" / ".chars());
-                breadcrumbs.extend(e.current().file_name().unwrap().to_str().unwrap().chars());
+                breadcrumbs.push_str(" / ");
+                breadcrumbs.push_str(e.current().file_name().unwrap().to_str().unwrap());
             }
             breadcrumbs
         }
@@ -337,7 +337,7 @@ impl DirStack {
     // FS errors would be permission denied (which shouldn't happen but should be reported)
     // and not a directory (which doesn't happen because we checked for is_dir).
     // For the moment, I just unwrap.
-    fn ls(path: &PathBuf) -> Result<Vec<PathBuf>, String> {
+    fn ls(path: &Path) -> Result<Vec<PathBuf>, String> {
         Ok(std::fs::read_dir(path)
             .map_err(|e| format!("{}", e))?
             .filter_map(Result::ok)
@@ -365,7 +365,7 @@ fn get_savefile_path() -> Result<PathBuf, String> {
         .ok_or_else(|| String::from("Couldn't find savefile path"))
 }
 
-fn load_savefile(src: &PathBuf, dest: &PathBuf) -> Result<(), std::io::Error> {
+fn load_savefile(src: &Path, dest: &Path) -> Result<(), std::io::Error> {
     let buf = std::fs::read(src)?;
     std::fs::write(dest, &buf)?;
     Ok(())

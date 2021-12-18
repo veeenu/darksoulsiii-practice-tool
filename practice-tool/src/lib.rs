@@ -11,6 +11,7 @@ use std::time::Instant;
 use imgui::*;
 
 use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
+use libds3::{PARAMS, wait_option};
 
 use crate::pointers::PointerChains;
 
@@ -35,7 +36,7 @@ impl PracticeTool {
                     path.push("jdsd_dsiii_practice_tool.toml");
                     path
                 })
-                .ok_or_else(|| format!("Couldn't find config file"))?;
+                .ok_or_else(|| "Couldn't find config file".to_string())?;
             let config_content = std::fs::read_to_string(config_path)
                 .map_err(|e| format!("Couldn't read config file: {:?}", e))?;
             println!("{}", config_content);
@@ -98,6 +99,22 @@ impl PracticeTool {
         let widgets = config.make_commands(&pointers);
 
         log_panics::init();
+
+        let mut equip_param_goods = wait_option(|| unsafe {
+            if let Err(e) = PARAMS.refresh() {
+                error!("{}", e);
+            }
+            PARAMS.get_equip_param_goods()
+        });
+        equip_param_goods
+            .find(|i| {
+                i.id == 117
+            })
+            .and_then(|p| p.param)
+            .map(|mut darksign| {
+                darksign.icon_id = 116;
+            });
+
         PracticeTool {
             config,
             pointers,
@@ -220,7 +237,7 @@ impl ImguiRenderLoop for PracticeTool {
         for w in &mut self.widgets {
             if let Some(logs) = w.log() {
                 let now = Instant::now();
-                self.log.extend(logs.into_iter().map(|l| (now.clone(), l)));
+                self.log.extend(logs.into_iter().map(|l| (now, l)));
             }
             self.log
                 .retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
