@@ -53,20 +53,31 @@ You can contact me on Discord at `johndisandonato#4484` or on [Twitter](https://
 - NamelessHoodie[2] and Amir's work on [HoodieScript](https://github.com/NamelessHoodie/HoodieScript)
   for insights about the game's inner workings.
 - The Soulsmodding community for the [Param definitions](https://github.com/soulsmods/Paramdex).
+- r3sus for the help with anti-cheat ideas, for all the interesting study material / code and
+  all the general tips.
 
 ## Development
 
-All you need for building the project is a nightly version of Rust.
+The dependencies for running all the tasks in the project are:
+- Rust nightly
+- Python >=3.9 with `pandas`
+
+The project can be wholly built via `cargo xtask`.
+
+### Distribution artifacts 
+
+To create a `jdsd_dsiii_practice_tool.zip` file in the `target/dist` folder:
 
 ```
-cargo +nightly build --release
+cargo +nightly xtask dist
 ```
 
-In order to create a release package, run the bundled Python build script.
-This will create a `jdsd_dsiii_practice_tool.zip` file in the project root.
+### Codegen
+
+To run the code generation tasks:
 
 ```
-python build.py package
+cargo +nightly xtask codegen
 ```
 
 ## Writeup
