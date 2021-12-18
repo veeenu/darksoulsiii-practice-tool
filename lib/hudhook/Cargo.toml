@@ -7,7 +7,12 @@ edition = "2021"
 name = "hook_you"
 crate-type = ["cdylib"]
 
+[[bin]]
+name = "inject"
+
 [dependencies]
+console = "0.15.0"
+dialoguer = "0.9.0"
 imgui-dx11 = { path = "../imgui-dx11" }
 log = "0.4.14"
 once_cell = "1.8.0"
