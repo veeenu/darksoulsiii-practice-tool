@@ -13,7 +13,7 @@ use imgui::*;
 use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
 use libds3::{wait_option, PARAMS};
 
-use crate::{pointers::PointerChains, widgets::param_edit::ParamEdit};
+use crate::pointers::PointerChains;
 
 struct PracticeTool {
     config: config::Config,
@@ -96,8 +96,7 @@ impl PracticeTool {
             .expect("Couldn't detect version!")
             .into();
 
-        let mut widgets = config.make_commands(&pointers);
-        widgets.insert(0, Box::new(ParamEdit::new(&PARAMS)));
+        let widgets = config.make_commands(&pointers);
 
         log_panics::init();
 

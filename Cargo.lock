@@ -354,6 +354,7 @@ dependencies = [
  "log",
  "macro-param",
  "widestring",
+ "winapi",
 ]
 
 [[package]]
@@ -456,6 +457,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dcea7a30d6b81a2423cc59c43554880feff7b57d12916f231a79f8d6d9470201"
 dependencies = [
  "pathdiff",
+ "winapi",
+]
+
+[[package]]
+name = "param-tinkerer"
+version = "0.1.0"
+dependencies = [
+ "hudhook",
+ "imgui",
+ "imgui-dx11",
+ "imgui-sys",
+ "libds3",
  "winapi",
 ]
 

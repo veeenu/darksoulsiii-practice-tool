@@ -1,6 +1,8 @@
 #![feature(once_cell)]
 
 mod params;
+pub mod memedit;
+pub mod pointers;
 pub mod version;
 
 use std::time::Duration;

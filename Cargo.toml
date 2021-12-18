@@ -5,6 +5,7 @@ members = [
   "lib/imgui-dx11",
   "lib/libds3",
   "lib/macro-param",
+  "lib/param-tinkerer",
   "xtask",
 ]
 
