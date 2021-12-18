@@ -26,7 +26,7 @@ fn main() -> Result<()> {
     let task = env::args().nth(1);
     match task.as_ref().map(|it| it.as_str()) {
         Some("dist") => dist()?,
-        Some("codegen") => codegen()?,
+        Some("codegen") => codegen::codegen()?,
         Some("help") => print_help(),
         _ => print_help(),
     }
@@ -82,12 +82,6 @@ fn dist() -> Result<()> {
     add_zip(project_root().join("target/release/jdsd_dsiii_practice_tool.exe"))?;
     add_zip(project_root().join("target/release/jdsd_dsiii_practice_tool.dll"))?;
     add_zip(project_root().join("practice-tool/jdsd_dsiii_practice_tool.toml"))?;
-
-    Ok(())
-}
-
-fn codegen() -> Result<()> {
-    checkout_paramdex()?;
 
     Ok(())
 }
@@ -165,21 +159,6 @@ fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
         );
 
         EndUpdateResourceW(handle, FALSE);
-    }
-
-    Ok(())
-}
-
-fn checkout_paramdex() -> Result<()> {
-    let git = env::var("GIT").unwrap_or_else(|_| "git".to_string());
-    let status = Command::new(git)
-        .current_dir(project_root().join("target"))
-        .args(&["clone", "https://github.com/soulsmods/Paramdex.git"])
-        .status()
-        .map_err(|e| format!("git: {}", e))?;
-
-    if !status.success() {
-        Err("git clone failed")?;
     }
 
     Ok(())
