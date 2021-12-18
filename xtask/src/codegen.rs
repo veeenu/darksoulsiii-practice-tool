@@ -16,7 +16,7 @@ fn run_python_script() -> Result<()> {
     let cmd = Command::new(python)
         .current_dir(project_root().join("target"))
         .args(&[
-            project_root().join("xtask/src/codegen.py"),
+            project_root().join("xtask/src/codegen/codegen.py"),
             project_root().join("target/Paramdex"),
             project_root().join("xtask"),
         ])
