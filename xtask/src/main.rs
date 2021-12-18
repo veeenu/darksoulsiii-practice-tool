@@ -83,7 +83,7 @@ fn dist() -> Result<()> {
         "jdsd_dsiii_practice_tool.exe",
     )?;
     add_zip(
-        project_root().join("target/release/jdsd_dsiii_practice_tool.dll"),
+        project_root().join("target/release/libjdsd_dsiii_practice_tool.dll"),
         "jdsd_dsiii_practice_tool.dll",
     )?;
     add_zip(

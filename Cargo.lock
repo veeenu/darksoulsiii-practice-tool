@@ -345,7 +345,7 @@ checksum = "b71991ff56294aa922b450139ee08b3bfc70982c6b2c7562771375cf73542dd4"
 
 [[package]]
 name = "jdsd_dsiii_practice_tool"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "chrono",
  "dynasm",
