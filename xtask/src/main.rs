@@ -12,8 +12,8 @@ use winapi::shared::minwindef::FALSE;
 use winapi::shared::ntdef::{LANG_ENGLISH, MAKELANGID, SUBLANG_DEFAULT};
 use winapi::um::winbase::{BeginUpdateResourceW, EndUpdateResourceW, UpdateResourceW};
 use winapi::um::winuser::{MAKEINTRESOURCEW, RT_GROUP_ICON, RT_ICON};
-use zip::{CompressionMethod, ZipWriter};
 use zip::write::FileOptions;
+use zip::{CompressionMethod, ZipWriter};
 
 type DynError = Box<dyn std::error::Error>;
 type Result<T> = std::result::Result<T, DynError>;
@@ -52,7 +52,8 @@ fn dist() -> Result<()> {
     update_icon(
         project_root().join("target/release/jdsd_dsiii_practice_tool.exe"),
         project_root().join("practice-tool/src/sidherald.ico"),
-    ).map_err(|e| format!("Update icon: {}", e))?;
+    )
+    .map_err(|e| format!("Update icon: {}", e))?;
 
     std::fs::remove_dir_all(dist_dir()).ok();
     std::fs::create_dir_all(dist_dir())?;
@@ -60,13 +61,11 @@ fn dist() -> Result<()> {
     let mut zip = ZipWriter::new(File::create(
         dist_dir().join("jdsd_dsiii_practice_tool.zip"),
     )?);
-    let file_options = FileOptions::default()
-        .compression_method(CompressionMethod::Deflated);
-    
+    let file_options = FileOptions::default().compression_method(CompressionMethod::Deflated);
+
     let mut buf: Vec<u8> = Vec::new();
 
-    let mut add_zip = |src: PathBuf| -> Result<()> {
-        let dst = src.file_name().unwrap().to_string_lossy();
+    let mut add_zip = |src: PathBuf, dst: &str| -> Result<()> {
         File::open(&src)
             .map_err(|e| format!("{}: Couldn't open file: {}", dst, e))?
             .read_to_end(&mut buf)
@@ -79,9 +78,18 @@ fn dist() -> Result<()> {
         Ok(())
     };
 
-    add_zip(project_root().join("target/release/jdsd_dsiii_practice_tool.exe"))?;
-    add_zip(project_root().join("target/release/jdsd_dsiii_practice_tool.dll"))?;
-    add_zip(project_root().join("practice-tool/jdsd_dsiii_practice_tool.toml"))?;
+    add_zip(
+        project_root().join("target/release/jdsd_dsiii_practice_tool.exe"),
+        "jdsd_dsiii_practice_tool.exe",
+    )?;
+    add_zip(
+        project_root().join("target/release/jdsd_dsiii_practice_tool.dll"),
+        "jdsd_dsiii_practice_tool.dll",
+    )?;
+    add_zip(
+        project_root().join("practice-tool/jdsd_dsiii_practice_tool.toml"),
+        "jdsd_dsiii_practice_tool.toml",
+    )?;
 
     Ok(())
 }
