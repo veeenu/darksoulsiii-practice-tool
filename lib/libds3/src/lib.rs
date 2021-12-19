@@ -9,7 +9,7 @@ use std::time::Duration;
 
 pub use params::*;
 
-pub fn wait_option<T, F: Fn() -> Option<T>>(f: F) -> T {
+pub fn wait_option<T, F: FnMut() -> Option<T>>(mut f: F) -> T {
     loop {
         if let Some(t) = f() {
             return t;
