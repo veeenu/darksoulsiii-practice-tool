@@ -399,6 +399,7 @@ dependencies = [
  "imgui",
  "log",
  "macro-param",
+ "parking_lot",
  "widestring",
  "winapi",
 ]

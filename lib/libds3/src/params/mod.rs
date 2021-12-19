@@ -1,22 +1,20 @@
 mod param_data;
-use imgui::{ChildWindow, ListBox, Selectable};
 pub use param_data::*;
 
 use std::collections::BTreeMap;
 use std::ffi::c_void;
-use std::fmt::Write;
 use std::lazy::SyncLazy;
-use std::sync::{Mutex, RwLock};
 
 use log::{error, info};
+use parking_lot::RwLock;
 use widestring::U16CStr;
 
 use crate::version::{Version, VERSION};
 use crate::{wait_option, ParamVisitor};
 
-pub static PARAMS: SyncLazy<Params> = SyncLazy::new(|| unsafe {
+pub static PARAMS: SyncLazy<RwLock<Params>> = SyncLazy::new(|| unsafe {
     wait_option(|| match Params::new() {
-        Ok(p) => Some(p),
+        Ok(p) => Some(RwLock::new(p)),
         Err(e) => {
             info!("Waiting on memory: {}", e);
             None
@@ -68,22 +66,13 @@ const fn param_ptr(v: Version) -> usize {
     }
 }
 
-#[derive(Default)]
-struct ParamUIState {
-    selected_param: usize,
-    selected_id: usize,
-}
-
-pub struct Params(
-    RwLock<BTreeMap<String, (*const c_void, isize)>>,
-    Mutex<ParamUIState>,
-);
+pub struct Params(BTreeMap<String, (*const c_void, isize)>);
 unsafe impl Send for Params {}
 unsafe impl Sync for Params {}
 
 impl Params {
     unsafe fn new() -> Result<Params, String> {
-        let p = Params(RwLock::new(BTreeMap::new()), Mutex::new(Default::default()));
+        let mut p = Params(BTreeMap::new());
         p.refresh()?;
 
         Ok(p)
@@ -92,7 +81,7 @@ impl Params {
     /// # Safety
     ///
     /// Accesses raw pointers. Should never crash as the param pointers are static.
-    pub unsafe fn refresh(&self) -> Result<(), String> {
+    pub unsafe fn refresh(&mut self) -> Result<(), String> {
         let version = VERSION.ok_or_else(|| String::from("Couldn't detect version"))?;
 
         let base: &ParamMaster = std::ptr::read(param_ptr(version) as *const *const ParamMaster)
@@ -100,7 +89,7 @@ impl Params {
             .ok_or_else(|| "Invalid param base address".to_string())?;
 
         let m = Params::param_entries_from_master(base)?;
-        *self.0.write().unwrap() = m;
+        self.0 = m;
         Ok(())
     }
 
@@ -150,8 +139,28 @@ impl Params {
         Ok(m)
     }
 
+    pub fn keys(&self) -> impl Iterator<Item = &String> {
+        self.0.keys()
+    }
+
     fn get_param_ptr(&self, s: &str) -> Option<(*const c_void, isize)> {
-        self.0.read().unwrap().get(s).cloned()
+        self.0.get(s).cloned()
+    }
+
+    pub fn visit_param_item<T: ParamVisitor>(
+        &self,
+        param: &str,
+        param_idx: usize,
+        visitor: &mut T,
+    ) {
+        PARAM_VTABLE
+            .get(param)
+            .and_then(|lambda| {
+                unsafe { self.get_param_idx_ptr(param, param_idx) }.map(|v| (lambda, v))
+            })
+            .map(|(lambda, ptr)| {
+                lambda(ptr, visitor);
+            });
     }
 
     /// # Safety
@@ -171,7 +180,10 @@ impl Params {
     ///
     /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
     /// params well-formed and loaded into memory) before invoking.
-    unsafe fn iter_param<T: 'static>(&self, s: &str) -> Option<impl Iterator<Item = Param<T>>> {
+    ///
+    /// This is somewhat expensive as it calculates each param's offset at every iteration. If you
+    /// only need the param IDs, use `iter_param_ids`.
+    pub unsafe fn iter_param<T: 'static>(&self, s: &str) -> Option<impl Iterator<Item = Param<T>>> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
         let vec_ptr = param_ptr.offset(0x40) as *const ParamEntryOffset;
@@ -204,7 +216,7 @@ impl Params {
     ///
     /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
     /// params well-formed and loaded into memory) before invoking.
-    pub unsafe fn get_param_idx<T: 'static>(&self, s: &str, i: usize) -> Option<Param<T>> {
+    unsafe fn get_param_idx<T: 'static>(&self, s: &str, i: usize) -> Option<Param<T>> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
         if i >= (count as usize) {
@@ -219,122 +231,4 @@ impl Params {
             param: (param_ptr.offset(param_entries[i].param_offset) as *mut T).as_mut(),
         })
     }
-
-    pub fn render_imgui(&self, ui: &imgui::Ui) {
-        let mut state = self.1.lock().unwrap();
-        let params = self.0.read().unwrap();
-
-        ChildWindow::new("##param_child_wnd")
-            .size([250. * 3., 250.])
-            .build(ui, || {
-                ui.columns(3, "##param_columns", false);
-
-                ListBox::new("##param_names")
-                    .size([240., 240.])
-                    .build(ui, || {
-                        for (idx, k) in params.keys().enumerate() {
-                            if Selectable::new(k)
-                                .selected(idx == state.selected_param)
-                                .build(ui)
-                            {
-                                state.selected_param = idx;
-                            }
-                        }
-                    });
-
-                ui.next_column();
-                ui.set_current_column_width(130.);
-                let selected_key = params.keys().nth(state.selected_param);
-
-                if let Some(param_entries) =
-                    selected_key.and_then(|k| unsafe { self.iter_param_ids(k) })
-                {
-                    let mut buf = String::new();
-                    ListBox::new("##param_ids")
-                        .size([120., 240.])
-                        .build(ui, || {
-                            for (idx, id) in param_entries.enumerate() {
-                                write!(buf, "{}", id).ok();
-                                if Selectable::new(&buf)
-                                    .selected(idx == state.selected_id)
-                                    .build(ui)
-                                {
-                                    state.selected_id = idx;
-                                }
-                                buf.clear();
-                            }
-                        });
-                }
-
-                ui.next_column();
-                ui.set_current_column_width(370.);
-
-                if let Some(key) = selected_key {
-                    if let Some(param_item) =
-                        unsafe { self.get_param_idx_ptr(key, state.selected_id) }
-                    {
-                        struct ImguiParamVisitor<'a>(&'a imgui::Ui<'a>);
-
-                        impl<'a> ParamVisitor for ImguiParamVisitor<'a> {
-                            fn visit_u8(&mut self, name: &str, v: &mut u8) {
-                                let mut i = *v as i32;
-                                self.0.input_int(name, &mut i).build();
-                                *v = i as _;
-                            }
-
-                            fn visit_u16(&mut self, name: &str, v: &mut u16) {
-                                let mut i = *v as i32;
-                                self.0.input_int(name, &mut i).build();
-                                *v = i as _;
-                            }
-
-                            fn visit_u32(&mut self, name: &str, v: &mut u32) {
-                                let mut i = *v as i32;
-                                self.0.input_int(name, &mut i).build();
-                                *v = i as _;
-                            }
-
-                            fn visit_i8(&mut self, name: &str, v: &mut i8) {
-                                let mut i = *v as i32;
-                                self.0.input_int(name, &mut i).build();
-                                *v = i as _;
-                            }
-
-                            fn visit_i16(&mut self, name: &str, v: &mut i16) {
-                                let mut i = *v as i32;
-                                self.0.input_int(name, &mut i).build();
-                                *v = i as _;
-                            }
-
-                            fn visit_i32(&mut self, name: &str, v: &mut i32) {
-                                let mut i = *v as i32;
-                                self.0.input_int(name, &mut i).build();
-                                *v = i as _;
-                            }
-
-                            fn visit_f32(&mut self, name: &str, v: &mut f32) {
-                                self.0.input_float(name, v).build();
-                            }
-
-                            fn visit_bool(&mut self, name: &str, v: &mut bool) {
-                                self.0.checkbox(name, v);
-                            }
-                        }
-
-                        if let Some(lambda) = PARAM_VTABLE.get(key) {
-                            ListBox::new("##param_detail")
-                                .size([360., 240.])
-                                .build(ui, || {
-                                    let token = ui.push_item_width(120.);
-                                    lambda(param_item, &mut ImguiParamVisitor(ui));
-                                    drop(token);
-                                });
-                        }
-                    }
-                };
-            });
-
-        drop(params);
-    }
 }
-

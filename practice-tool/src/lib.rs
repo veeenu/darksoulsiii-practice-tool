@@ -11,7 +11,7 @@ use std::time::Instant;
 use imgui::*;
 
 use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
-use libds3::{PARAMS, wait_option};
+use libds3::{wait_option, PARAMS};
 
 use crate::pointers::PointerChains;
 
@@ -100,20 +100,20 @@ impl PracticeTool {
 
         log_panics::init();
 
-        let mut equip_param_goods = wait_option(|| unsafe {
-            if let Err(e) = PARAMS.refresh() {
-                error!("{}", e);
-            }
-            PARAMS.get_equip_param_goods()
-        });
-        equip_param_goods
-            .find(|i| {
-                i.id == 117
+        {
+            let mut params = PARAMS.write();
+            wait_option(|| unsafe {
+                if let Err(e) = params.refresh() {
+                    error!("{}", e);
+                }
+                params.get_equip_param_goods()
             })
+            .find(|i| i.id == 117)
             .and_then(|p| p.param)
             .map(|mut darksign| {
                 darksign.icon_id = 116;
             });
+        }
 
         PracticeTool {
             config,
