@@ -6,7 +6,7 @@ mod pointers;
 mod util;
 mod widgets;
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use imgui::*;
 
@@ -166,6 +166,20 @@ impl PracticeTool {
             .build(ui, || {
                 ui.text("johndisandonato's Dark Souls III Practice Tool is active");
 
+                if let Some(igt) = libds3::pointers::IGT
+                    .read()
+                {
+                    let millis = (igt % 1000) / 10;
+                    let total_seconds = igt / 1000;
+                    let seconds = total_seconds % 60;
+                    let minutes = total_seconds / 60 % 60;
+                    let hours = total_seconds / 3600;
+                    ui.text(format!(
+                        "IGT {:02}:{:02}:{:02}.{:02}",
+                        hours, minutes, seconds, millis
+                    ));
+                }
+
                 if flags.focused {
                     for w in self.widgets.iter_mut() {
                         w.interact();
@@ -220,7 +234,7 @@ impl PracticeTool {
 
 impl ImguiRenderLoop for PracticeTool {
     fn render(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
-        if self.config.settings.display.keyup() {
+        if flags.focused && self.config.settings.display.keyup() {
             self.is_shown = !self.is_shown;
             if !self.is_shown {
                 self.pointers.mouse_enable.write(0u8);

@@ -216,7 +216,6 @@ unsafe extern "system" fn imgui_wnd_proc(
                 }
                 WM_CHAR => io.add_input_character(wparam as u8 as char),
                 WM_ACTIVATE => {
-                    debug!("WM_ACTIVATE {:x} {:x}", wparam, lparam);
                     if LOWORD(wparam as _) == WA_INACTIVE {
                         imgui_renderer.flags.focused = false;
                     } else {

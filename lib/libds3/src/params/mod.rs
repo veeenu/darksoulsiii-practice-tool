@@ -1,7 +1,7 @@
 mod param_data;
 pub use param_data::*;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ffi::c_void;
 use std::lazy::SyncLazy;
 
@@ -20,6 +20,10 @@ pub static PARAMS: SyncLazy<RwLock<Params>> = SyncLazy::new(|| unsafe {
             None
         }
     })
+});
+
+pub static PARAM_NAMES: SyncLazy<HashMap<String, HashMap<usize, String>>> = SyncLazy::new(|| {
+    serde_json::from_str(&include_str!("param_names.json")).unwrap()
 });
 
 #[repr(C)]
