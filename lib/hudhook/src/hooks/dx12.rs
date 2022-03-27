@@ -1,32 +1,33 @@
 use crate::mh;
 
 use std::ffi::c_void;
-use std::ptr::null_mut;
+use std::mem::{ManuallyDrop, size_of};
+use std::ptr::{null, null_mut};
 
-use imgui_dx11::check_hresult;
 use log::*;
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
+use winapi::shared::minwindef::LOWORD;
+use winapi::um::winuser::{GET_WHEEL_DELTA_WPARAM, GET_XBUTTON_WPARAM};
+use windows::core::{HRESULT, IUnknown, Interface, PCSTR};
+use windows::Win32::Foundation::{BOOL, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
+use windows::Win32::Graphics::Direct3D::D3D_FEATURE_LEVEL_11_0;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::{Common::*, *};
+use windows::Win32::Graphics::Dxgi::{
+    CreateDXGIFactory, IDXGIFactory, IDXGISwapChain, DXGI_SWAP_CHAIN_DESC,
+    DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH, DXGI_SWAP_EFFECT_FLIP_DISCARD,
+    DXGI_USAGE_RENDER_TARGET_OUTPUT,
+};
+use windows::Win32::Graphics::Gdi::{ScreenToClient, HBRUSH};
+use windows::Win32::System::LibraryLoader::GetModuleHandleA;
+use windows::Win32::UI::WindowsAndMessaging::*;
 
-use winapi::shared::dxgi::*;
-use winapi::shared::dxgiformat::*;
-use winapi::shared::dxgitype::*;
-use winapi::shared::minwindef::*;
-use winapi::shared::windef::{HBRUSH, HICON, HMENU, HWND, POINT, RECT};
-use winapi::um::d3d11::*;
-use winapi::um::d3dcommon::*;
-use winapi::um::winnt::*;
-use winapi::um::winuser::*;
-use winapi::Interface;
-
-type DXGISwapChainPresentType = unsafe extern "system" fn(
-    This: *mut IDXGISwapChain,
-    SyncInterval: UINT,
-    Flags: UINT,
-) -> HRESULT;
+type DXGISwapChainPresentType =
+    unsafe extern "system" fn(This: *mut IDXGISwapChain, SyncInterval: u32, Flags: u32) -> HRESULT;
 
 type WndProcType =
-    unsafe extern "system" fn(hwnd: HWND, umsg: UINT, wparam: WPARAM, lparam: LPARAM) -> isize;
+    unsafe extern "system" fn(hwnd: HWND, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Data structures and traits
@@ -39,7 +40,7 @@ trait Renderer {
 
 /// Implement your `imgui` rendering logic via this trait.
 pub trait ImguiRenderLoop {
-    fn render(&mut self, ui: &mut imgui_dx11::imgui::Ui, flags: &ImguiRenderLoopFlags);
+    fn render(&mut self, ui: &mut imgui_dx12::imgui::Ui, flags: &ImguiRenderLoopFlags);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,10 +56,15 @@ static TRAMPOLINE: OnceCell<DXGISwapChainPresentType> = OnceCell::new();
 static mut IMGUI_RENDER_LOOP: OnceCell<Box<dyn ImguiRenderLoop + Send + Sync>> = OnceCell::new();
 static IMGUI_RENDERER: OnceCell<Mutex<Box<ImguiRenderer>>> = OnceCell::new();
 
+struct FrameContext {
+    back_buffer: ID3D12Resource,
+    desc_handle: D3D12_CPU_DESCRIPTOR_HANDLE,
+}
+
 unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
     p_this: *mut IDXGISwapChain,
-    sync_interval: UINT,
-    flags: UINT,
+    sync_interval: u32,
+    flags: u32,
 ) -> HRESULT {
     let trampoline = TRAMPOLINE
         .get()
@@ -66,46 +72,124 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
 
     let mut renderer = IMGUI_RENDERER
         .get_or_init(|| {
-            let mut dev: *mut ID3D11Device = null_mut();
-            let mut dev_ctx: *mut ID3D11DeviceContext = null_mut();
-            let mut sd: DXGI_SWAP_CHAIN_DESC = std::mem::zeroed();
+            trace!("Initializing renderer, p_this -> {:p}", p_this);
+            trace!("{:?}", (*p_this));
+            let desc = (*p_this).GetDesc().unwrap();
+            trace!("Desc: {:#?}", desc);
+            let dev = (*p_this).GetDevice::<ID3D12Device>().unwrap();
+            trace!("Got device: {:?}", dev);
 
-            check_hresult((*p_this).GetDevice(&ID3D11Device::uuidof(), &mut dev as *mut _ as _));
-            (*dev).GetImmediateContext(&mut dev_ctx as _);
+            trace!("Renderer heap");
+            let renderer_heap: ID3D12DescriptorHeap = dev
+                .CreateDescriptorHeap(&D3D12_DESCRIPTOR_HEAP_DESC {
+                    Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+                    NumDescriptors: desc.BufferCount,
+                    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+                    NodeMask: 0,
+                })
+                .unwrap();
 
-            check_hresult((*p_this).GetDesc(&mut sd as *mut _));
+            debug!("Command queue");
+            let command_queue = dev
+                .CreateCommandQueue(&D3D12_COMMAND_QUEUE_DESC {
+                    Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
+                    Priority: 0,
+                    Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
+                    NodeMask: 0,
+                })
+                .unwrap();
 
-            let mut engine = imgui_dx11::RenderEngine::new_with_ptrs(dev, dev_ctx, &mut *p_this);
+            debug!("Command alloc");
+            let command_allocator = dev
+                .CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
+                .unwrap();
+
+            debug!("Command list");
+            let command_list: ID3D12GraphicsCommandList = dev
+                .CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &command_allocator, None)
+                .unwrap();
+            command_list.Close().unwrap();
+
+            debug!("RTV heap");
+            let rtv_heap: ID3D12DescriptorHeap = dev
+                .CreateDescriptorHeap(&D3D12_DESCRIPTOR_HEAP_DESC {
+                    Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+                    NumDescriptors: desc.BufferCount,
+                    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+                    NodeMask: 1,
+                })
+                .unwrap();
+
+            let rtv_heap_inc_size =
+                dev.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+            let rtv_handle_start = rtv_heap.GetCPUDescriptorHandleForHeapStart();
+
+            debug!("Frame contexts");
+            let frame_contexts: Vec<FrameContext> = (0..desc.BufferCount)
+                .map(|i| {
+                    let desc_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+                        ptr: rtv_handle_start.ptr + (i * rtv_heap_inc_size) as usize,
+                    };
+                    let back_buffer = (*p_this).GetBuffer(i).unwrap();
+                    dev.CreateRenderTargetView(&back_buffer, null(), desc_handle);
+                    FrameContext {
+                        desc_handle,
+                        back_buffer,
+                    }
+                })
+                .collect();
+
+            let mut ctx = imgui::Context::create();
+            let cpu_desc = renderer_heap.GetCPUDescriptorHandleForHeapStart();
+            let gpu_desc = renderer_heap.GetGPUDescriptorHandleForHeapStart();
+            debug!("Engine");
+            let engine = imgui_dx12::RenderEngine::new(
+                &mut ctx,
+                dev,
+                desc.BufferCount,
+                DXGI_FORMAT_R8G8B8A8_UNORM,
+                renderer_heap.clone(),
+                cpu_desc,
+                gpu_desc,
+            );
+            debug!("Render loop + wnd proc");
             let render_loop = IMGUI_RENDER_LOOP.take().unwrap();
             let wnd_proc = std::mem::transmute::<_, WndProcType>(SetWindowLongPtrA(
-                sd.OutputWindow,
+                desc.OutputWindow,
                 GWLP_WNDPROC,
                 imgui_wnd_proc as usize as isize,
             ));
 
-            let imgui_ctx = engine.ctx();
-            imgui_ctx.set_ini_filename(None);
-            imgui_ctx.io_mut().nav_active = true;
-            imgui_ctx.io_mut().nav_visible = true;
+            ctx.set_ini_filename(None);
+            ctx.io_mut().nav_active = true;
+            ctx.io_mut().nav_visible = true;
 
             let flags = ImguiRenderLoopFlags { focused: true };
 
+            debug!("Done init");
             Mutex::new(Box::new(ImguiRenderer {
+                ctx,
+                command_queue,
+                command_allocator,
+                command_list,
                 engine,
                 render_loop,
                 wnd_proc,
                 flags,
+                renderer_heap,
+                frame_contexts,
+                frame_context_idx: 0,
             }))
         })
         .lock();
 
     {
-        let ctx = (*renderer).ctx();
-        let mut sd: DXGI_SWAP_CHAIN_DESC = std::mem::zeroed();
+        let ctx = &mut (*renderer).ctx;
+        let sd = p_this.as_ref().unwrap().GetDesc().unwrap();
         let mut rect: RECT = std::mem::zeroed();
-        p_this.as_ref().unwrap().GetDesc(&mut sd as _);
 
-        if GetWindowRect(sd.OutputWindow, &mut rect as _) != 0 {
+        if GetWindowRect(sd.OutputWindow, &mut rect as _).as_bool() {
             let mut io = ctx.io_mut();
 
             io.display_size = [
@@ -116,12 +200,12 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
             let mut pos = POINT { x: 0, y: 0 };
 
             let active_window = GetForegroundWindow();
-            if active_window != 0 as HWND
+            if !active_window.is_invalid()
                 && (active_window == sd.OutputWindow
-                    || IsChild(active_window, sd.OutputWindow) != 0)
+                    || IsChild(active_window, sd.OutputWindow).as_bool())
             {
                 let gcp = GetCursorPos(&mut pos as *mut _);
-                if gcp != 0 && ScreenToClient(sd.OutputWindow, &mut pos as *mut _) != 0 {
+                if gcp.as_bool() && ScreenToClient(sd.OutputWindow, &mut pos as *mut _).as_bool() {
                     io.mouse_pos[0] = pos.x as _;
                     io.mouse_pos[1] = pos.y as _;
                 }
@@ -137,13 +221,13 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
 
 unsafe extern "system" fn imgui_wnd_proc(
     hwnd: HWND,
-    umsg: UINT,
-    wparam: WPARAM,
-    lparam: LPARAM,
-) -> isize {
+    umsg: u32,
+    WPARAM(wparam): WPARAM,
+    LPARAM(lparam): LPARAM,
+) -> LRESULT {
     match IMGUI_RENDERER.get().map(Mutex::try_lock) {
         Some(Some(mut imgui_renderer)) => {
-            let ctx = imgui_renderer.ctx();
+            let ctx = &mut imgui_renderer.ctx;
             let mut io = ctx.io_mut();
 
             match umsg {
@@ -173,7 +257,7 @@ unsafe extern "system" fn imgui_wnd_proc(
                     // return 1;
                 }
                 WM_XBUTTONDOWN | WM_XBUTTONDBLCLK => {
-                    let btn = if GET_XBUTTON_WPARAM(wparam) == XBUTTON1 {
+                    let btn = if GET_XBUTTON_WPARAM(wparam) == XBUTTON1.0 as u16 {
                         3
                     } else {
                         4
@@ -198,7 +282,7 @@ unsafe extern "system" fn imgui_wnd_proc(
                     // return 1;
                 }
                 WM_XBUTTONUP => {
-                    let btn = if GET_XBUTTON_WPARAM(wparam) == XBUTTON1 {
+                    let btn = if GET_XBUTTON_WPARAM(wparam) == XBUTTON1.0 as u16 {
                         3
                     } else {
                         4
@@ -216,12 +300,12 @@ unsafe extern "system" fn imgui_wnd_proc(
                 }
                 WM_CHAR => io.add_input_character(wparam as u8 as char),
                 WM_ACTIVATE => {
-                    if LOWORD(wparam as _) == WA_INACTIVE {
+                    if LOWORD(wparam as _) == WA_INACTIVE as u16 {
                         imgui_renderer.flags.focused = false;
                     } else {
                         imgui_renderer.flags.focused = true;
                     }
-                    return 1;
+                    return LRESULT(1);
                 }
                 _ => {}
             }
@@ -229,15 +313,15 @@ unsafe extern "system" fn imgui_wnd_proc(
             let wnd_proc = imgui_renderer.wnd_proc;
             drop(imgui_renderer);
 
-            CallWindowProcW(Some(wnd_proc), hwnd, umsg, wparam, lparam)
+            CallWindowProcW(Some(wnd_proc), hwnd, umsg, WPARAM(wparam), LPARAM(lparam))
         }
         Some(None) => {
             debug!("Could not lock in WndProc");
-            DefWindowProcW(hwnd, umsg, wparam, lparam)
+            DefWindowProcW(hwnd, umsg, WPARAM(wparam), LPARAM(lparam))
         }
         None => {
             debug!("WndProc called before hook was set");
-            DefWindowProcW(hwnd, umsg, wparam, lparam)
+            DefWindowProcW(hwnd, umsg, WPARAM(wparam), LPARAM(lparam))
         }
     }
 }
@@ -247,24 +331,71 @@ unsafe extern "system" fn imgui_wnd_proc(
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct ImguiRenderer {
-    engine: imgui_dx11::RenderEngine,
+    ctx: imgui_dx12::imgui::Context,
+    engine: imgui_dx12::RenderEngine,
     render_loop: Box<dyn ImguiRenderLoop>,
     wnd_proc: WndProcType,
     flags: ImguiRenderLoopFlags,
+    frame_contexts: Vec<FrameContext>,
+    frame_context_idx: usize,
+    renderer_heap: ID3D12DescriptorHeap,
+    command_queue: ID3D12CommandQueue,
+    command_allocator: ID3D12CommandAllocator,
+    command_list: ID3D12GraphicsCommandList,
 }
 
 impl ImguiRenderer {
     fn render(&mut self) {
-        if let Err(e) = self
-            .engine
-            .render(|ui| self.render_loop.render(ui, &self.flags))
-        {
-            error!("ImGui renderer error: {:?}", e);
-        }
-    }
+        let mut ui = self.ctx.frame();
+        self.render_loop.render(&mut ui, &self.flags);
+        let draw_data = ui.render();
 
-    fn ctx(&mut self) -> &mut imgui_dx11::imgui::Context {
-        self.engine.ctx()
+        self.frame_context_idx += 1;
+        self.frame_context_idx %= self.frame_contexts.len();
+        let frame_context = &self.frame_contexts[self.frame_context_idx];
+
+        let mut transition_barrier = ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
+            pResource: Some(frame_context.back_buffer.clone()),
+            Subresource: D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+            StateBefore: D3D12_RESOURCE_STATE_PRESENT,
+            StateAfter: D3D12_RESOURCE_STATE_RENDER_TARGET,
+        });
+
+        let barrier = D3D12_RESOURCE_BARRIER {
+            Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+            Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
+            Anonymous: D3D12_RESOURCE_BARRIER_0 {
+                Transition: transition_barrier.clone(),
+            },
+        };
+
+        unsafe {
+            self.command_list
+                .Reset(&self.command_allocator, None)
+                .unwrap();
+            self.command_list.ResourceBarrier(&[barrier.clone()]);
+            self.command_list.OMSetRenderTargets(
+                1,
+                &frame_context.desc_handle,
+                BOOL::from(false),
+                null(),
+            );
+            self.command_list
+                .SetDescriptorHeaps(&[Some(self.renderer_heap.clone())]);
+        };
+
+        self.engine.render_draw_data(draw_data, &self.command_list);
+        transition_barrier.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        transition_barrier.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
+        unsafe {
+            self.command_list.ResourceBarrier(&[barrier]);
+            self.command_list.Close().unwrap();
+            self.command_queue
+                .ExecuteCommandLists(&[Some(self.command_list.clone().into())]);
+        }
+
+        drop(transition_barrier);
     }
 }
 
@@ -285,88 +416,118 @@ pub struct ImguiRenderLoopFlags {
 ///
 /// Creates a swap chain + device instance and looks up its
 /// vtable to find the address.
-fn get_present_addr() -> LPVOID {
+fn get_present_addr() -> DXGISwapChainPresentType {
+    trace!("get_present_addr");
+    trace!("  HWND");
+    unsafe extern "system" fn wndproc(
+        hwnd: HWND,
+        msg: u32,
+        wparam: WPARAM,
+        lparam: LPARAM,
+    ) -> LRESULT {
+        DefWindowProcA(hwnd, msg, wparam, lparam)
+    }
+    let hinstance = unsafe { GetModuleHandleA(None) };
     let hwnd = {
-        let hinstance =
-            unsafe { winapi::um::libloaderapi::GetModuleHandleA(std::ptr::null::<i8>()) };
-        let wnd_class = WNDCLASSA {
+        let wnd_class = WNDCLASSEXA {
             style: CS_OWNDC | CS_HREDRAW | CS_VREDRAW,
-            lpfnWndProc: Some(DefWindowProcA),
+            lpfnWndProc: Some(wndproc),
             hInstance: hinstance,
-            lpszClassName: "HUDHOOK_DUMMY\0".as_ptr() as *const i8,
+            lpszClassName: PCSTR("HUDHOOK_DUMMY\0".as_ptr()),
             cbClsExtra: 0,
             cbWndExtra: 0,
-            hIcon: 0 as HICON,
-            hCursor: 0 as HICON,
-            hbrBackground: 0 as HBRUSH,
-            lpszMenuName: std::ptr::null::<i8>(),
+            cbSize: size_of::<WNDCLASSEXA>() as u32,
+            hIcon: HICON(0),
+            hIconSm: HICON(0),
+            hCursor: HCURSOR(0),
+            hbrBackground: HBRUSH(0),
+            lpszMenuName: PCSTR(null()),
         };
         unsafe {
-            RegisterClassA(&wnd_class);
+            trace!("    RegisterClassExA");
+            RegisterClassExA(&wnd_class);
+            trace!("    CreateWindowExA");
             CreateWindowExA(
-                0,
-                "HUDHOOK_DUMMY\0".as_ptr() as _,
-                "HUDHOOK_DUMMY\0".as_ptr() as _,
+                WINDOW_EX_STYLE(0),
+                PCSTR("HUDHOOK_DUMMY\0".as_ptr()),
+                PCSTR("HUDHOOK_DUMMY\0".as_ptr()),
                 WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                 0,
                 0,
-                16,
-                16,
-                0 as HWND,
-                0 as HMENU,
-                std::mem::transmute(hinstance),
-                0 as LPVOID,
+                100,
+                100,
+                None,
+                None,
+                hinstance,
+                null(),
             )
         }
     };
+    trace!("  hwnd = {:x}", hwnd.0);
 
-    let mut feature_level = D3D_FEATURE_LEVEL_11_0;
-    let mut swap_chain_desc: DXGI_SWAP_CHAIN_DESC = unsafe { std::mem::zeroed() };
-    let mut p_device: *mut ID3D11Device = null_mut();
-    let mut p_context: *mut ID3D11DeviceContext = null_mut();
-    let mut p_swap_chain: *mut IDXGISwapChain = null_mut();
+    // let mut debug_interface: Option<ID3D12Debug> = None;
+    // unsafe { D3D12GetDebugInterface(&mut debug_interface) }.unwrap();
+    // unsafe { debug_interface.as_ref().unwrap().EnableDebugLayer() };
 
-    swap_chain_desc.BufferCount = 1;
-    swap_chain_desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swap_chain_desc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-    swap_chain_desc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-    swap_chain_desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-    swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swap_chain_desc.OutputWindow = hwnd;
-    swap_chain_desc.SampleDesc.Count = 1;
-    swap_chain_desc.Windowed = 1;
+    trace!("  Factory");
+    let factory: IDXGIFactory = unsafe { CreateDXGIFactory() }.unwrap();
+    trace!("  Adapter");
+    let adapter = unsafe { factory.EnumAdapters(0) }.unwrap();
 
-    let result = unsafe {
-        D3D11CreateDeviceAndSwapChain(
-            std::ptr::null_mut::<IDXGIAdapter>(),
-            D3D_DRIVER_TYPE_HARDWARE,
-            0 as HMODULE,
-            0u32,
-            &mut feature_level as *mut D3D_FEATURE_LEVEL,
-            1,
-            D3D11_SDK_VERSION,
-            &mut swap_chain_desc as *mut DXGI_SWAP_CHAIN_DESC,
-            &mut p_swap_chain as *mut *mut IDXGISwapChain,
-            &mut p_device as *mut *mut ID3D11Device,
-            null_mut(),
-            &mut p_context as *mut *mut ID3D11DeviceContext,
-        )
+    trace!("  Device");
+    let mut dev: Option<ID3D12Device> = None;
+    unsafe { D3D12CreateDevice(&adapter, D3D_FEATURE_LEVEL_11_0, &mut dev) }.unwrap();
+    let dev = dev.unwrap();
+
+    let mut queue_desc = D3D12_COMMAND_QUEUE_DESC::default();
+    queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    queue_desc.Priority = 0;
+    queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    queue_desc.NodeMask = 0;
+
+    let command_queue: ID3D12CommandQueue =
+        unsafe { dev.CreateCommandQueue(&queue_desc as *const _) }.unwrap();
+    let command_alloc: ID3D12CommandAllocator =
+        unsafe { dev.CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT) }.unwrap();
+    let command_list: ID3D12CommandList =
+        unsafe { dev.CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &command_alloc, None) }
+            .unwrap();
+
+    let swap_chain_desc = DXGI_SWAP_CHAIN_DESC {
+        BufferDesc: DXGI_MODE_DESC {
+            Width: 100,
+            Height: 100,
+            RefreshRate: DXGI_RATIONAL {
+                Numerator: 60,
+                Denominator: 1,
+            },
+            Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+            ScanlineOrdering: DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED,
+            Scaling: DXGI_MODE_SCALING_UNSPECIFIED,
+        },
+        SampleDesc: DXGI_SAMPLE_DESC {
+            Count: 1,
+            Quality: 0,
+        },
+        BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
+        BufferCount: 2,
+        OutputWindow: hwnd,
+        Windowed: BOOL::from(true),
+        SwapEffect: DXGI_SWAP_EFFECT_FLIP_DISCARD,
+        Flags: DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH.0 as u32,
     };
+    trace!("{:#?}", swap_chain_desc);
 
-    if result < 0 {
-        panic!("D3D11CreateDeviceAndSwapChain failed {:x}", result);
-    }
+    trace!("  Swap chain");
+    let swap_chain = unsafe { factory.CreateSwapChain(command_queue, &swap_chain_desc) }.unwrap();
+    trace!("  Present ptr");
+    let present_ptr = unsafe { swap_chain.vtable().Present };
+    trace!("  Present ptr is {:p}", present_ptr as *mut c_void);
 
-    let ret = unsafe { (*(*p_swap_chain).lpVtbl).Present };
+    unsafe { DestroyWindow(hwnd) };
+    unsafe { UnregisterClassA(PCSTR("HUDHOOK_DUMMY\0".as_ptr()), hinstance) };
 
-    unsafe {
-        (*p_device).Release();
-        (*p_context).Release();
-        (*p_swap_chain).Release();
-        DestroyWindow(hwnd);
-    }
-
-    ret as LPVOID
+    unsafe { std::mem::transmute(present_ptr) }
 }
 
 /// Construct a `mh::Hook` that will render UI via the provided `ImguiRenderLoop`.
@@ -381,7 +542,7 @@ where
     let dxgi_swap_chain_present_addr = get_present_addr();
     debug!(
         "IDXGISwapChain::Present = {:p}",
-        dxgi_swap_chain_present_addr
+        dxgi_swap_chain_present_addr as *const c_void
     );
 
     let mut trampoline = null_mut();
@@ -389,7 +550,7 @@ where
     debug!(
         "MH_CreateHook: {:?}",
         mh::MH_CreateHook(
-            dxgi_swap_chain_present_addr,
+            dxgi_swap_chain_present_addr as *mut c_void,
             imgui_dxgi_swap_chain_present_impl as *mut c_void,
             &mut trampoline as *mut _ as _
         )
@@ -399,7 +560,7 @@ where
     TRAMPOLINE.get_or_init(|| std::mem::transmute(trampoline));
 
     mh::Hook::new(
-        dxgi_swap_chain_present_addr,
+        dxgi_swap_chain_present_addr as *mut c_void,
         imgui_dxgi_swap_chain_present_impl as *mut c_void,
     )
 }

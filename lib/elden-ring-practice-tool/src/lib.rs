@@ -4,7 +4,7 @@ use std::path::Path;
 
 use imgui::*;
 
-use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
+use hudhook::hooks::dx12::{ImguiRenderLoop, ImguiRenderLoopFlags};
 
 struct PracticeTool {}
 
@@ -25,7 +25,7 @@ impl PracticeTool {
         ])
         .ok();
 
-        println!("Hello world");
+        info!("Hello world");
         PracticeTool {}
     }
 }
@@ -39,4 +39,4 @@ impl ImguiRenderLoop for PracticeTool {
     }
 }
 
-hudhook::hudhook!(|| { [hudhook::hooks::dx11::hook_imgui(PracticeTool::new())] });
+hudhook::hudhook!(|| { [hudhook::hooks::dx12::hook_imgui(PracticeTool::new())] });

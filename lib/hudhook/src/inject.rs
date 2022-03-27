@@ -1,8 +1,9 @@
 use std::ffi::CString;
 use std::path::PathBuf;
-use std::ptr::null_mut;
+use std::ptr::{null, null_mut};
 
 use log::*;
+use widestring::U16CString;
 use winapi::shared::minwindef::{DWORD, LPVOID, MAX_PATH};
 use winapi::um::errhandlingapi::GetLastError;
 use winapi::um::handleapi::CloseHandle;
@@ -11,16 +12,17 @@ use winapi::um::minwinbase::LPSECURITY_ATTRIBUTES;
 use winapi::um::synchapi::WaitForSingleObject;
 use winapi::um::winbase::INFINITE;
 use winapi::um::winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, PROCESS_ALL_ACCESS};
-use winapi::um::winuser::{FindWindowA, GetWindowThreadProcessId};
 use winapi::um::{memoryapi, processthreadsapi};
+use windows::Win32::UI::WindowsAndMessaging::{FindWindowW, GetWindowThreadProcessId};
+use windows::core::{PCWSTR, PWSTR};
 
 /// Inject the DLL stored at `dll_path` in the process that owns the window with title `title`.
 pub fn inject(title: &str, dll_path: PathBuf) {
-    let title = CString::new(title).unwrap();
-    let hwnd = unsafe { FindWindowA(null_mut(), title.as_ptr() as *const i8) };
+    let title = U16CString::from_str(title).unwrap();
+    let hwnd = unsafe { FindWindowW(PCWSTR(null()), PCWSTR(title.as_ptr())) };
 
-    if hwnd.is_null() {
-        error!("FindWindowA returned NULL: {}", unsafe { GetLastError() });
+    if hwnd.0 == 0 {
+        error!("FindWindowW returned NULL: {}", unsafe { GetLastError() });
         return;
     }
 

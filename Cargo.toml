@@ -3,6 +3,7 @@ members = [
   "practice-tool", 
   "lib/hudhook",
   "lib/imgui-dx11",
+  "lib/imgui-dx12",
   "lib/libds3",
   "lib/elden-ring-practice-tool",
   "lib/macro-param",
