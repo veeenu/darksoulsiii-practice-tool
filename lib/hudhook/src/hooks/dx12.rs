@@ -1,30 +1,31 @@
 use crate::mh;
 
+use std::cell::RefCell;
 use std::ffi::c_void;
-use std::mem::{ManuallyDrop, size_of};
+use std::mem::{size_of, ManuallyDrop};
 use std::ptr::{null, null_mut};
 
 use log::*;
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
-use winapi::shared::minwindef::LOWORD;
+use winapi::shared::minwindef::{HMODULE, LOWORD};
 use winapi::um::winuser::{GET_WHEEL_DELTA_WPARAM, GET_XBUTTON_WPARAM};
-use windows::core::{HRESULT, IUnknown, Interface, PCSTR};
+use windows::core::{IUnknown, Interface, HRESULT, PCSTR};
 use windows::Win32::Foundation::{BOOL, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
 use windows::Win32::Graphics::Direct3D::D3D_FEATURE_LEVEL_11_0;
 use windows::Win32::Graphics::Direct3D12::*;
-use windows::Win32::Graphics::Dxgi::{Common::*, *};
+use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::{
     CreateDXGIFactory, IDXGIFactory, IDXGISwapChain, DXGI_SWAP_CHAIN_DESC,
     DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH, DXGI_SWAP_EFFECT_FLIP_DISCARD,
-    DXGI_USAGE_RENDER_TARGET_OUTPUT,
+    DXGI_USAGE_RENDER_TARGET_OUTPUT, *,
 };
 use windows::Win32::Graphics::Gdi::{ScreenToClient, HBRUSH};
 use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
 type DXGISwapChainPresentType =
-    unsafe extern "system" fn(This: *mut IDXGISwapChain, SyncInterval: u32, Flags: u32) -> HRESULT;
+    unsafe extern "system" fn(This: IDXGISwapChain3, SyncInterval: u32, Flags: u32) -> HRESULT;
 
 type WndProcType =
     unsafe extern "system" fn(hwnd: HWND, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT;
@@ -56,13 +57,14 @@ static TRAMPOLINE: OnceCell<DXGISwapChainPresentType> = OnceCell::new();
 static mut IMGUI_RENDER_LOOP: OnceCell<Box<dyn ImguiRenderLoop + Send + Sync>> = OnceCell::new();
 static IMGUI_RENDERER: OnceCell<Mutex<Box<ImguiRenderer>>> = OnceCell::new();
 
+#[derive(Debug)]
 struct FrameContext {
     back_buffer: ID3D12Resource,
     desc_handle: D3D12_CPU_DESCRIPTOR_HANDLE,
 }
 
-unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
-    p_this: *mut IDXGISwapChain,
+unsafe extern "fastcall" fn imgui_dxgi_swap_chain_present_impl(
+    swap_chain: IDXGISwapChain3,
     sync_interval: u32,
     flags: u32,
 ) -> HRESULT {
@@ -72,14 +74,10 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
 
     let mut renderer = IMGUI_RENDERER
         .get_or_init(|| {
-            trace!("Initializing renderer, p_this -> {:p}", p_this);
-            trace!("{:?}", (*p_this));
-            let desc = (*p_this).GetDesc().unwrap();
-            trace!("Desc: {:#?}", desc);
-            let dev = (*p_this).GetDevice::<ID3D12Device>().unwrap();
-            trace!("Got device: {:?}", dev);
+            trace!("Initializing renderer");
+            let desc = swap_chain.GetDesc().unwrap();
+            let dev = swap_chain.GetDevice::<ID3D12Device>().unwrap();
 
-            trace!("Renderer heap");
             let renderer_heap: ID3D12DescriptorHeap = dev
                 .CreateDescriptorHeap(&D3D12_DESCRIPTOR_HEAP_DESC {
                     Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
@@ -89,7 +87,6 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
                 })
                 .unwrap();
 
-            debug!("Command queue");
             let command_queue = dev
                 .CreateCommandQueue(&D3D12_COMMAND_QUEUE_DESC {
                     Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -99,18 +96,15 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
                 })
                 .unwrap();
 
-            debug!("Command alloc");
             let command_allocator = dev
                 .CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
                 .unwrap();
 
-            debug!("Command list");
             let command_list: ID3D12GraphicsCommandList = dev
                 .CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &command_allocator, None)
                 .unwrap();
             command_list.Close().unwrap();
 
-            debug!("RTV heap");
             let rtv_heap: ID3D12DescriptorHeap = dev
                 .CreateDescriptorHeap(&D3D12_DESCRIPTOR_HEAP_DESC {
                     Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
@@ -124,14 +118,15 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
                 dev.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
             let rtv_handle_start = rtv_heap.GetCPUDescriptorHandleForHeapStart();
+            trace!("rtv_handle_start ptr {:x}", rtv_handle_start.ptr);
 
-            debug!("Frame contexts");
             let frame_contexts: Vec<FrameContext> = (0..desc.BufferCount)
                 .map(|i| {
                     let desc_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
                         ptr: rtv_handle_start.ptr + (i * rtv_heap_inc_size) as usize,
                     };
-                    let back_buffer = (*p_this).GetBuffer(i).unwrap();
+                    trace!("desc handle {i} ptr {:x}", desc_handle.ptr);
+                    let back_buffer = swap_chain.GetBuffer(i).unwrap();
                     dev.CreateRenderTargetView(&back_buffer, null(), desc_handle);
                     FrameContext {
                         desc_handle,
@@ -143,7 +138,6 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
             let mut ctx = imgui::Context::create();
             let cpu_desc = renderer_heap.GetCPUDescriptorHandleForHeapStart();
             let gpu_desc = renderer_heap.GetGPUDescriptorHandleForHeapStart();
-            debug!("Engine");
             let engine = imgui_dx12::RenderEngine::new(
                 &mut ctx,
                 dev,
@@ -153,7 +147,6 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
                 cpu_desc,
                 gpu_desc,
             );
-            debug!("Render loop + wnd proc");
             let render_loop = IMGUI_RENDER_LOOP.take().unwrap();
             let wnd_proc = std::mem::transmute::<_, WndProcType>(SetWindowLongPtrA(
                 desc.OutputWindow,
@@ -177,20 +170,21 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
                 render_loop,
                 wnd_proc,
                 flags,
+                rtv_heap,
                 renderer_heap,
                 frame_contexts,
-                frame_context_idx: 0,
+                frame_contexts_idx: swap_chain.GetCurrentBackBufferIndex() as usize
             }))
         })
         .lock();
 
     {
-        let ctx = &mut (*renderer).ctx;
-        let sd = p_this.as_ref().unwrap().GetDesc().unwrap();
+        let sd = swap_chain.GetDesc().unwrap();
+        trace!("Swapchain desc {:?}", sd);
         let mut rect: RECT = std::mem::zeroed();
 
         if GetWindowRect(sd.OutputWindow, &mut rect as _).as_bool() {
-            let mut io = ctx.io_mut();
+            let mut io = renderer.ctx.io_mut();
 
             io.display_size = [
                 (rect.right - rect.left) as f32,
@@ -213,10 +207,12 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
         }
     }
 
-    (*renderer).render();
+    trace!("Rendering");
+    renderer.render();
+    trace!("Rendered");
     drop(renderer);
 
-    trampoline(p_this, sync_interval, flags)
+    trampoline(swap_chain, sync_interval, flags)
 }
 
 unsafe extern "system" fn imgui_wnd_proc(
@@ -337,7 +333,8 @@ struct ImguiRenderer {
     wnd_proc: WndProcType,
     flags: ImguiRenderLoopFlags,
     frame_contexts: Vec<FrameContext>,
-    frame_context_idx: usize,
+    frame_contexts_idx: usize,
+    rtv_heap: ID3D12DescriptorHeap,
     renderer_heap: ID3D12DescriptorHeap,
     command_queue: ID3D12CommandQueue,
     command_allocator: ID3D12CommandAllocator,
@@ -346,13 +343,18 @@ struct ImguiRenderer {
 
 impl ImguiRenderer {
     fn render(&mut self) {
-        let mut ui = self.ctx.frame();
+        trace!("New frame {}/{}", self.frame_contexts_idx, self.frame_contexts.len());
+        self.engine.new_frame(&mut self.ctx);
+        let ctx = &mut self.ctx;
+        let mut ui = ctx.frame();
+        trace!("Got frame, call render loop");
         self.render_loop.render(&mut ui, &self.flags);
         let draw_data = ui.render();
+        trace!("Got draw data");
 
-        self.frame_context_idx += 1;
-        self.frame_context_idx %= self.frame_contexts.len();
-        let frame_context = &self.frame_contexts[self.frame_context_idx];
+        self.frame_contexts_idx += 1;
+        self.frame_contexts_idx %= self.frame_contexts.len();
+        let frame_context = &self.frame_contexts[self.frame_contexts_idx];
 
         let mut transition_barrier = ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
             pResource: Some(frame_context.back_buffer.clone()),
@@ -370,27 +372,41 @@ impl ImguiRenderer {
         };
 
         unsafe {
+            trace!("Reset command alloc");
+            self.command_allocator.Reset().unwrap();
+            trace!("Reset command list");
             self.command_list
                 .Reset(&self.command_allocator, None)
                 .unwrap();
+            trace!("CL Resource barrier");
             self.command_list.ResourceBarrier(&[barrier.clone()]);
+            trace!(
+                "CL Render targets {:?}, {:x}",
+                frame_context,
+                frame_context.desc_handle.ptr
+            );
             self.command_list.OMSetRenderTargets(
                 1,
                 &frame_context.desc_handle,
                 BOOL::from(false),
                 null(),
             );
+            trace!("CL Descriptor heaps");
             self.command_list
                 .SetDescriptorHeaps(&[Some(self.renderer_heap.clone())]);
         };
 
-        self.engine.render_draw_data(draw_data, &self.command_list);
+        trace!("Render draw data");
+        self.engine.render_draw_data(draw_data, &self.command_list, self.frame_contexts_idx);
         transition_barrier.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         transition_barrier.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 
         unsafe {
+            trace!("CL Resource barrier");
             self.command_list.ResourceBarrier(&[barrier]);
+            trace!("CL close");
             self.command_list.Close().unwrap();
+            trace!("CL exec");
             self.command_queue
                 .ExecuteCommandLists(&[Some(self.command_list.clone().into())]);
         }

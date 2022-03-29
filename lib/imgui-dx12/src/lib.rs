@@ -6,14 +6,19 @@ use std::ptr::{null, null_mut};
 
 use imgui::internal::RawWrapper;
 use imgui::{BackendFlags, DrawCmd, DrawIdx, DrawVert, TextureId};
+use log::*;
+use memoffset::offset_of;
 use windows::core::PCSTR;
-use windows::Win32::Foundation::{BOOL, RECT};
+use windows::Win32::Foundation::{BOOL, CloseHandle, RECT};
 use windows::Win32::Graphics::Direct3D::Fxc::D3DCompile;
 use windows::Win32::Graphics::Direct3D::{
     ID3DBlob, ID3DInclude, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 };
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::Win32::Graphics::Dxgi::{
+    DXGIGetDebugInterface1, IDXGIInfoQueue, DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE,
+};
 use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject};
 
 pub struct RenderEngine {
@@ -25,6 +30,7 @@ pub struct RenderEngine {
     num_frames_in_flight: u32,
     frame_index: usize,
     frame_resources: Vec<FrameResources>,
+    const_buf: [[f32; 4]; 4],
 
     root_signature: Option<ID3D12RootSignature>,
     pipeline_state: Option<ID3D12PipelineState>,
@@ -38,9 +44,9 @@ struct FrameResources {
 }
 
 impl FrameResources {
-    fn resize(&mut self, dev: &ID3D12Device, indices: usize, vertices: usize) {
-        if self.vertex_buffer.is_some() && self.vertex_buffer_size < vertices {
-            drop(self.vertex_buffer.take().unwrap());
+    fn resize(&mut self, dev: &ID3D12Device, indices: usize, vertices: usize) -> Result<(), windows::core::Error> {
+        if self.vertex_buffer.is_none() || self.vertex_buffer_size < vertices {
+            drop(self.vertex_buffer.take());
             self.vertex_buffer_size = vertices + 5000;
             let props = D3D12_HEAP_PROPERTIES {
                 Type: D3D12_HEAP_TYPE_UPLOAD,
@@ -74,11 +80,10 @@ impl FrameResources {
                     null(),
                     &mut self.vertex_buffer as *mut _,
                 )
-            }
-            .unwrap();
+            }?;
         }
-        if self.index_buffer.is_some() && self.index_buffer_size < indices {
-            drop(self.index_buffer.take().unwrap());
+        if self.index_buffer.is_none() || self.index_buffer_size < indices {
+            drop(self.index_buffer.take());
             self.index_buffer_size = indices + 10000;
             let props = D3D12_HEAP_PROPERTIES {
                 Type: D3D12_HEAP_TYPE_UPLOAD,
@@ -112,10 +117,33 @@ impl FrameResources {
                     null(),
                     &mut self.index_buffer as *mut _,
                 )
-            }
-            .unwrap();
+            }?
         }
+        Ok(())
     }
+}
+
+unsafe fn print_debug() {
+    let diq: IDXGIInfoQueue = DXGIGetDebugInterface1(0).unwrap();
+
+    for i in 0..diq.GetNumStoredMessages(DXGI_DEBUG_ALL) {
+        let mut msg_len: usize = 0;
+        diq.GetMessage(DXGI_DEBUG_ALL, i, null_mut(), &mut msg_len as _)
+            .unwrap();
+        let diqm = vec![0u8; msg_len];
+        let pdiqm = diqm.as_ptr() as *mut DXGI_INFO_QUEUE_MESSAGE;
+        diq.GetMessage(DXGI_DEBUG_ALL, i, pdiqm, &mut msg_len as _)
+            .unwrap();
+        let diqm = pdiqm.as_ref().unwrap();
+        debug!(
+            "{}",
+            String::from_utf8_lossy(std::slice::from_raw_parts(
+                diqm.pDescription as *const u8,
+                diqm.DescriptionByteLength
+            ))
+        );
+    }
+    diq.ClearStoredMessages(DXGI_DEBUG_ALL);
 }
 
 impl Default for FrameResources {
@@ -153,10 +181,15 @@ impl RenderEngine {
             num_frames_in_flight,
             frame_index: 0,
             frame_resources,
+            const_buf: [[0f32; 4]; 4],
             root_signature: None,
             pipeline_state: None,
             font_texture_resource: None,
         }
+    }
+
+    pub fn print_reason(&self) {
+        trace!("{:?}", unsafe { self.dev.GetDeviceRemovedReason() });
     }
 
     // pub fn render<F: FnOnce(&mut imgui::Ui)>(&mut self, f: F) -> Result<(), String> {
@@ -185,16 +218,17 @@ impl RenderEngine {
     // }
 
     fn setup_render_state(
-        &self,
+        &mut self,
         draw_data: &imgui::DrawData,
         cmd_list: &ID3D12GraphicsCommandList,
         frame_resources_idx: usize,
     ) {
+        trace!("Setup render state");
         let display_pos = draw_data.display_pos;
         let display_size = draw_data.display_size;
 
         let frame_resources = &self.frame_resources[frame_resources_idx];
-        let const_buf = {
+        self.const_buf = {
             let [l, t, r, b] = [
                 display_pos[0],
                 display_pos[1],
@@ -253,7 +287,7 @@ impl RenderEngine {
             cmd_list.IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             cmd_list.SetPipelineState(self.pipeline_state.as_ref().unwrap());
             cmd_list.SetGraphicsRootSignature(self.root_signature.as_ref().unwrap());
-            cmd_list.SetGraphicsRoot32BitConstants(0, 16, const_buf.as_ptr() as *const c_void, 0);
+            cmd_list.SetGraphicsRoot32BitConstants(0, 16, self.const_buf.as_ptr() as *const c_void, 0);
             cmd_list.OMSetBlendFactor(&[0f32; 4]);
         }
     }
@@ -262,20 +296,23 @@ impl RenderEngine {
         &mut self,
         draw_data: &imgui::DrawData,
         cmd_list: &ID3D12GraphicsCommandList,
+        frame_resources_idx: usize,
     ) {
+        trace!("Render draw data");
         if draw_data.display_size[0] <= 0f32 || draw_data.display_size[1] <= 0f32 {
             return;
         }
 
-        self.frame_index += 1;
-        let frame_resources_idx = (self.frame_index % self.frame_resources.len()) as usize;
-
         {
-            self.frame_resources[frame_resources_idx].resize(
+            trace!("  Resize");
+            if self.frame_resources[frame_resources_idx].resize(
                 &self.dev,
                 draw_data.total_idx_count as usize,
                 draw_data.total_vtx_count as usize,
-            )
+            ).is_err() {
+                self.print_reason();
+                panic!();
+            }
         };
 
         let range = D3D12_RANGE::default();
@@ -294,6 +331,7 @@ impl RenderEngine {
 
         {
             let frame_resources = &self.frame_resources[frame_resources_idx];
+
             frame_resources.vertex_buffer.as_ref().map(|vb| unsafe {
                 vb.Map(0, &range, &mut vtx_resource as *mut _ as _).unwrap();
                 std::ptr::copy_nonoverlapping(vertices.as_ptr(), vtx_resource, vertices.len());
@@ -302,17 +340,13 @@ impl RenderEngine {
 
             frame_resources.index_buffer.as_ref().map(|ib| unsafe {
                 ib.Map(0, &range, &mut idx_resource as *mut _ as _).unwrap();
-                std::ptr::copy_nonoverlapping(indices.as_ptr(), idx_resource, vertices.len());
+                std::ptr::copy_nonoverlapping(indices.as_ptr(), idx_resource, indices.len());
                 ib.Unmap(0, &range);
             });
         }
 
         {
-            self.setup_render_state(
-                draw_data,
-                &cmd_list,
-                frame_resources_idx as usize,
-            );
+            self.setup_render_state(draw_data, &cmd_list, frame_resources_idx as usize);
         }
 
         let mut vtx_offset = 0usize;
@@ -322,6 +356,7 @@ impl RenderEngine {
             for cmd in cl.commands() {
                 match cmd {
                     DrawCmd::Elements { count, cmd_params } => {
+                        trace!("  Draw elements");
                         let [cx, cy, cw, ch] = cmd_params.clip_rect;
                         let [x, y] = draw_data.display_pos;
                         let r = RECT {
@@ -336,8 +371,11 @@ impl RenderEngine {
                                 ptr: cmd_params.texture_id.id() as _,
                             };
                             unsafe {
+                                trace!("1");
                                 cmd_list.SetGraphicsRootDescriptorTable(1, tex_handle);
+                                trace!("2");
                                 cmd_list.RSSetScissorRects(&[r]);
+                                trace!("3");
                                 cmd_list.DrawIndexedInstanced(
                                     count as _,
                                     1,
@@ -351,13 +389,10 @@ impl RenderEngine {
                         idx_offset += count;
                     }
                     DrawCmd::ResetRenderState => {
-                        self.setup_render_state(
-                            draw_data,
-                            &cmd_list,
-                            frame_resources_idx,
-                        );
+                        self.setup_render_state(draw_data, &cmd_list, frame_resources_idx);
                     }
                     DrawCmd::RawCallback { callback, raw_cmd } => unsafe {
+                        trace!("Callback");
                         callback(cl.raw(), raw_cmd)
                     },
                 }
@@ -367,118 +402,106 @@ impl RenderEngine {
     }
 
     fn create_device_objects(&mut self, ctx: &mut imgui::Context) {
-        // TODO
-        // if self.dev.is_none() {
-        //     return;
-        // }
-
         if self.pipeline_state.is_some() {
+            trace!("Invalidate");
             self.invalidate_device_objects();
         }
 
-        {
-            let root_signature = D3D12_ROOT_SIGNATURE_DESC {
-                NumParameters: 2,
-                pParameters: [
-                    D3D12_ROOT_PARAMETER {
-                        ParameterType: D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
-                        Anonymous: D3D12_ROOT_PARAMETER_0 {
-                            Constants: D3D12_ROOT_CONSTANTS {
-                                ShaderRegister: 0,
-                                RegisterSpace: 0,
-                                Num32BitValues: 16,
-                            },
-                        },
-                        ShaderVisibility: D3D12_SHADER_VISIBILITY_VERTEX,
-                    },
-                    D3D12_ROOT_PARAMETER {
-                        ParameterType: D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-                        Anonymous: D3D12_ROOT_PARAMETER_0 {
-                            DescriptorTable: D3D12_ROOT_DESCRIPTOR_TABLE {
-                                NumDescriptorRanges: 1,
-                                pDescriptorRanges: [D3D12_DESCRIPTOR_RANGE {
-                                    RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-                                    NumDescriptors: 1,
-                                    BaseShaderRegister: 0,
-                                    RegisterSpace: 0,
-                                    OffsetInDescriptorsFromTableStart: 0,
-                                }]
-                                .as_ptr(),
-                            },
-                        },
-                        ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
-                    },
-                ]
-                .as_ptr(),
-                NumStaticSamplers: 1,
-                pStaticSamplers: [D3D12_STATIC_SAMPLER_DESC {
-                    Filter: D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-                    AddressU: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                    AddressV: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                    AddressW: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                    MipLODBias: 0f32,
-                    MaxAnisotropy: 0,
-                    ComparisonFunc: D3D12_COMPARISON_FUNC_ALWAYS,
-                    BorderColor: D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
-                    MinLOD: 0f32,
-                    MaxLOD: 0f32,
-                    ShaderRegister: 0,
-                    RegisterSpace: 0,
-                    ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
-                }]
-                .as_ptr(),
-                Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
-                    | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
-                    | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
-                    | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS,
-            };
+        let mut desc_range = D3D12_DESCRIPTOR_RANGE::default();
+        desc_range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+        desc_range.NumDescriptors = 1;
+        desc_range.BaseShaderRegister = 0;
+        desc_range.RegisterSpace = 0;
+        desc_range.OffsetInDescriptorsFromTableStart = 0;
 
-            let mut blob: Option<ID3DBlob> = None;
-            unsafe {
-                D3D12SerializeRootSignature(
-                    &root_signature,
-                    D3D_ROOT_SIGNATURE_VERSION_1,
-                    &mut blob as *mut _,
-                    &mut None as *mut _,
-                )
+        let params = [
+            D3D12_ROOT_PARAMETER {
+                ParameterType: D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+                Anonymous: D3D12_ROOT_PARAMETER_0 {
+                    Constants: D3D12_ROOT_CONSTANTS {
+                        ShaderRegister: 0,
+                        RegisterSpace: 0,
+                        Num32BitValues: 16,
+                    },
+                },
+                ShaderVisibility: D3D12_SHADER_VISIBILITY_VERTEX,
+            },
+            D3D12_ROOT_PARAMETER {
+                ParameterType: D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+                Anonymous: D3D12_ROOT_PARAMETER_0 {
+                    DescriptorTable: D3D12_ROOT_DESCRIPTOR_TABLE {
+                        NumDescriptorRanges: 1,
+                        pDescriptorRanges: &desc_range,
+                    },
+                },
+                ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
+            },
+        ];
+
+        let sampler = D3D12_STATIC_SAMPLER_DESC {
+            Filter: D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+            AddressU: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            AddressV: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            AddressW: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            MipLODBias: 0f32,
+            MaxAnisotropy: 0,
+            ComparisonFunc: D3D12_COMPARISON_FUNC_ALWAYS,
+            BorderColor: D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
+            MinLOD: 0f32,
+            MaxLOD: 0f32,
+            ShaderRegister: 0,
+            RegisterSpace: 0,
+            ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
+        };
+
+        let mut root_signature_desc = D3D12_ROOT_SIGNATURE_DESC::default();
+        root_signature_desc.NumParameters = 2;
+        root_signature_desc.pParameters = params.as_ptr();
+        root_signature_desc.NumStaticSamplers = 1;
+        root_signature_desc.pStaticSamplers = &sampler;
+        root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
+            | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
+            | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
+            | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+        let mut blob: Option<ID3DBlob> = None;
+        let mut err_blob: Option<ID3DBlob> = None;
+        trace!("Serialize root signature");
+        if let Err(e) = unsafe {
+            D3D12SerializeRootSignature(
+                &root_signature_desc,
+                D3D_ROOT_SIGNATURE_VERSION_1_0,
+                &mut blob,
+                &mut err_blob,
+            )
+        } {
+            error!("SerializeRootSignature error: {:?} ({:?})", e, err_blob);
+            if let Some(err_blob) = err_blob {
+                let buf_ptr = unsafe { err_blob.GetBufferPointer() } as *mut u8;
+                let buf_size = unsafe { err_blob.GetBufferSize() };
+                let s = unsafe { String::from_raw_parts(buf_ptr, buf_size, buf_size + 1) };
+                error!("{}", s);
             }
-            .unwrap();
-
-            let blob = blob.unwrap();
-            self.root_signature = Some(
-                unsafe {
-                    self.dev.CreateRootSignature(
-                        0,
-                        std::slice::from_raw_parts(
-                            blob.GetBufferPointer() as *const u8,
-                            blob.GetBufferSize(),
-                        ),
-                    )
-                }
-                .unwrap(),
-            );
         }
 
-        let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
-            pRootSignature: self.root_signature.clone(),
-            NodeMask: 1,
-            PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-            SampleMask: u32::MAX,
-            NumRenderTargets: 1,
-            SampleDesc: DXGI_SAMPLE_DESC {
-                Count: 1,
-                Quality: 0,
-            },
-            Flags: D3D12_PIPELINE_STATE_FLAG_NONE,
-            ..Default::default()
-        };
-        pso_desc.RTVFormats[0] = self.rtv_format;
+        trace!("Create root signature");
+        let blob = blob.unwrap();
+        self.root_signature = Some(
+            unsafe {
+                self.dev.CreateRootSignature(
+                    0,
+                    std::slice::from_raw_parts(
+                        blob.GetBufferPointer() as *const u8,
+                        blob.GetBufferSize(),
+                    ),
+                )
+            }
+            .unwrap(),
+        );
 
         let mut vtx_shader: Option<ID3DBlob> = None;
         let mut pix_shader: Option<ID3DBlob> = None;
 
-        {
-            let vs = r#"
+        let vs = r#"
                 cbuffer vertexBuffer : register(b0) 
                 {
                   float4x4 ProjectionMatrix; 
@@ -506,60 +529,24 @@ impl RenderEngine {
                   return output;
                 }"#;
 
-            unsafe {
-                D3DCompile(
-                    vs.as_ptr() as _,
-                    vs.len(),
-                    PCSTR(null()),
-                    null(),
-                    None::<ID3DInclude>,
-                    PCSTR("main".as_ptr()),
-                    PCSTR("vs_5_0".as_ptr()),
-                    0,
-                    0,
-                    &mut vtx_shader as *mut _,
-                    &mut None as _,
-                )
-            }
-            .unwrap();
-
-            pso_desc.InputLayout = D3D12_INPUT_LAYOUT_DESC {
-                pInputElementDescs: [
-                    D3D12_INPUT_ELEMENT_DESC {
-                        SemanticName: PCSTR("POSITION\0".as_ptr()),
-                        SemanticIndex: 0,
-                        Format: DXGI_FORMAT_R32G32_FLOAT,
-                        InputSlot: 0,
-                        AlignedByteOffset: 0,
-                        InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
-                        InstanceDataStepRate: 0,
-                    },
-                    D3D12_INPUT_ELEMENT_DESC {
-                        SemanticName: PCSTR("TEXCOORD\0".as_ptr()),
-                        SemanticIndex: 0,
-                        Format: DXGI_FORMAT_R32G32_FLOAT,
-                        InputSlot: 0,
-                        AlignedByteOffset: 8,
-                        InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
-                        InstanceDataStepRate: 0,
-                    },
-                    D3D12_INPUT_ELEMENT_DESC {
-                        SemanticName: PCSTR("COLOR\0".as_ptr()),
-                        SemanticIndex: 0,
-                        Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-                        InputSlot: 0,
-                        AlignedByteOffset: 16,
-                        InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
-                        InstanceDataStepRate: 0,
-                    },
-                ]
-                .as_ptr(),
-                NumElements: 3,
-            };
+        unsafe {
+            D3DCompile(
+                vs.as_ptr() as _,
+                vs.len(),
+                PCSTR(null()),
+                null(),
+                None::<ID3DInclude>,
+                PCSTR("main\0".as_ptr()),
+                PCSTR("vs_5_0\0".as_ptr()),
+                0,
+                0,
+                &mut vtx_shader as *mut _,
+                &mut None as _,
+            )
         }
+        .unwrap();
 
-        {
-            let ps = r#"
+        let ps = r#"
                 struct PS_INPUT
                 {
                   float4 pos : SV_POSITION;
@@ -575,23 +562,91 @@ impl RenderEngine {
                   return out_col; 
                 }"#;
 
-            unsafe {
-                D3DCompile(
-                    ps.as_ptr() as _,
-                    ps.len(),
-                    PCSTR(null()),
-                    null(),
-                    None::<ID3DInclude>,
-                    PCSTR("main".as_ptr()),
-                    PCSTR("ps_5_0".as_ptr()),
-                    0,
-                    0,
-                    &mut pix_shader as *mut _,
-                    &mut None as _,
-                )
-            }
-            .unwrap();
+        unsafe {
+            D3DCompile(
+                ps.as_ptr() as _,
+                ps.len(),
+                PCSTR(null()),
+                null(),
+                None::<ID3DInclude>,
+                PCSTR("main\0".as_ptr()),
+                PCSTR("ps_5_0\0".as_ptr()),
+                0,
+                0,
+                &mut pix_shader as *mut _,
+                &mut None as _,
+            )
         }
+        .unwrap();
+
+        let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+            pRootSignature: self.root_signature.clone(),
+            NodeMask: 1,
+            PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+            SampleMask: u32::MAX,
+            NumRenderTargets: 1,
+            SampleDesc: DXGI_SAMPLE_DESC {
+                Count: 1,
+                Quality: 0,
+            },
+            Flags: D3D12_PIPELINE_STATE_FLAG_NONE,
+            ..Default::default()
+        };
+        pso_desc.RTVFormats[0] = self.rtv_format;
+        pso_desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+
+        let vtx_shader = vtx_shader.unwrap();
+        pso_desc.VS = D3D12_SHADER_BYTECODE {
+            pShaderBytecode: unsafe { vtx_shader.GetBufferPointer() },
+            BytecodeLength: unsafe { vtx_shader.GetBufferSize() },
+        };
+
+        let pix_shader = pix_shader.unwrap();
+        pso_desc.PS = D3D12_SHADER_BYTECODE {
+            pShaderBytecode: unsafe { pix_shader.GetBufferPointer() },
+            BytecodeLength: unsafe { pix_shader.GetBufferSize() },
+        };
+
+        let elem_descs = [
+            D3D12_INPUT_ELEMENT_DESC {
+                SemanticName: PCSTR("POSITION\0".as_ptr()),
+                SemanticIndex: 0,
+                Format: DXGI_FORMAT_R32G32_FLOAT,
+                InputSlot: 0,
+                AlignedByteOffset: offset_of!(DrawVert, pos) as u32,
+                InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
+                InstanceDataStepRate: 0,
+            },
+            D3D12_INPUT_ELEMENT_DESC {
+                SemanticName: PCSTR("TEXCOORD\0".as_ptr()),
+                SemanticIndex: 0,
+                Format: DXGI_FORMAT_R32G32_FLOAT,
+                InputSlot: 0,
+                AlignedByteOffset: offset_of!(DrawVert, uv) as u32,
+                InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
+                InstanceDataStepRate: 0,
+            },
+            D3D12_INPUT_ELEMENT_DESC {
+                SemanticName: PCSTR("COLOR\0".as_ptr()),
+                SemanticIndex: 0,
+                Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+                InputSlot: 0,
+                AlignedByteOffset: offset_of!(DrawVert, col) as u32,
+                InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
+                InstanceDataStepRate: 0,
+            },
+        ];
+        debug!(
+            "{} {} {}",
+            offset_of!(DrawVert, pos),
+            offset_of!(DrawVert, uv),
+            offset_of!(DrawVert, col)
+        );
+
+        pso_desc.InputLayout = D3D12_INPUT_LAYOUT_DESC {
+            pInputElementDescs: elem_descs.as_ptr(),
+            NumElements: 3,
+        };
 
         pso_desc.BlendState.AlphaToCoverageEnable = BOOL::from(false);
         pso_desc.BlendState.RenderTarget[0] = D3D12_RENDER_TARGET_BLEND_DESC {
@@ -619,29 +674,9 @@ impl RenderEngine {
             ForcedSampleCount: 0,
             ConservativeRaster: D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
         };
-        pso_desc.DepthStencilState = D3D12_DEPTH_STENCIL_DESC {
-            DepthEnable: false.into(),
-            DepthWriteMask: D3D12_DEPTH_WRITE_MASK_ALL,
-            DepthFunc: D3D12_COMPARISON_FUNC_ALWAYS,
-            StencilEnable: false.into(),
-            StencilReadMask: Default::default(),
-            StencilWriteMask: Default::default(),
-            FrontFace: D3D12_DEPTH_STENCILOP_DESC {
-                StencilFailOp: D3D12_STENCIL_OP_KEEP,
-                StencilDepthFailOp: D3D12_STENCIL_OP_KEEP,
-                StencilPassOp: D3D12_STENCIL_OP_KEEP,
-                StencilFunc: D3D12_COMPARISON_FUNC_ALWAYS,
-            },
-            BackFace: D3D12_DEPTH_STENCILOP_DESC {
-                StencilFailOp: D3D12_STENCIL_OP_KEEP,
-                StencilDepthFailOp: D3D12_STENCIL_OP_KEEP,
-                StencilPassOp: D3D12_STENCIL_OP_KEEP,
-                StencilFunc: D3D12_COMPARISON_FUNC_ALWAYS,
-            },
-        };
 
-        self.pipeline_state =
-            Some(unsafe { self.dev.CreateGraphicsPipelineState(&pso_desc) }.unwrap());
+        let pipeline_state = unsafe { self.dev.CreateGraphicsPipelineState(&pso_desc) };
+        self.pipeline_state = Some(pipeline_state.unwrap());
 
         self.create_font_texture(ctx);
     }
@@ -664,9 +699,11 @@ impl RenderEngine {
     }
 
     fn create_font_texture(&mut self, ctx: &mut imgui::Context) {
+        trace!("Create font texture");
         let mut fonts = ctx.fonts();
         let texture = fonts.build_rgba32_texture();
 
+        trace!("Create committed resource");
         let mut p_texture: Option<ID3D12Resource> = None;
         unsafe {
             self.dev.CreateCommittedResource(
@@ -700,9 +737,12 @@ impl RenderEngine {
         }
         .unwrap();
 
+        trace!("Create committed resource 2");
         let mut upload_buffer: Option<ID3D12Resource> = None;
-        let upload_pitch = (texture.width * 4 + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1)
-            & !(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+        // let upload_pitch = (texture.width * 4 + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1)
+        //     & !(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+        // let upload_size = texture.height * upload_pitch;
+        let upload_pitch = texture.width * 4;
         let upload_size = texture.height * upload_pitch;
         unsafe {
             self.dev.CreateCommittedResource(
@@ -740,6 +780,9 @@ impl RenderEngine {
             Begin: 0,
             End: upload_size as usize,
         };
+        trace!("Upload buffer shens");
+        trace!("{:?} range", range);
+        trace!("{} {}x{} texture", texture.data.len(), texture.width, texture.height);
         upload_buffer.as_ref().map(|ub| unsafe {
             let mut ptr: *mut u8 = null_mut();
             ub.Map(0, &range, &mut ptr as *mut _ as _).unwrap();
@@ -748,11 +791,14 @@ impl RenderEngine {
             ub.Unmap(0, &range);
         });
 
+        trace!("Create fence");
         let fence: ID3D12Fence = unsafe { self.dev.CreateFence(0, D3D12_FENCE_FLAG_NONE) }.unwrap();
 
+        trace!("Create event");
         let event =
             unsafe { CreateEventA(null(), BOOL::from(false), BOOL::from(false), PCSTR(null())) };
 
+        trace!("Create cmd queue");
         let cmd_queue: ID3D12CommandQueue = unsafe {
             self.dev.CreateCommandQueue(&D3D12_COMMAND_QUEUE_DESC {
                 Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -763,20 +809,22 @@ impl RenderEngine {
         }
         .unwrap();
 
+        trace!("Create cmd allocator");
         let cmd_allocator: ID3D12CommandAllocator = unsafe {
             self.dev
                 .CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
         }
         .unwrap();
 
+        trace!("Create cmd list");
         let cmd_list: ID3D12GraphicsCommandList = unsafe {
             self.dev
-                .CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, cmd_allocator, None)
+                .CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, cmd_allocator.clone(), None)
         }
         .unwrap();
 
         let src_location = D3D12_TEXTURE_COPY_LOCATION {
-            pResource: upload_buffer,
+            pResource: upload_buffer.clone(),
             Type: D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
             Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                 PlacedFootprint: D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
@@ -813,6 +861,7 @@ impl RenderEngine {
             },
         };
 
+        trace!("Create commands");
         unsafe {
             cmd_list.CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, null());
             cmd_list.ResourceBarrier(&[barrier]);
@@ -837,6 +886,9 @@ impl RenderEngine {
             },
         };
 
+        unsafe { CloseHandle(event) };
+
+        trace!("Create SRV");
         unsafe {
             self.dev.CreateShaderResourceView(
                 p_texture.clone(),
@@ -847,6 +899,7 @@ impl RenderEngine {
         drop(self.font_texture_resource.take());
         self.font_texture_resource = p_texture;
         fonts.tex_id = TextureId::from(self.font_srv_gpu_desc_handle.ptr as usize);
+        trace!("Done");
     }
 
     fn shutdown(&mut self) {}

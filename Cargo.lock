@@ -394,7 +394,7 @@ dependencies = [
  "log",
  "once_cell",
  "parking_lot",
- "simplelog 0.11.0",
+ "simplelog 0.11.2",
  "widestring",
  "winapi",
  "windows 0.34.0",
@@ -438,6 +438,9 @@ version = "0.1.0"
 dependencies = [
  "imgui",
  "imgui-sys",
+ "log",
+ "memoffset",
+ "simplelog 0.11.2",
  "windows 0.34.0",
 ]
 
@@ -539,9 +542,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.14"
+version = "0.4.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
+checksum = "6389c490849ff5bc16be905ae24bc913a9c8892e19b2341dbc175e14c341c2b8"
 dependencies = [
  "cfg-if",
 ]
@@ -1073,9 +1076,9 @@ dependencies = [
 
 [[package]]
 name = "simplelog"
-version = "0.11.0"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8baa24de25f3092d9697c76f94cf09f67fca13db2ea11ce80c2f055c1aaf0795"
+checksum = "c1348164456f72ca0116e4538bdaabb0ddb622c7d9f16387c725af3e96d6001c"
 dependencies = [
  "chrono",
  "log",
