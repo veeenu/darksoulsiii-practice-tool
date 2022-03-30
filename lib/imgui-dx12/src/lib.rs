@@ -16,9 +16,6 @@ use windows::Win32::Graphics::Direct3D::{
 };
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
-use windows::Win32::Graphics::Dxgi::{
-    DXGIGetDebugInterface1, IDXGIInfoQueue, DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE,
-};
 use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject};
 
 pub struct RenderEngine {
@@ -27,8 +24,6 @@ pub struct RenderEngine {
     font_srv_cpu_desc_handle: D3D12_CPU_DESCRIPTOR_HANDLE,
     font_srv_gpu_desc_handle: D3D12_GPU_DESCRIPTOR_HANDLE,
     font_texture_resource: Option<ID3D12Resource>,
-    num_frames_in_flight: u32,
-    frame_index: usize,
     frame_resources: Vec<FrameResources>,
     const_buf: [[f32; 4]; 4],
 
@@ -88,8 +83,6 @@ impl FrameResources {
                 )
             } {
                 error!("{:?}", e);
-            } else {
-                trace!("Vertex buffer ok {:?}", self.vertex_buffer);
             }
         }
         if self.index_buffer.is_none() || self.index_buffer_size < indices {
@@ -129,35 +122,10 @@ impl FrameResources {
                 )
             } {
                 error!("{:?}", e);
-            } else {
-                trace!("Index buffer ok {:?}", self.index_buffer);
             }
         }
         Ok(())
     }
-}
-
-unsafe fn print_debug() {
-    let diq: IDXGIInfoQueue = DXGIGetDebugInterface1(0).unwrap();
-
-    for i in 0..diq.GetNumStoredMessages(DXGI_DEBUG_ALL) {
-        let mut msg_len: usize = 0;
-        diq.GetMessage(DXGI_DEBUG_ALL, i, null_mut(), &mut msg_len as _)
-            .unwrap();
-        let diqm = vec![0u8; msg_len];
-        let pdiqm = diqm.as_ptr() as *mut DXGI_INFO_QUEUE_MESSAGE;
-        diq.GetMessage(DXGI_DEBUG_ALL, i, pdiqm, &mut msg_len as _)
-            .unwrap();
-        let diqm = pdiqm.as_ref().unwrap();
-        debug!(
-            "{}",
-            String::from_utf8_lossy(std::slice::from_raw_parts(
-                diqm.pDescription as *const u8,
-                diqm.DescriptionByteLength
-            ))
-        );
-    }
-    diq.ClearStoredMessages(DXGI_DEBUG_ALL);
 }
 
 impl Default for FrameResources {
@@ -192,8 +160,6 @@ impl RenderEngine {
             rtv_format,
             font_srv_cpu_desc_handle,
             font_srv_gpu_desc_handle,
-            num_frames_in_flight,
-            frame_index: 0,
             frame_resources,
             const_buf: [[0f32; 4]; 4],
             root_signature: None,
@@ -202,42 +168,12 @@ impl RenderEngine {
         }
     }
 
-    pub fn print_reason(&self) {
-        trace!("{:?}", unsafe { self.dev.GetDeviceRemovedReason() });
-    }
-
-    // pub fn render<F: FnOnce(&mut imgui::Ui)>(&mut self, f: F) -> Result<(), String> {
-    //     let mut rect = RECT::default();
-    //     unsafe { GetWindowRect(self.dev., &mut rect) };
-    //     self.ctx.io_mut().display_size = [
-    //         (rect.right - rect.left) as f32,
-    //         (rect.bottom - rect.top) as f32,
-    //     ];
-    //     rect.right -= rect.left;
-    //     rect.top = 0;
-    //     rect.left = 0;
-
-    //     let mut ui = self.ctx.frame();
-    //     f(&mut ui);
-    //     let draw_data = ui.render();
-
-    //     let [x, y] = draw_data.display_pos;
-    //     let [width, height] = draw_data.display_size;
-
-    //     if width <= 0. && height <= 0. {
-    //         panic!("Insufficient display size {} x {}", width, height);
-    //     }
-
-    //     self.render_draw_data(draw_data, cmd_list);
-    // }
-
     fn setup_render_state(
         &mut self,
         draw_data: &imgui::DrawData,
         cmd_list: &ID3D12GraphicsCommandList,
         frame_resources_idx: usize,
     ) {
-        trace!("Setup render state");
         let display_pos = draw_data.display_pos;
         let display_size = draw_data.display_size;
 
@@ -317,13 +253,11 @@ impl RenderEngine {
         cmd_list: &ID3D12GraphicsCommandList,
         frame_resources_idx: usize,
     ) {
-        trace!("Render draw data");
         if draw_data.display_size[0] <= 0f32 || draw_data.display_size[1] <= 0f32 {
             return;
         }
 
         {
-            trace!("  Resize");
             if self.frame_resources[frame_resources_idx]
                 .resize(
                     &self.dev,
@@ -355,9 +289,7 @@ impl RenderEngine {
             let frame_resources = &self.frame_resources[frame_resources_idx];
 
             frame_resources.vertex_buffer.as_ref().map(|vb| unsafe {
-                if let Err(e) = vb.Map(0, &range, &mut vtx_resource as *mut _ as _) {
-                    trace!("{e}: {:?} {:?}", self.dev.GetDeviceRemovedReason(), vb);
-                }
+                vb.Map(0, &range, &mut vtx_resource as *mut _ as _).unwrap();
                 std::ptr::copy_nonoverlapping(vertices.as_ptr(), vtx_resource, vertices.len());
                 vb.Unmap(0, &range);
             });
@@ -380,7 +312,6 @@ impl RenderEngine {
             for cmd in cl.commands() {
                 match cmd {
                     DrawCmd::Elements { count, cmd_params } => {
-                        trace!("  Draw elements");
                         let [cx, cy, cw, ch] = cmd_params.clip_rect;
                         let [x, y] = draw_data.display_pos;
                         let r = RECT {
@@ -395,11 +326,8 @@ impl RenderEngine {
                                 ptr: cmd_params.texture_id.id() as _,
                             };
                             unsafe {
-                                trace!("1");
                                 cmd_list.SetGraphicsRootDescriptorTable(1, tex_handle);
-                                trace!("2");
                                 cmd_list.RSSetScissorRects(&[r]);
-                                trace!("3");
                                 cmd_list.DrawIndexedInstanced(
                                     count as _,
                                     1,
@@ -416,7 +344,6 @@ impl RenderEngine {
                         self.setup_render_state(draw_data, &cmd_list, frame_resources_idx);
                     }
                     DrawCmd::RawCallback { callback, raw_cmd } => unsafe {
-                        trace!("Callback");
                         callback(cl.raw(), raw_cmd)
                     },
                 }
@@ -427,7 +354,6 @@ impl RenderEngine {
 
     pub fn create_device_objects(&mut self, ctx: &mut imgui::Context) {
         if self.pipeline_state.is_some() {
-            trace!("Invalidate");
             self.invalidate_device_objects();
         }
 
@@ -489,7 +415,6 @@ impl RenderEngine {
             | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
         let mut blob: Option<ID3DBlob> = None;
         let mut err_blob: Option<ID3DBlob> = None;
-        trace!("Serialize root signature");
         if let Err(e) = unsafe {
             D3D12SerializeRootSignature(
                 &root_signature_desc,
@@ -498,16 +423,14 @@ impl RenderEngine {
                 &mut err_blob,
             )
         } {
-            error!("SerializeRootSignature error: {:?} ({:?})", e, err_blob);
             if let Some(err_blob) = err_blob {
                 let buf_ptr = unsafe { err_blob.GetBufferPointer() } as *mut u8;
                 let buf_size = unsafe { err_blob.GetBufferSize() };
                 let s = unsafe { String::from_raw_parts(buf_ptr, buf_size, buf_size + 1) };
-                error!("{}", s);
+                error!("{}: {}", e, s);
             }
         }
 
-        trace!("Create root signature");
         let blob = blob.unwrap();
         self.root_signature = Some(
             unsafe {
@@ -660,12 +583,6 @@ impl RenderEngine {
                 InstanceDataStepRate: 0,
             },
         ];
-        debug!(
-            "{} {} {}",
-            offset_of!(DrawVert, pos),
-            offset_of!(DrawVert, uv),
-            offset_of!(DrawVert, col)
-        );
 
         pso_desc.InputLayout = D3D12_INPUT_LAYOUT_DESC {
             pInputElementDescs: elem_descs.as_ptr(),
@@ -723,11 +640,9 @@ impl RenderEngine {
     }
 
     fn create_font_texture(&mut self, ctx: &mut imgui::Context) {
-        trace!("Create font texture");
         let mut fonts = ctx.fonts();
         let texture = fonts.build_rgba32_texture();
 
-        trace!("Create committed resource");
         let mut p_texture: Option<ID3D12Resource> = None;
         unsafe {
             self.dev.CreateCommittedResource(
@@ -761,11 +676,7 @@ impl RenderEngine {
         }
         .unwrap();
 
-        trace!("Create committed resource 2");
         let mut upload_buffer: Option<ID3D12Resource> = None;
-        // let upload_pitch = (texture.width * 4 + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1)
-        //     & !(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
-        // let upload_size = texture.height * upload_pitch;
         let upload_pitch = texture.width * 4;
         let upload_size = texture.height * upload_pitch;
         unsafe {
@@ -804,14 +715,6 @@ impl RenderEngine {
             Begin: 0,
             End: upload_size as usize,
         };
-        trace!("Upload buffer shens");
-        trace!("{:?} range", range);
-        trace!(
-            "{} {}x{} texture",
-            texture.data.len(),
-            texture.width,
-            texture.height
-        );
         upload_buffer.as_ref().map(|ub| unsafe {
             let mut ptr: *mut u8 = null_mut();
             ub.Map(0, &range, &mut ptr as *mut _ as _).unwrap();
@@ -819,14 +722,11 @@ impl RenderEngine {
             ub.Unmap(0, &range);
         });
 
-        trace!("Create fence");
         let fence: ID3D12Fence = unsafe { self.dev.CreateFence(0, D3D12_FENCE_FLAG_NONE) }.unwrap();
 
-        trace!("Create event");
         let event =
             unsafe { CreateEventA(null(), BOOL::from(false), BOOL::from(false), PCSTR(null())) };
 
-        trace!("Create cmd queue");
         let cmd_queue: ID3D12CommandQueue = unsafe {
             self.dev.CreateCommandQueue(&D3D12_COMMAND_QUEUE_DESC {
                 Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -837,14 +737,12 @@ impl RenderEngine {
         }
         .unwrap();
 
-        trace!("Create cmd allocator");
         let cmd_allocator: ID3D12CommandAllocator = unsafe {
             self.dev
                 .CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
         }
         .unwrap();
 
-        trace!("Create cmd list");
         let cmd_list: ID3D12GraphicsCommandList = unsafe {
             self.dev.CreateCommandList(
                 0,
@@ -893,7 +791,6 @@ impl RenderEngine {
             },
         };
 
-        trace!("Create commands");
         unsafe {
             cmd_list.CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, null());
             cmd_list.ResourceBarrier(&[barrier]);
@@ -920,7 +817,6 @@ impl RenderEngine {
 
         unsafe { CloseHandle(event) };
 
-        trace!("Create SRV");
         unsafe {
             self.dev.CreateShaderResourceView(
                 p_texture.clone(),
@@ -931,7 +827,6 @@ impl RenderEngine {
         drop(self.font_texture_resource.take());
         self.font_texture_resource = p_texture;
         fonts.tex_id = TextureId::from(self.font_srv_gpu_desc_handle.ptr as usize);
-        trace!("Done");
     }
 
     fn shutdown(&mut self) {}

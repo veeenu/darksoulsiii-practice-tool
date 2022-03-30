@@ -6,8 +6,7 @@ use std::mem::{size_of, ManuallyDrop};
 use std::ptr::{null, null_mut};
 
 use log::*;
-use once_cell::sync::OnceCell;
-use once_cell::sync::Lazy;
+use once_cell::sync::{Lazy, OnceCell};
 use parking_lot::Mutex;
 use winapi::shared::minwindef::{HMODULE, LOWORD};
 use winapi::um::winuser::{GET_WHEEL_DELTA_WPARAM, GET_XBUTTON_WPARAM};
@@ -88,8 +87,9 @@ unsafe extern "system" fn imgui_execute_command_lists_impl(
             trace!("cmd_queue ptr was not set");
             Err(())
         }
-    }).ok();
-    
+    })
+    .ok();
+
     let (_, trampoline) = TRAMPOLINE
         .get()
         .expect("ID3D12CommandQueue::ExecuteCommandLists trampoline uninitialized");
@@ -106,144 +106,10 @@ unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
         .expect("IDXGISwapChain::Present trampoline uninitialized");
 
     let mut renderer = IMGUI_RENDERER
-        .get_or_init(|| {
-            trace!("Initializing renderer");
-            let desc = swap_chain.GetDesc().unwrap();
-            let dev = swap_chain.GetDevice::<ID3D12Device>().unwrap();
-
-            let renderer_heap: ID3D12DescriptorHeap = dev
-                .CreateDescriptorHeap(&D3D12_DESCRIPTOR_HEAP_DESC {
-                    Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-                    NumDescriptors: desc.BufferCount,
-                    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-                    NodeMask: 0,
-                })
-                .unwrap();
-
-            let command_queue: ID3D12CommandQueue = dev
-                .CreateCommandQueue(&D3D12_COMMAND_QUEUE_DESC {
-                    Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
-                    Priority: 0,
-                    Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
-                    NodeMask: 0,
-                })
-                .unwrap();
-
-            let command_allocator = dev
-                .CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
-                .unwrap();
-
-            let command_list: ID3D12GraphicsCommandList = dev
-                .CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &command_allocator, None)
-                .unwrap();
-            command_list.Close().unwrap();
-
-            let rtv_heap: ID3D12DescriptorHeap = dev
-                .CreateDescriptorHeap(&D3D12_DESCRIPTOR_HEAP_DESC {
-                    Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-                    NumDescriptors: desc.BufferCount,
-                    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-                    NodeMask: 1,
-                })
-                .unwrap();
-
-            let rtv_heap_inc_size =
-                dev.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-            let rtv_handle_start = rtv_heap.GetCPUDescriptorHandleForHeapStart();
-            debug!("rtv_handle_start ptr {:x}", rtv_handle_start.ptr);
-
-            let frame_contexts: Vec<FrameContext> = (0..desc.BufferCount)
-                .map(|i| {
-                    let desc_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                        ptr: rtv_handle_start.ptr + (i * rtv_heap_inc_size) as usize,
-                    };
-                    debug!("desc handle {i} ptr {:x}", desc_handle.ptr);
-                    let back_buffer = swap_chain.GetBuffer(i).unwrap();
-                    dev.CreateRenderTargetView(&back_buffer, null(), desc_handle);
-                    FrameContext {
-                        desc_handle,
-                        back_buffer,
-                        command_allocator: dev
-                            .CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
-                            .unwrap(),
-                    }
-                })
-                .collect();
-
-            let mut ctx = imgui::Context::create();
-            let cpu_desc = renderer_heap.GetCPUDescriptorHandleForHeapStart();
-            let gpu_desc = renderer_heap.GetGPUDescriptorHandleForHeapStart();
-            let engine = imgui_dx12::RenderEngine::new(
-                &mut ctx,
-                dev,
-                desc.BufferCount,
-                DXGI_FORMAT_R8G8B8A8_UNORM,
-                renderer_heap.clone(),
-                cpu_desc,
-                gpu_desc,
-            );
-            // engine.create_device_objects(&mut ctx);
-            let render_loop = IMGUI_RENDER_LOOP.take().unwrap();
-            let wnd_proc = std::mem::transmute::<_, WndProcType>(SetWindowLongPtrA(
-                desc.OutputWindow,
-                GWLP_WNDPROC,
-                imgui_wnd_proc as usize as isize,
-            ));
-
-            ctx.set_ini_filename(None);
-            ctx.io_mut().nav_active = true;
-            ctx.io_mut().nav_visible = true;
-
-            let flags = ImguiRenderLoopFlags { focused: true };
-
-            debug!("Done init");
-            Mutex::new(Box::new(ImguiRenderer {
-                ctx,
-                command_queue: None,
-                command_allocator,
-                command_list,
-                engine,
-                render_loop,
-                wnd_proc,
-                flags,
-                rtv_heap,
-                renderer_heap,
-                frame_contexts,
-                frame_contexts_idx: swap_chain.GetCurrentBackBufferIndex() as usize,
-            }))
-        })
+        .get_or_init(|| Mutex::new(Box::new(ImguiRenderer::new(swap_chain.clone()))))
         .lock();
 
-    {
-        let sd = swap_chain.GetDesc().unwrap();
-        let mut rect: RECT = std::mem::zeroed();
-
-        if GetWindowRect(sd.OutputWindow, &mut rect as _).as_bool() {
-            let mut io = renderer.ctx.io_mut();
-
-            io.display_size = [
-                (rect.right - rect.left) as f32,
-                (rect.bottom - rect.top) as f32,
-            ];
-
-            let mut pos = POINT { x: 0, y: 0 };
-
-            let active_window = GetForegroundWindow();
-            if !active_window.is_invalid()
-                && (active_window == sd.OutputWindow
-                    || IsChild(active_window, sd.OutputWindow).as_bool())
-            {
-                let gcp = GetCursorPos(&mut pos as *mut _);
-                if gcp.as_bool() && ScreenToClient(sd.OutputWindow, &mut pos as *mut _).as_bool() {
-                    io.mouse_pos[0] = pos.x as _;
-                    io.mouse_pos[1] = pos.y as _;
-                }
-            }
-        }
-    }
-
-    renderer.render(swap_chain.GetCurrentBackBufferIndex() as usize);
+    renderer.render(swap_chain.clone());
     drop(renderer);
 
     trampoline_present(swap_chain, sync_interval, flags)
@@ -367,35 +233,149 @@ struct ImguiRenderer {
     wnd_proc: WndProcType,
     flags: ImguiRenderLoopFlags,
     frame_contexts: Vec<FrameContext>,
-    frame_contexts_idx: usize,
-    rtv_heap: ID3D12DescriptorHeap,
+    // frame_contexts_idx: usize,
+    _rtv_heap: ID3D12DescriptorHeap,
     renderer_heap: ID3D12DescriptorHeap,
-    // command_queue: ID3D12CommandQueue,
     command_queue: Option<ID3D12CommandQueue>,
-    command_allocator: ID3D12CommandAllocator,
     command_list: ID3D12GraphicsCommandList,
 }
 
 impl ImguiRenderer {
-    fn render(&mut self, idx: usize) -> Option<()> {
+    unsafe fn new(swap_chain: IDXGISwapChain3) -> Self {
+        trace!("Initializing renderer");
+        let desc = swap_chain.GetDesc().unwrap();
+        let dev = swap_chain.GetDevice::<ID3D12Device>().unwrap();
+
+        let renderer_heap: ID3D12DescriptorHeap = dev
+            .CreateDescriptorHeap(&D3D12_DESCRIPTOR_HEAP_DESC {
+                Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+                NumDescriptors: desc.BufferCount,
+                Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+                NodeMask: 0,
+            })
+            .unwrap();
+
+        let command_allocator: ID3D12CommandAllocator = dev
+            .CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
+            .unwrap();
+
+        let command_list: ID3D12GraphicsCommandList = dev
+            .CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &command_allocator, None)
+            .unwrap();
+        command_list.Close().unwrap();
+
+        let rtv_heap: ID3D12DescriptorHeap = dev
+            .CreateDescriptorHeap(&D3D12_DESCRIPTOR_HEAP_DESC {
+                Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+                NumDescriptors: desc.BufferCount,
+                Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+                NodeMask: 1,
+            })
+            .unwrap();
+
+        let rtv_heap_inc_size =
+            dev.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+        let rtv_handle_start = rtv_heap.GetCPUDescriptorHandleForHeapStart();
+        debug!("rtv_handle_start ptr {:x}", rtv_handle_start.ptr);
+
+        let frame_contexts: Vec<FrameContext> = (0..desc.BufferCount)
+            .map(|i| {
+                let desc_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+                    ptr: rtv_handle_start.ptr + (i * rtv_heap_inc_size) as usize,
+                };
+                debug!("desc handle {i} ptr {:x}", desc_handle.ptr);
+                let back_buffer = swap_chain.GetBuffer(i).unwrap();
+                dev.CreateRenderTargetView(&back_buffer, null(), desc_handle);
+                FrameContext {
+                    desc_handle,
+                    back_buffer,
+                    command_allocator: dev
+                        .CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
+                        .unwrap(),
+                }
+            })
+            .collect();
+
+        let mut ctx = imgui::Context::create();
+        let cpu_desc = renderer_heap.GetCPUDescriptorHandleForHeapStart();
+        let gpu_desc = renderer_heap.GetGPUDescriptorHandleForHeapStart();
+        let engine = imgui_dx12::RenderEngine::new(
+            &mut ctx,
+            dev,
+            desc.BufferCount,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            renderer_heap.clone(),
+            cpu_desc,
+            gpu_desc,
+        );
+        let render_loop = IMGUI_RENDER_LOOP.take().unwrap();
+        let wnd_proc = std::mem::transmute::<_, WndProcType>(SetWindowLongPtrA(
+            desc.OutputWindow,
+            GWLP_WNDPROC,
+            imgui_wnd_proc as usize as isize,
+        ));
+
+        ctx.set_ini_filename(None);
+        ctx.io_mut().nav_active = true;
+        ctx.io_mut().nav_visible = true;
+
+        let flags = ImguiRenderLoopFlags { focused: true };
+
+        debug!("Done init");
+        ImguiRenderer {
+            ctx,
+            command_queue: None,
+            command_list,
+            engine,
+            render_loop,
+            wnd_proc,
+            flags,
+            _rtv_heap: rtv_heap,
+            renderer_heap,
+            frame_contexts,
+        }
+    }
+
+    fn render(&mut self, swap_chain: IDXGISwapChain3) -> Option<()> {
+        let sd = unsafe { swap_chain.GetDesc() }.unwrap();
+        let mut rect: RECT = Default::default();
+
+        if unsafe { GetWindowRect(sd.OutputWindow, &mut rect as _).as_bool() } {
+            let mut io = self.ctx.io_mut();
+
+            io.display_size = [
+                (rect.right - rect.left) as f32,
+                (rect.bottom - rect.top) as f32,
+            ];
+
+            let mut pos = POINT { x: 0, y: 0 };
+
+            let active_window = unsafe { GetForegroundWindow() };
+            if !active_window.is_invalid()
+                && (active_window == sd.OutputWindow
+                    || unsafe { IsChild(active_window, sd.OutputWindow) }.as_bool())
+            {
+                let gcp = unsafe { GetCursorPos(&mut pos as *mut _) };
+                if gcp.as_bool()
+                    && unsafe { ScreenToClient(sd.OutputWindow, &mut pos as *mut _) }.as_bool()
+                {
+                    io.mouse_pos[0] = pos.x as _;
+                    io.mouse_pos[1] = pos.y as _;
+                }
+            }
+        }
+
         let command_queue = self.command_queue.as_ref()?;
 
-        self.frame_contexts_idx = idx;
-        let frame_context = &self.frame_contexts[self.frame_contexts_idx];
+        let frame_contexts_idx = unsafe { swap_chain.GetCurrentBackBufferIndex() } as usize;
+        let frame_context = &self.frame_contexts[frame_contexts_idx];
 
-        trace!(
-            "New frame {}/{} on buffer {:?}",
-            self.frame_contexts_idx,
-            self.frame_contexts.len(),
-            frame_context.back_buffer
-        );
         self.engine.new_frame(&mut self.ctx);
         let ctx = &mut self.ctx;
         let mut ui = ctx.frame();
-        trace!("Got frame, call render loop");
         self.render_loop.render(&mut ui, &self.flags);
         let draw_data = ui.render();
-        trace!("Got draw data");
 
         let mut transition_barrier = ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
             pResource: Some(frame_context.back_buffer.clone()),
@@ -415,42 +395,28 @@ impl ImguiRenderer {
         let command_allocator = &frame_context.command_allocator;
 
         unsafe {
-            trace!("Reset command alloc");
             command_allocator.Reset().unwrap();
-            trace!("Reset command list");
             self.command_list.Reset(command_allocator, None).unwrap();
-            trace!("CL Resource barrier");
             self.command_list.ResourceBarrier(&[barrier.clone()]);
-            trace!(
-                "CL Render targets {:?}, {:x}",
-                frame_context,
-                frame_context.desc_handle.ptr
-            );
             self.command_list.OMSetRenderTargets(
                 1,
                 &frame_context.desc_handle,
                 BOOL::from(false),
                 null(),
             );
-            trace!("CL Descriptor heaps");
             self.command_list
                 .SetDescriptorHeaps(&[Some(self.renderer_heap.clone())]);
         };
 
-        trace!("Render draw data");
         self.engine
-            .render_draw_data(draw_data, &self.command_list, self.frame_contexts_idx);
+            .render_draw_data(draw_data, &self.command_list, frame_contexts_idx);
         transition_barrier.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         transition_barrier.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 
         unsafe {
-            trace!("CL Resource barrier");
             self.command_list.ResourceBarrier(&[barrier]);
-            trace!("CL close");
             self.command_list.Close().unwrap();
-            trace!("CL exec");
-            command_queue
-                .ExecuteCommandLists(&[Some(self.command_list.clone().into())]);
+            command_queue.ExecuteCommandLists(&[Some(self.command_list.clone().into())]);
         }
 
         drop(transition_barrier);

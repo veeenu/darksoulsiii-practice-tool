@@ -35,7 +35,6 @@ impl ImguiRenderLoop for PracticeTool {
         Window::new("##window").build(ui, || {
             ui.text("It works!");
         });
-        println!("It works");
     }
 }
 
