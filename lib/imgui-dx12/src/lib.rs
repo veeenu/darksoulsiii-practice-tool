@@ -9,7 +9,7 @@ use imgui::{BackendFlags, DrawCmd, DrawIdx, DrawVert, TextureId};
 use log::*;
 use memoffset::offset_of;
 use windows::core::PCSTR;
-use windows::Win32::Foundation::{BOOL, CloseHandle, RECT};
+use windows::Win32::Foundation::{CloseHandle, BOOL, RECT};
 use windows::Win32::Graphics::Direct3D::Fxc::D3DCompile;
 use windows::Win32::Graphics::Direct3D::{
     ID3DBlob, ID3DInclude, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
@@ -44,9 +44,15 @@ struct FrameResources {
 }
 
 impl FrameResources {
-    fn resize(&mut self, dev: &ID3D12Device, indices: usize, vertices: usize) -> Result<(), windows::core::Error> {
+    fn resize(
+        &mut self,
+        dev: &ID3D12Device,
+        indices: usize,
+        vertices: usize,
+    ) -> Result<(), windows::core::Error> {
         if self.vertex_buffer.is_none() || self.vertex_buffer_size < vertices {
             drop(self.vertex_buffer.take());
+
             self.vertex_buffer_size = vertices + 5000;
             let props = D3D12_HEAP_PROPERTIES {
                 Type: D3D12_HEAP_TYPE_UPLOAD,
@@ -71,16 +77,20 @@ impl FrameResources {
                 Flags: D3D12_RESOURCE_FLAG_NONE,
             };
 
-            unsafe {
+            if let Err(e) = unsafe {
                 dev.CreateCommittedResource(
                     &props,
                     D3D12_HEAP_FLAG_NONE,
                     &desc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
                     null(),
-                    &mut self.vertex_buffer as *mut _,
+                    &mut self.vertex_buffer as *mut Option<_>,
                 )
-            }?;
+            } {
+                error!("{:?}", e);
+            } else {
+                trace!("Vertex buffer ok {:?}", self.vertex_buffer);
+            }
         }
         if self.index_buffer.is_none() || self.index_buffer_size < indices {
             drop(self.index_buffer.take());
@@ -108,7 +118,7 @@ impl FrameResources {
                 Flags: D3D12_RESOURCE_FLAG_NONE,
             };
 
-            unsafe {
+            if let Err(e) = unsafe {
                 dev.CreateCommittedResource(
                     &props,
                     D3D12_HEAP_FLAG_NONE,
@@ -117,7 +127,11 @@ impl FrameResources {
                     null(),
                     &mut self.index_buffer as *mut _,
                 )
-            }?
+            } {
+                error!("{:?}", e);
+            } else {
+                trace!("Index buffer ok {:?}", self.index_buffer);
+            }
         }
         Ok(())
     }
@@ -287,7 +301,12 @@ impl RenderEngine {
             cmd_list.IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             cmd_list.SetPipelineState(self.pipeline_state.as_ref().unwrap());
             cmd_list.SetGraphicsRootSignature(self.root_signature.as_ref().unwrap());
-            cmd_list.SetGraphicsRoot32BitConstants(0, 16, self.const_buf.as_ptr() as *const c_void, 0);
+            cmd_list.SetGraphicsRoot32BitConstants(
+                0,
+                16,
+                self.const_buf.as_ptr() as *const c_void,
+                0,
+            );
             cmd_list.OMSetBlendFactor(&[0f32; 4]);
         }
     }
@@ -305,12 +324,15 @@ impl RenderEngine {
 
         {
             trace!("  Resize");
-            if self.frame_resources[frame_resources_idx].resize(
-                &self.dev,
-                draw_data.total_idx_count as usize,
-                draw_data.total_vtx_count as usize,
-            ).is_err() {
-                self.print_reason();
+            if self.frame_resources[frame_resources_idx]
+                .resize(
+                    &self.dev,
+                    draw_data.total_idx_count as usize,
+                    draw_data.total_vtx_count as usize,
+                )
+                .is_err()
+            {
+                trace!("{:?}", unsafe { self.dev.GetDeviceRemovedReason() });
                 panic!();
             }
         };
@@ -333,7 +355,9 @@ impl RenderEngine {
             let frame_resources = &self.frame_resources[frame_resources_idx];
 
             frame_resources.vertex_buffer.as_ref().map(|vb| unsafe {
-                vb.Map(0, &range, &mut vtx_resource as *mut _ as _).unwrap();
+                if let Err(e) = vb.Map(0, &range, &mut vtx_resource as *mut _ as _) {
+                    trace!("{e}: {:?} {:?}", self.dev.GetDeviceRemovedReason(), vb);
+                }
                 std::ptr::copy_nonoverlapping(vertices.as_ptr(), vtx_resource, vertices.len());
                 vb.Unmap(0, &range);
             });
@@ -401,7 +425,7 @@ impl RenderEngine {
         }
     }
 
-    fn create_device_objects(&mut self, ctx: &mut imgui::Context) {
+    pub fn create_device_objects(&mut self, ctx: &mut imgui::Context) {
         if self.pipeline_state.is_some() {
             trace!("Invalidate");
             self.invalidate_device_objects();
@@ -782,11 +806,15 @@ impl RenderEngine {
         };
         trace!("Upload buffer shens");
         trace!("{:?} range", range);
-        trace!("{} {}x{} texture", texture.data.len(), texture.width, texture.height);
+        trace!(
+            "{} {}x{} texture",
+            texture.data.len(),
+            texture.width,
+            texture.height
+        );
         upload_buffer.as_ref().map(|ub| unsafe {
             let mut ptr: *mut u8 = null_mut();
             ub.Map(0, &range, &mut ptr as *mut _ as _).unwrap();
-            // TODO check pointer arithmetic shenanigans if stuff goes sideways
             std::ptr::copy_nonoverlapping(texture.data.as_ptr(), ptr, texture.data.len());
             ub.Unmap(0, &range);
         });
@@ -818,8 +846,12 @@ impl RenderEngine {
 
         trace!("Create cmd list");
         let cmd_list: ID3D12GraphicsCommandList = unsafe {
-            self.dev
-                .CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, cmd_allocator.clone(), None)
+            self.dev.CreateCommandList(
+                0,
+                D3D12_COMMAND_LIST_TYPE_DIRECT,
+                cmd_allocator.clone(),
+                None,
+            )
         }
         .unwrap();
 

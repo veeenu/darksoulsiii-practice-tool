@@ -7,6 +7,7 @@ use std::ptr::{null, null_mut};
 
 use log::*;
 use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use winapi::shared::minwindef::{HMODULE, LOWORD};
 use winapi::um::winuser::{GET_WHEEL_DELTA_WPARAM, GET_XBUTTON_WPARAM};
@@ -26,6 +27,12 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 
 type DXGISwapChainPresentType =
     unsafe extern "system" fn(This: IDXGISwapChain3, SyncInterval: u32, Flags: u32) -> HRESULT;
+
+type ExecuteCommandListsType = unsafe extern "system" fn(
+    This: ID3D12CommandQueue,
+    num_command_lists: u32,
+    command_lists: *mut ID3D12CommandList,
+);
 
 type WndProcType =
     unsafe extern "system" fn(hwnd: HWND, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT;
@@ -48,7 +55,7 @@ pub trait ImguiRenderLoop {
 // Global singletons
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static TRAMPOLINE: OnceCell<DXGISwapChainPresentType> = OnceCell::new();
+static TRAMPOLINE: OnceCell<(DXGISwapChainPresentType, ExecuteCommandListsType)> = OnceCell::new();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Hook entry points
@@ -61,14 +68,40 @@ static IMGUI_RENDERER: OnceCell<Mutex<Box<ImguiRenderer>>> = OnceCell::new();
 struct FrameContext {
     back_buffer: ID3D12Resource,
     desc_handle: D3D12_CPU_DESCRIPTOR_HANDLE,
+    command_allocator: ID3D12CommandAllocator,
 }
 
-unsafe extern "fastcall" fn imgui_dxgi_swap_chain_present_impl(
+unsafe extern "system" fn imgui_execute_command_lists_impl(
+    cmd_queue: ID3D12CommandQueue,
+    num_command_lists: u32,
+    command_lists: *mut ID3D12CommandList,
+) {
+    static CELL: OnceCell<()> = OnceCell::new();
+
+    CELL.get_or_try_init(|| {
+        trace!("cmd_queue ptr is {:?}", cmd_queue);
+        if let Some(renderer) = IMGUI_RENDERER.get() {
+            trace!("cmd_queue ptr was set");
+            renderer.lock().command_queue = Some(cmd_queue.clone());
+            Ok(())
+        } else {
+            trace!("cmd_queue ptr was not set");
+            Err(())
+        }
+    }).ok();
+    
+    let (_, trampoline) = TRAMPOLINE
+        .get()
+        .expect("ID3D12CommandQueue::ExecuteCommandLists trampoline uninitialized");
+    trampoline(cmd_queue, num_command_lists, command_lists);
+}
+
+unsafe extern "system" fn imgui_dxgi_swap_chain_present_impl(
     swap_chain: IDXGISwapChain3,
     sync_interval: u32,
     flags: u32,
 ) -> HRESULT {
-    let trampoline = TRAMPOLINE
+    let (trampoline_present, _) = TRAMPOLINE
         .get()
         .expect("IDXGISwapChain::Present trampoline uninitialized");
 
@@ -87,7 +120,7 @@ unsafe extern "fastcall" fn imgui_dxgi_swap_chain_present_impl(
                 })
                 .unwrap();
 
-            let command_queue = dev
+            let command_queue: ID3D12CommandQueue = dev
                 .CreateCommandQueue(&D3D12_COMMAND_QUEUE_DESC {
                     Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
                     Priority: 0,
@@ -118,19 +151,22 @@ unsafe extern "fastcall" fn imgui_dxgi_swap_chain_present_impl(
                 dev.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
             let rtv_handle_start = rtv_heap.GetCPUDescriptorHandleForHeapStart();
-            trace!("rtv_handle_start ptr {:x}", rtv_handle_start.ptr);
+            debug!("rtv_handle_start ptr {:x}", rtv_handle_start.ptr);
 
             let frame_contexts: Vec<FrameContext> = (0..desc.BufferCount)
                 .map(|i| {
                     let desc_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
                         ptr: rtv_handle_start.ptr + (i * rtv_heap_inc_size) as usize,
                     };
-                    trace!("desc handle {i} ptr {:x}", desc_handle.ptr);
+                    debug!("desc handle {i} ptr {:x}", desc_handle.ptr);
                     let back_buffer = swap_chain.GetBuffer(i).unwrap();
                     dev.CreateRenderTargetView(&back_buffer, null(), desc_handle);
                     FrameContext {
                         desc_handle,
                         back_buffer,
+                        command_allocator: dev
+                            .CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
+                            .unwrap(),
                     }
                 })
                 .collect();
@@ -147,6 +183,7 @@ unsafe extern "fastcall" fn imgui_dxgi_swap_chain_present_impl(
                 cpu_desc,
                 gpu_desc,
             );
+            // engine.create_device_objects(&mut ctx);
             let render_loop = IMGUI_RENDER_LOOP.take().unwrap();
             let wnd_proc = std::mem::transmute::<_, WndProcType>(SetWindowLongPtrA(
                 desc.OutputWindow,
@@ -163,7 +200,7 @@ unsafe extern "fastcall" fn imgui_dxgi_swap_chain_present_impl(
             debug!("Done init");
             Mutex::new(Box::new(ImguiRenderer {
                 ctx,
-                command_queue,
+                command_queue: None,
                 command_allocator,
                 command_list,
                 engine,
@@ -173,14 +210,13 @@ unsafe extern "fastcall" fn imgui_dxgi_swap_chain_present_impl(
                 rtv_heap,
                 renderer_heap,
                 frame_contexts,
-                frame_contexts_idx: swap_chain.GetCurrentBackBufferIndex() as usize
+                frame_contexts_idx: swap_chain.GetCurrentBackBufferIndex() as usize,
             }))
         })
         .lock();
 
     {
         let sd = swap_chain.GetDesc().unwrap();
-        trace!("Swapchain desc {:?}", sd);
         let mut rect: RECT = std::mem::zeroed();
 
         if GetWindowRect(sd.OutputWindow, &mut rect as _).as_bool() {
@@ -207,12 +243,10 @@ unsafe extern "fastcall" fn imgui_dxgi_swap_chain_present_impl(
         }
     }
 
-    trace!("Rendering");
-    renderer.render();
-    trace!("Rendered");
+    renderer.render(swap_chain.GetCurrentBackBufferIndex() as usize);
     drop(renderer);
 
-    trampoline(swap_chain, sync_interval, flags)
+    trampoline_present(swap_chain, sync_interval, flags)
 }
 
 unsafe extern "system" fn imgui_wnd_proc(
@@ -336,14 +370,25 @@ struct ImguiRenderer {
     frame_contexts_idx: usize,
     rtv_heap: ID3D12DescriptorHeap,
     renderer_heap: ID3D12DescriptorHeap,
-    command_queue: ID3D12CommandQueue,
+    // command_queue: ID3D12CommandQueue,
+    command_queue: Option<ID3D12CommandQueue>,
     command_allocator: ID3D12CommandAllocator,
     command_list: ID3D12GraphicsCommandList,
 }
 
 impl ImguiRenderer {
-    fn render(&mut self) {
-        trace!("New frame {}/{}", self.frame_contexts_idx, self.frame_contexts.len());
+    fn render(&mut self, idx: usize) -> Option<()> {
+        let command_queue = self.command_queue.as_ref()?;
+
+        self.frame_contexts_idx = idx;
+        let frame_context = &self.frame_contexts[self.frame_contexts_idx];
+
+        trace!(
+            "New frame {}/{} on buffer {:?}",
+            self.frame_contexts_idx,
+            self.frame_contexts.len(),
+            frame_context.back_buffer
+        );
         self.engine.new_frame(&mut self.ctx);
         let ctx = &mut self.ctx;
         let mut ui = ctx.frame();
@@ -351,10 +396,6 @@ impl ImguiRenderer {
         self.render_loop.render(&mut ui, &self.flags);
         let draw_data = ui.render();
         trace!("Got draw data");
-
-        self.frame_contexts_idx += 1;
-        self.frame_contexts_idx %= self.frame_contexts.len();
-        let frame_context = &self.frame_contexts[self.frame_contexts_idx];
 
         let mut transition_barrier = ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
             pResource: Some(frame_context.back_buffer.clone()),
@@ -371,13 +412,13 @@ impl ImguiRenderer {
             },
         };
 
+        let command_allocator = &frame_context.command_allocator;
+
         unsafe {
             trace!("Reset command alloc");
-            self.command_allocator.Reset().unwrap();
+            command_allocator.Reset().unwrap();
             trace!("Reset command list");
-            self.command_list
-                .Reset(&self.command_allocator, None)
-                .unwrap();
+            self.command_list.Reset(command_allocator, None).unwrap();
             trace!("CL Resource barrier");
             self.command_list.ResourceBarrier(&[barrier.clone()]);
             trace!(
@@ -397,7 +438,8 @@ impl ImguiRenderer {
         };
 
         trace!("Render draw data");
-        self.engine.render_draw_data(draw_data, &self.command_list, self.frame_contexts_idx);
+        self.engine
+            .render_draw_data(draw_data, &self.command_list, self.frame_contexts_idx);
         transition_barrier.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         transition_barrier.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 
@@ -407,11 +449,12 @@ impl ImguiRenderer {
             trace!("CL close");
             self.command_list.Close().unwrap();
             trace!("CL exec");
-            self.command_queue
+            command_queue
                 .ExecuteCommandLists(&[Some(self.command_list.clone().into())]);
         }
 
         drop(transition_barrier);
+        None
     }
 }
 
@@ -432,7 +475,7 @@ pub struct ImguiRenderLoopFlags {
 ///
 /// Creates a swap chain + device instance and looks up its
 /// vtable to find the address.
-fn get_present_addr() -> DXGISwapChainPresentType {
+fn get_present_addr() -> (DXGISwapChainPresentType, ExecuteCommandListsType) {
     trace!("get_present_addr");
     trace!("  HWND");
     unsafe extern "system" fn wndproc(
@@ -479,18 +522,10 @@ fn get_present_addr() -> DXGISwapChainPresentType {
             )
         }
     };
-    trace!("  hwnd = {:x}", hwnd.0);
 
-    // let mut debug_interface: Option<ID3D12Debug> = None;
-    // unsafe { D3D12GetDebugInterface(&mut debug_interface) }.unwrap();
-    // unsafe { debug_interface.as_ref().unwrap().EnableDebugLayer() };
-
-    trace!("  Factory");
     let factory: IDXGIFactory = unsafe { CreateDXGIFactory() }.unwrap();
-    trace!("  Adapter");
     let adapter = unsafe { factory.EnumAdapters(0) }.unwrap();
 
-    trace!("  Device");
     let mut dev: Option<ID3D12Device> = None;
     unsafe { D3D12CreateDevice(&adapter, D3D_FEATURE_LEVEL_11_0, &mut dev) }.unwrap();
     let dev = dev.unwrap();
@@ -532,18 +567,20 @@ fn get_present_addr() -> DXGISwapChainPresentType {
         SwapEffect: DXGI_SWAP_EFFECT_FLIP_DISCARD,
         Flags: DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH.0 as u32,
     };
-    trace!("{:#?}", swap_chain_desc);
 
-    trace!("  Swap chain");
-    let swap_chain = unsafe { factory.CreateSwapChain(command_queue, &swap_chain_desc) }.unwrap();
-    trace!("  Present ptr");
+    let swap_chain = unsafe { factory.CreateSwapChain(&command_queue, &swap_chain_desc) }.unwrap();
     let present_ptr = unsafe { swap_chain.vtable().Present };
-    trace!("  Present ptr is {:p}", present_ptr as *mut c_void);
+    let ecl_ptr = unsafe { command_queue.vtable().ExecuteCommandLists };
 
     unsafe { DestroyWindow(hwnd) };
     unsafe { UnregisterClassA(PCSTR("HUDHOOK_DUMMY\0".as_ptr()), hinstance) };
 
-    unsafe { std::mem::transmute(present_ptr) }
+    unsafe {
+        (
+            std::mem::transmute(present_ptr),
+            std::mem::transmute(ecl_ptr),
+        )
+    }
 }
 
 /// Construct a `mh::Hook` that will render UI via the provided `ImguiRenderLoop`.
@@ -551,32 +588,56 @@ fn get_present_addr() -> DXGISwapChainPresentType {
 /// # Safety
 ///
 /// yolo
-pub unsafe fn hook_imgui<T: 'static>(t: T) -> mh::Hook
+pub unsafe fn hook_imgui<T: 'static>(t: T) -> [mh::Hook; 2]
 where
     T: ImguiRenderLoop + Send + Sync,
 {
-    let dxgi_swap_chain_present_addr = get_present_addr();
+    let (dxgi_swap_chain_present_addr, execute_command_lists_addr) = get_present_addr();
     debug!(
         "IDXGISwapChain::Present = {:p}",
         dxgi_swap_chain_present_addr as *const c_void
     );
+    debug!(
+        "ID3D12CommandQueue::ExecuteCommandLists = {:p}",
+        execute_command_lists_addr as *const c_void
+    );
 
-    let mut trampoline = null_mut();
+    let mut trampoline_dscp = null_mut();
+    let mut trampoline_cqecl = null_mut();
 
     debug!(
         "MH_CreateHook: {:?}",
         mh::MH_CreateHook(
             dxgi_swap_chain_present_addr as *mut c_void,
             imgui_dxgi_swap_chain_present_impl as *mut c_void,
-            &mut trampoline as *mut _ as _
+            &mut trampoline_dscp as *mut _ as _
+        )
+    );
+    debug!(
+        "MH_CreateHook: {:?}",
+        mh::MH_CreateHook(
+            execute_command_lists_addr as *mut c_void,
+            imgui_execute_command_lists_impl as *mut c_void,
+            &mut trampoline_cqecl as *mut _ as _
         )
     );
 
     IMGUI_RENDER_LOOP.get_or_init(|| Box::new(t));
-    TRAMPOLINE.get_or_init(|| std::mem::transmute(trampoline));
+    TRAMPOLINE.get_or_init(|| {
+        (
+            std::mem::transmute(trampoline_dscp),
+            std::mem::transmute(trampoline_cqecl),
+        )
+    });
 
-    mh::Hook::new(
-        dxgi_swap_chain_present_addr as *mut c_void,
-        imgui_dxgi_swap_chain_present_impl as *mut c_void,
-    )
+    [
+        mh::Hook::new(
+            dxgi_swap_chain_present_addr as *mut c_void,
+            imgui_dxgi_swap_chain_present_impl as *mut c_void,
+        ),
+        mh::Hook::new(
+            execute_command_lists_addr as *mut c_void,
+            imgui_execute_command_lists_impl as *mut c_void,
+        ),
+    ]
 }
