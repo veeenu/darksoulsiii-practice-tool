@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 name = "libjdsd_dsiii_practice_tool"
 
 [dependencies]
-hudhook = { path = "../lib/hudhook" }
+hudhook = { path = "../lib/hudhook/hudhook" }
 libds3 = { path = "../lib/libds3" }
 log = "0.4.14"
 simplelog = "0.8.0"
