@@ -73,7 +73,6 @@ fn get_base_module_bytes(proc_name: &str) -> Option<(usize, Vec<u8>)> {
     }
 }
 
-
 fn first_cstr(v: &[u8]) -> String {
     v.iter()
         .take_while(|&c| c != &0u8)
@@ -129,15 +128,36 @@ impl Module {
     fn find_rtti_desc(&self, addr: usize) -> Option<()> {
         println!("rtti string at {:x} ({:x})", addr, addr + self.base_addr);
         let rtti_type_desc = ((addr - 0x10) & 0xFFFFFFFF) as u32;
-        println!("rtti type desc   {:x}", rtti_type_desc as usize + self.base_addr);
-        let rtti_object_locator = self.find_u32(rtti_type_desc).next()? - 0xC + self.base_addr;
-        println!("rtti obj locator {:x}", rtti_object_locator);
-        let rtti_vtable_ptr = self.find_u64(rtti_object_locator as u64).next()? + self.base_addr + 0x8;
-        println!("rtti vtable ptr  {:x}", rtti_vtable_ptr);
+        println!(
+            "rtti type desc   {:08x} ({:08x})",
+            rtti_type_desc,
+            rtti_type_desc as usize + self.base_addr
+        );
+
+        let rtti_object_locator = self.find_u32(rtti_type_desc).next()? - 0xC;
+        let rtti_object_locator_value = self.get_u64(rtti_object_locator).unwrap();
+        println!(
+            "rtti obj locator {:08x} ({:08x}) value {:x}",
+            rtti_object_locator,
+            (rtti_object_locator + self.base_addr),
+            rtti_object_locator_value
+        );
+
+        let rtti_vtable_ptr = self
+            .find_u64((rtti_object_locator + self.base_addr) as u64)
+            .next()?
+            + 0x8;
+        let rtti_vtable_ptr_abs = rtti_vtable_ptr + self.base_addr;
+        println!(
+            "rtti vtable ptr  {:08x} ({:08x})",
+            rtti_vtable_ptr,
+            rtti_vtable_ptr_abs,
+        );
+
         // let rtti_vtable_base = self.get_u64(rtti_vtable_ptr + 0x8)?;
         // println!("rtti vtable base {:x}", rtti_vtable_base);
 
-        for instance_addr in self.find_u64(rtti_vtable_ptr as _) {
+        for instance_addr in self.find_u64(rtti_vtable_ptr_abs as _) {
             println!("Instance at {:x}", instance_addr);
         }
 
@@ -160,7 +180,10 @@ fn main() {
 
     println!("addr {:x}", addr);
 
-    let pattern = std::env::args().skip(1).next().expect("Usage: <class name>");
+    let pattern = std::env::args()
+        .skip(1)
+        .next()
+        .expect("Usage: <class name>");
 
     let m = Module {
         base_addr: addr,
