@@ -3,7 +3,7 @@ pub use param_data::*;
 
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::c_void;
-use std::lazy::SyncLazy;
+use std::sync::LazyLock;
 
 use log::{error, info};
 use parking_lot::RwLock;
@@ -12,7 +12,7 @@ use widestring::U16CStr;
 use crate::version::{Version, VERSION};
 use crate::{wait_option, ParamVisitor};
 
-pub static PARAMS: SyncLazy<RwLock<Params>> = SyncLazy::new(|| unsafe {
+pub static PARAMS: LazyLock<RwLock<Params>> = LazyLock::new(|| unsafe {
     wait_option(|| match Params::new() {
         Ok(p) => Some(RwLock::new(p)),
         Err(e) => {
@@ -22,7 +22,7 @@ pub static PARAMS: SyncLazy<RwLock<Params>> = SyncLazy::new(|| unsafe {
     })
 });
 
-pub static PARAM_NAMES: SyncLazy<HashMap<String, HashMap<usize, String>>> = SyncLazy::new(|| {
+pub static PARAM_NAMES: LazyLock<HashMap<String, HashMap<usize, String>>> = LazyLock::new(|| {
     serde_json::from_str(&include_str!("param_names.json")).unwrap()
 });
 

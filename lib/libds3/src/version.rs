@@ -1,5 +1,5 @@
 use std::ffi::OsString;
-use std::lazy::SyncLazy;
+use std::sync::LazyLock;
 use std::os::windows::prelude::OsStringExt;
 
 #[derive(Clone, Copy)]
@@ -10,7 +10,7 @@ pub enum Version {
     Ver115,
 }
 
-pub static VERSION: SyncLazy<Option<Version>> = SyncLazy::new(|| unsafe { detect_version() });
+pub static VERSION: LazyLock<Option<Version>> = LazyLock::new(|| unsafe { detect_version() });
 
 unsafe fn vercmp(ptr: *const [u16; 4], ver: &str) -> bool {
     if let Some(ver_mem) = ptr.as_ref().map(|s| &s[..]).map(OsString::from_wide) {

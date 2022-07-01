@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::lazy::SyncLazy;
+use std::sync::LazyLock;
 
 pub(crate) fn get_key_code(k: &str) -> Option<i32> {
     VK_SYMBOL_MAP.get(&k.to_lowercase()).copied()
@@ -9,7 +9,7 @@ pub(crate) fn get_key_repr(k: i32) -> Option<&'static str> {
     VK_SYMBOL_MAP_INV.get(&k).map(String::as_str)
 }
 
-pub static VK_SYMBOL_MAP: SyncLazy<HashMap<String, i32>> = SyncLazy::new(|| {
+pub static VK_SYMBOL_MAP: LazyLock<HashMap<String, i32>> = LazyLock::new(|| {
     use winapi::um::winuser::*;
     [
         ("lbutton", VK_LBUTTON),
@@ -190,5 +190,5 @@ pub static VK_SYMBOL_MAP: SyncLazy<HashMap<String, i32>> = SyncLazy::new(|| {
     .collect()
 });
 
-pub static VK_SYMBOL_MAP_INV: SyncLazy<HashMap<i32, String>> =
-    SyncLazy::new(|| VK_SYMBOL_MAP.iter().map(|(k, &v)| (v, k.clone())).collect());
+pub static VK_SYMBOL_MAP_INV: LazyLock<HashMap<i32, String>> =
+    LazyLock::new(|| VK_SYMBOL_MAP.iter().map(|(k, &v)| (v, k.clone())).collect());

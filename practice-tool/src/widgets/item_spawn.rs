@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::ffi::c_void;
 use std::fmt::Display;
-use std::lazy::SyncLazy;
+use std::sync::LazyLock;
 
 use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, Slider, WindowFlags};
 use serde::de::Visitor;
@@ -13,8 +13,8 @@ use crate::util::{get_key_code, KeyState};
 use super::Widget;
 
 const ISP_TAG: &str = "##item-spawn";
-static ITEM_ID_TREE: SyncLazy<ItemIDTree> =
-    SyncLazy::new(|| serde_json::from_str(include_str!("item_ids.json")).unwrap());
+static ITEM_ID_TREE: LazyLock<ItemIDTree> =
+    LazyLock::new(|| serde_json::from_str(include_str!("item_ids.json")).unwrap());
 
 static INFUSION_TYPES: [(u32, &str); 16] = [
     (0, "Normal"),
