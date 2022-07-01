@@ -36,9 +36,7 @@ pub trait ParamStruct {
 pub fn print_hex<T: Sized>(ptr: *const T) {
     let ptr = ptr as *const u8;
 
-    let bytes: Vec<u8> = (0..std::mem::size_of::<T>())
-        .map(|i| unsafe { *ptr.add(i) })
-        .collect();
+    let bytes: Vec<u8> = (0..std::mem::size_of::<T>()).map(|i| unsafe { *ptr.add(i) }).collect();
 
     bytes.chunks(16).for_each(|bs| {
         for i in bs {

@@ -7,10 +7,9 @@ use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, Slider, Win
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer};
 
+use super::Widget;
 use crate::memedit::Bitflag;
 use crate::util::{get_key_code, KeyState};
-
-use super::Widget;
 
 const ISP_TAG: &str = "##item-spawn";
 static ITEM_ID_TREE: LazyLock<ItemIDTree> =
@@ -52,14 +51,8 @@ static UPGRADES: [(u32, &str); 11] = [
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 enum ItemIDTree {
-    Node {
-        node: String,
-        children: Vec<ItemIDTree>,
-    },
-    Leaf {
-        id: HexU32,
-        desc: String,
-    },
+    Node { node: String, children: Vec<ItemIDTree> },
+    Leaf { id: HexU32, desc: String },
 }
 
 #[derive(Debug)]
@@ -69,9 +62,7 @@ struct Stack<'a> {
 
 impl<'a> Stack<'a> {
     fn new(tree: &'a ItemIDTree) -> Self {
-        Stack {
-            stack: vec![(tree, 0)],
-        }
+        Stack { stack: vec![(tree, 0)] }
     }
 
     fn enter(&mut self, idx: usize) {
@@ -84,7 +75,7 @@ impl<'a> Stack<'a> {
                         self.stack.push((&children[idx], 0));
                     }
                 }
-            }
+            },
             ItemIDTree::Leaf { .. } => unreachable!(),
         }
     }
@@ -97,7 +88,7 @@ impl<'a> Stack<'a> {
                 if let ItemIDTree::Node { .. } = children[idx] {
                     self.stack.push((&children[idx], 0));
                 }
-            }
+            },
             ItemIDTree::Leaf { .. } => unreachable!(),
         }
     }
@@ -118,7 +109,7 @@ impl<'a> Stack<'a> {
         match last_tree {
             ItemIDTree::Node { children, .. } => {
                 *last_idx = usize::min(*last_idx + 1, children.len() - 1);
-            }
+            },
             ItemIDTree::Leaf { .. } => unreachable!(),
         }
     }
@@ -131,7 +122,7 @@ impl<'a> Stack<'a> {
                 } else {
                     Some(&children[idx])
                 }
-            }
+            },
             _ => unreachable!(),
         }
     }
@@ -139,10 +130,9 @@ impl<'a> Stack<'a> {
     fn values(&self) -> impl IntoIterator<Item = (usize, bool, &ItemIDTree)> {
         let (last_tree, last_idx) = self.stack.last().unwrap();
         match last_tree {
-            ItemIDTree::Node { children, .. } => children
-                .iter()
-                .enumerate()
-                .map(|(idx, node)| (idx, idx == *last_idx, node)),
+            ItemIDTree::Node { children, .. } => {
+                children.iter().enumerate().map(|(idx, node)| (idx, idx == *last_idx, node))
+            },
             ItemIDTree::Leaf { .. } => unreachable!(), // no Leaf is ever pushed on the stack
         }
     }
@@ -249,7 +239,7 @@ impl<'a> ItemSpawner<'a> {
             Some(mut v) => {
                 v.push(log);
                 Some(v)
-            }
+            },
             None => Some(vec![log]),
         };
     }
@@ -284,54 +274,50 @@ impl<'a> Widget for ItemSpawner<'a> {
             )
             .begin_popup(ui)
         {
-            ChildWindow::new("##item-spawn-breadcrumbs")
-                .size([240., 14.])
-                .build(ui, || {
-                    ui.text(&self.breadcrumbs);
-                    ui.set_scroll_x(ui.scroll_max_x());
-                });
+            ChildWindow::new("##item-spawn-breadcrumbs").size([240., 14.]).build(ui, || {
+                ui.text(&self.breadcrumbs);
+                ui.set_scroll_x(ui.scroll_max_x());
+            });
 
-            ListBox::new("##item-spawn-list")
-                .size([240., 100.])
-                .build(ui, || {
-                    if Selectable::new(format!(".. Up one dir ({})", self.key_back)).build(ui) {
-                        self.stack.exit();
-                    }
+            ListBox::new("##item-spawn-list").size([240., 100.]).build(ui, || {
+                if Selectable::new(format!(".. Up one dir ({})", self.key_back)).build(ui) {
+                    self.stack.exit();
+                }
 
-                    let center_scroll_y = if self.key_down.keyup() {
-                        self.stack.next();
-                        true
-                    } else if self.key_up.keyup() {
-                        self.stack.prev();
-                        true
-                    } else {
-                        false
+                let center_scroll_y = if self.key_down.keyup() {
+                    self.stack.next();
+                    true
+                } else if self.key_up.keyup() {
+                    self.stack.prev();
+                    true
+                } else {
+                    false
+                };
+
+                if self.key_enter.keyup() {
+                    self.stack.enter_here();
+                }
+
+                let mut goto: Option<usize> = None;
+                for (idx, is_selected, i) in self.stack.values() {
+                    let repr = match i {
+                        ItemIDTree::Node { node, .. } => node,
+                        ItemIDTree::Leaf { desc, .. } => desc,
                     };
-
-                    if self.key_enter.keyup() {
-                        self.stack.enter_here();
+                    if Selectable::new(repr).selected(is_selected).build(ui) {
+                        goto = Some(idx);
                     }
 
-                    let mut goto: Option<usize> = None;
-                    for (idx, is_selected, i) in self.stack.values() {
-                        let repr = match i {
-                            ItemIDTree::Node { node, .. } => node,
-                            ItemIDTree::Leaf { desc, .. } => desc,
-                        };
-                        if Selectable::new(repr).selected(is_selected).build(ui) {
-                            goto = Some(idx);
-                        }
-
-                        if center_scroll_y && is_selected {
-                            ui.set_scroll_here_y();
-                        }
+                    if center_scroll_y && is_selected {
+                        ui.set_scroll_here_y();
                     }
+                }
 
-                    if let Some(idx) = goto {
-                        self.stack.enter(idx);
-                        self.breadcrumbs = self.stack.breadcrumbs();
-                    }
-                });
+                if let Some(idx) = goto {
+                    self.stack.enter(idx);
+                    self.breadcrumbs = self.stack.breadcrumbs();
+                }
+            });
 
             Slider::new("Qty", 0, 256).build(ui, &mut self.spawn_instance.qty);
             Slider::new("Dur", 0, 9999).build(ui, &mut self.spawn_instance.durability);
@@ -347,12 +333,9 @@ impl<'a> Widget for ItemSpawner<'a> {
 
             ui.set_next_item_width(240.);
 
-            ui.combo(
-                "##item-spawn-upgrade",
-                &mut self.upgrade_idx,
-                &UPGRADES,
-                |(_, label)| Cow::Borrowed(label),
-            );
+            ui.combo("##item-spawn-upgrade", &mut self.upgrade_idx, &UPGRADES, |(_, label)| {
+                Cow::Borrowed(label)
+            });
 
             if ui.button_with_size(format!("Spawn item ({})", self.key_load), [240., 20.]) {
                 self.spawn_item();
@@ -410,11 +393,7 @@ impl<'de> Deserialize<'de> for HexU32 {
                 E: serde::de::Error,
             {
                 if v.len() != 8 {
-                    return Err(E::custom(format!(
-                        "Invalid hex string length {}: {}",
-                        v.len(),
-                        v
-                    )));
+                    return Err(E::custom(format!("Invalid hex string length {}: {}", v.len(), v)));
                 }
 
                 let mut bytes = [0u8; 4];
@@ -467,17 +446,8 @@ impl ItemSpawnInstance {
         let durability = self.durability;
         let item_id = self.item_id + self.infusion + self.upgrade;
 
-        let mut spawn_request = SpawnRequest {
-            qty,
-            item_id,
-            durability,
-            unknown: 1,
-        };
+        let mut spawn_request = SpawnRequest { qty, item_id, durability, unknown: 1 };
 
-        spawn_fn_ptr(
-            *pp_map_item_man,
-            &mut spawn_request as *mut _,
-            &mut [0u32; 4] as *mut _,
-        );
+        spawn_fn_ptr(*pp_map_item_man, &mut spawn_request as *mut _, &mut [0u32; 4] as *mut _);
     }
 }

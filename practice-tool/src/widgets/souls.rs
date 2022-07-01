@@ -1,7 +1,6 @@
+use super::Widget;
 use crate::memedit::PointerChain;
 use crate::util::KeyState;
-
-use super::Widget;
 
 #[derive(Debug)]
 pub(crate) struct Souls {
@@ -13,12 +12,7 @@ pub(crate) struct Souls {
 
 impl Souls {
     pub(crate) fn new(amount: u32, ptr: PointerChain<u32>, hotkey: KeyState) -> Self {
-        Souls {
-            label: format!("Souls ({})", hotkey),
-            ptr,
-            hotkey,
-            amount,
-        }
+        Souls { label: format!("Souls ({})", hotkey), ptr, hotkey, amount }
     }
 
     fn add(&self) -> Option<u32> {

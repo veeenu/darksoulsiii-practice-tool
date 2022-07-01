@@ -8,9 +8,8 @@ mod widgets;
 
 use std::time::Instant;
 
-use imgui::*;
-
 use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
+use imgui::*;
 use libds3::{wait_option, PARAMS};
 
 use crate::pointers::PointerChains;
@@ -72,7 +71,7 @@ impl PracticeTool {
                     ),
                 ])
                 .ok();
-            }
+            },
             e => {
                 CombinedLogger::init(vec![TermLogger::new(
                     LevelFilter::Debug, // config.settings.log_level.to_level_filter(),
@@ -86,16 +85,15 @@ impl PracticeTool {
                     Some(Err(e)) => error!("Could not initialize log file: {:?}", e),
                     _ => unreachable!(),
                 }
-            }
+            },
         }
 
         if let Some(err) = config_err {
             debug!("{:?}", err);
         }
 
-        let pointers: PointerChains = pointers::detect_version()
-            .expect("Couldn't detect version!")
-            .into();
+        let pointers: PointerChains =
+            pointers::detect_version().expect("Couldn't detect version!").into();
 
         let widgets = config.make_commands(&pointers);
 
@@ -116,13 +114,7 @@ impl PracticeTool {
 
         info!("Initialized");
 
-        PracticeTool {
-            config,
-            pointers,
-            widgets,
-            is_shown: false,
-            log: Vec::new(),
-        }
+        PracticeTool { config, pointers, widgets, is_shown: false, log: Vec::new() }
     }
 
     fn render_visible(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
@@ -252,8 +244,7 @@ impl ImguiRenderLoop for PracticeTool {
                 let now = Instant::now();
                 self.log.extend(logs.into_iter().map(|l| (now, l)));
             }
-            self.log
-                .retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
+            self.log.retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
         }
 
         self.render_logs(ui, flags);

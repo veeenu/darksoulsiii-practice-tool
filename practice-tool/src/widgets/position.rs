@@ -1,7 +1,6 @@
+use super::Widget;
 use crate::memedit::PointerChain;
 use crate::util::KeyState;
-
-use super::Widget;
 
 #[derive(Debug)]
 pub(crate) struct SavePosition {

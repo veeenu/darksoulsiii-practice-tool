@@ -1,7 +1,5 @@
 mod vk;
 
-pub(crate) use vk::*;
-
 use std::ffi::OsString;
 use std::fmt::Display;
 use std::os::windows::prelude::OsStringExt;
@@ -11,6 +9,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use log::*;
 use serde::Deserialize;
+pub(crate) use vk::*;
 use winapi::shared::minwindef::{HMODULE, MAX_PATH};
 use winapi::um::errhandlingapi::GetLastError;
 use winapi::um::libloaderapi::{
@@ -23,7 +22,8 @@ use winapi::um::winuser::GetAsyncKeyState;
 pub fn get_dll_path() -> Option<PathBuf> {
     let mut hmodule: HMODULE = null_mut();
     // SAFETY
-    // This is reckless, but it should never fail, and if it does, it's ok to crash and burn.
+    // This is reckless, but it should never fail, and if it does, it's ok to crash
+    // and burn.
     let gmh_result = unsafe {
         GetModuleHandleExA(
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
@@ -33,9 +33,7 @@ pub fn get_dll_path() -> Option<PathBuf> {
     };
 
     if gmh_result == 0 {
-        error!("get_dll_path: GetModuleHandleExA error: {:x}", unsafe {
-            GetLastError()
-        },);
+        error!("get_dll_path: GetModuleHandleExA error: {:x}", unsafe { GetLastError() },);
         return None;
     }
 

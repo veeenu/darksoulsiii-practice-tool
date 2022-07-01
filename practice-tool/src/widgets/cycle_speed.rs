@@ -1,9 +1,8 @@
 use std::cmp::Ordering;
 
+use super::Widget;
 use crate::memedit::PointerChain;
 use crate::util::KeyState;
-
-use super::Widget;
 
 #[derive(Debug)]
 pub(crate) struct CycleSpeed {
@@ -17,12 +16,7 @@ impl CycleSpeed {
     pub(crate) fn new(values: &[f32], ptr: PointerChain<f32>, hotkey: KeyState) -> Self {
         let mut values = values.to_vec();
         values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-        CycleSpeed {
-            label: format!("Speed ({})", hotkey),
-            ptr,
-            hotkey,
-            values,
-        }
+        CycleSpeed { label: format!("Speed ({})", hotkey), ptr, hotkey, values }
     }
 
     fn cycle(&self) -> Option<f32> {

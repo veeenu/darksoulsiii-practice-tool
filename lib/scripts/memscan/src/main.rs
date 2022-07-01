@@ -17,10 +17,8 @@ fn szcmp(source: &[CHAR], s: &str) -> bool {
 
 fn read_base_module_data(pid: u32) -> Option<(usize, Vec<u8>)> {
     let module_snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid) };
-    let mut module_entry = MODULEENTRY32 {
-        dwSize: std::mem::size_of::<MODULEENTRY32>() as _,
-        ..Default::default()
-    };
+    let mut module_entry =
+        MODULEENTRY32 { dwSize: std::mem::size_of::<MODULEENTRY32>() as _, ..Default::default() };
 
     unsafe { Module32First(module_snapshot, &mut module_entry) };
 
@@ -38,10 +36,7 @@ fn read_base_module_data(pid: u32) -> Option<(usize, Vec<u8>)> {
                     &mut bytes_read,
                 )
             };
-            println!(
-                "Read {} out of {} bytes",
-                bytes_read, module_entry.modBaseSize
-            );
+            println!("Read {} out of {} bytes", bytes_read, module_entry.modBaseSize);
             unsafe { CloseHandle(process) };
             return Some((module_entry.modBaseAddr as usize, buf));
         }
@@ -54,10 +49,8 @@ fn read_base_module_data(pid: u32) -> Option<(usize, Vec<u8>)> {
 
 fn get_base_module_bytes(proc_name: &str) -> Option<(usize, Vec<u8>)> {
     let process_snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
-    let mut process_entry = PROCESSENTRY32 {
-        dwSize: std::mem::size_of::<PROCESSENTRY32>() as _,
-        ..Default::default()
-    };
+    let mut process_entry =
+        PROCESSENTRY32 { dwSize: std::mem::size_of::<PROCESSENTRY32>() as _, ..Default::default() };
 
     unsafe { Process32First(process_snapshot, &mut process_entry) };
 
@@ -76,11 +69,7 @@ fn get_base_module_bytes(proc_name: &str) -> Option<(usize, Vec<u8>)> {
 }
 
 fn first_cstr(v: &[u8]) -> String {
-    v.iter()
-        .take_while(|&c| c != &0u8)
-        .take(256)
-        .map(|&c| c as char)
-        .collect()
+    v.iter().take_while(|&c| c != &0u8).take(256).map(|&c| c as char).collect()
 }
 
 struct Module {
@@ -91,34 +80,28 @@ struct Module {
 impl Module {
     fn find_u32(&self, needle: u32) -> impl Iterator<Item = usize> + '_ {
         const N: usize = size_of::<u32>();
-        self.bytes
-            .array_chunks::<N>()
-            .copied()
-            .map(u32::from_le_bytes)
-            .enumerate()
-            .filter_map(move |(pos, haystack_val)| {
+        self.bytes.array_chunks::<N>().copied().map(u32::from_le_bytes).enumerate().filter_map(
+            move |(pos, haystack_val)| {
                 if haystack_val == needle {
                     Some(pos * N)
                 } else {
                     None
                 }
-            })
+            },
+        )
     }
 
     fn find_u64(&self, needle: u64) -> impl Iterator<Item = usize> + '_ {
         const N: usize = size_of::<u64>();
-        self.bytes
-            .array_chunks::<N>()
-            .copied()
-            .map(u64::from_le_bytes)
-            .enumerate()
-            .filter_map(move |(pos, haystack_val)| {
+        self.bytes.array_chunks::<N>().copied().map(u64::from_le_bytes).enumerate().filter_map(
+            move |(pos, haystack_val)| {
                 if haystack_val == needle {
                     Some(pos * N)
                 } else {
                     None
                 }
-            })
+            },
+        )
     }
 
     fn get_u64(&self, addr: usize) -> Option<u64> {
@@ -145,15 +128,10 @@ impl Module {
             rtti_object_locator_value
         );
 
-        let rtti_vtable_ptr = self
-            .find_u64((rtti_object_locator + self.base_addr) as u64)
-            .next()?
-            + 0x8;
+        let rtti_vtable_ptr =
+            self.find_u64((rtti_object_locator + self.base_addr) as u64).next()? + 0x8;
         let rtti_vtable_ptr_abs = rtti_vtable_ptr + self.base_addr;
-        println!(
-            "rtti vtable ptr  {:08x} ({:08x})",
-            rtti_vtable_ptr, rtti_vtable_ptr_abs,
-        );
+        println!("rtti vtable ptr  {:08x} ({:08x})", rtti_vtable_ptr, rtti_vtable_ptr_abs,);
 
         // let rtti_vtable_base = self.get_u64(rtti_vtable_ptr + 0x8)?;
         // println!("rtti vtable base {:x}", rtti_vtable_base);
@@ -183,9 +161,6 @@ fn main() {
 
     let pattern = std::env::args().nth(1).expect("Usage: <class name>");
 
-    let m = Module {
-        base_addr: addr,
-        bytes: buf,
-    };
+    let m = Module { base_addr: addr, bytes: buf };
     m.find_all(&pattern);
 }

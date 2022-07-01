@@ -60,9 +60,7 @@ fn perform_injection() -> Result<(), String> {
 fn main() {
     CombinedLogger::init(vec![TermLogger::new(
         LevelFilter::Trace,
-        ConfigBuilder::new()
-            .add_filter_allow("jdsd_dsiii_practice_tool".to_string())
-            .build(),
+        ConfigBuilder::new().add_filter_allow("jdsd_dsiii_practice_tool".to_string()).build(),
         TerminalMode::Mixed,
     )])
     .ok();
@@ -72,9 +70,11 @@ fn main() {
         Ok((latest_version, download_url, release_notes)) => {
             if latest_version > current_version {
                 let update_msg = format!(
-          "A new version of the practice tool is available!\n\nLatest version: {}\nInstalled version: {}\n\nRelease notes:\n{}\n\nDo you want to download the update?\0",
-          latest_version, current_version, release_notes
-        );
+                    "A new version of the practice tool is available!\n\nLatest version: \
+                     {}\nInstalled version: {}\n\nRelease notes:\n{}\n\nDo you want to download \
+                     the update?\0",
+                    latest_version, current_version, release_notes
+                );
 
                 let msgbox_response = unsafe {
                     MessageBoxA(
@@ -89,7 +89,7 @@ fn main() {
                     open::that(download_url).ok();
                 }
             }
-        }
+        },
         Err(e) => {
             let error_msg = format!("Unexpected error checking for new version: {}\0", e);
             unsafe {
@@ -100,7 +100,7 @@ fn main() {
                     MB_OK | MB_ICONERROR,
                 );
             }
-        }
+        },
     }
 
     if let Err(e) = perform_injection() {

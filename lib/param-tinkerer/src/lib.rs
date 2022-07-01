@@ -3,10 +3,9 @@
 use std::fmt::Write;
 
 use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
+use imgui::*;
 use libds3::pointers::MOUSE_ENABLE;
 use libds3::{ParamVisitor, PARAMS, PARAM_NAMES};
-
-use imgui::*;
 
 struct ParamTinkerer {
     shown: bool,
@@ -20,11 +19,7 @@ impl ParamTinkerer {
         hudhook::utils::alloc_console();
         hudhook::utils::simplelog();
 
-        ParamTinkerer {
-            shown: false,
-            selected_param: 0,
-            selected_param_id: 0,
-        }
+        ParamTinkerer { shown: false, selected_param: 0, selected_param_id: 0 }
     }
 }
 
@@ -81,18 +76,13 @@ impl ParamTinkerer {
                     ui.set_current_column_width(COLUMN1 + 10.);
 
                     ui.push_item_width(-1.);
-                    ListBox::new("##param_names")
-                        .size([COLUMN1, 220.])
-                        .build(ui, || {
-                            for (idx, k) in params.keys().enumerate() {
-                                if Selectable::new(k)
-                                    .selected(idx == self.selected_param)
-                                    .build(ui)
-                                {
-                                    self.selected_param = idx;
-                                }
+                    ListBox::new("##param_names").size([COLUMN1, 220.]).build(ui, || {
+                        for (idx, k) in params.keys().enumerate() {
+                            if Selectable::new(k).selected(idx == self.selected_param).build(ui) {
+                                self.selected_param = idx;
                             }
-                        });
+                        }
+                    });
 
                     params
                         .keys()
@@ -106,26 +96,24 @@ impl ParamTinkerer {
 
                     let mut buf = String::new();
                     ui.push_item_width(-1.);
-                    ListBox::new("##param_ids")
-                        .size([COLUMN2, 220.])
-                        .build(ui, || {
-                            for (idx, id) in param_entries.enumerate() {
-                                let param_repr = PARAM_NAMES
-                                    .get(param_name)
-                                    .and_then(|param_id_names| param_id_names.get(&(id as usize)))
-                                    .unwrap_or_else(|| {
-                                        buf.clear();
-                                        write!(buf, "{}", id).ok();
-                                        &buf
-                                    });
-                                if Selectable::new(param_repr)
-                                    .selected(idx == self.selected_param_id)
-                                    .build(ui)
-                                {
-                                    self.selected_param_id = idx;
-                                }
+                    ListBox::new("##param_ids").size([COLUMN2, 220.]).build(ui, || {
+                        for (idx, id) in param_entries.enumerate() {
+                            let param_repr = PARAM_NAMES
+                                .get(param_name)
+                                .and_then(|param_id_names| param_id_names.get(&(id as usize)))
+                                .unwrap_or_else(|| {
+                                    buf.clear();
+                                    write!(buf, "{}", id).ok();
+                                    &buf
+                                });
+                            if Selectable::new(param_repr)
+                                .selected(idx == self.selected_param_id)
+                                .build(ui)
+                            {
+                                self.selected_param_id = idx;
                             }
-                        });
+                        }
+                    });
 
                     (param_name, self.selected_param_id)
                 });
@@ -181,16 +169,10 @@ impl ParamTinkerer {
 
                     ui.columns(1, "##param_columns2", false);
 
-                    ListBox::new("##param_detail")
-                        .size([COLUMN3, 220.])
-                        .build(ui, || {
-                            let _token = ui.push_item_width(120.);
-                            params.visit_param_item(
-                                param_name,
-                                param_idx,
-                                &mut ImguiParamVisitor(ui),
-                            );
-                        });
+                    ListBox::new("##param_detail").size([COLUMN3, 220.]).build(ui, || {
+                        let _token = ui.push_item_width(120.);
+                        params.visit_param_item(param_name, param_idx, &mut ImguiParamVisitor(ui));
+                    });
                 };
             });
     }
