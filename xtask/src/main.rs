@@ -6,6 +6,8 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use dll_syringe::Syringe;
+use dll_syringe::process::OwnedProcess;
 use widestring::U16CString;
 use winapi::ctypes::c_void;
 use winapi::shared::minwindef::FALSE;
@@ -26,6 +28,7 @@ fn main() -> Result<()> {
     let task = env::args().nth(1);
     match task.as_deref() {
         Some("dist") => dist()?,
+        Some("run") => run()?,
         Some("codegen") => codegen::codegen()?,
         Some("help") => print_help(),
         _ => print_help(),
@@ -94,13 +97,56 @@ fn dist() -> Result<()> {
     Ok(())
 }
 
+fn run() -> Result<()> {
+    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+    let status = Command::new(&cargo)
+        .current_dir(project_root())
+        .args(&[
+            "build",
+            "--release",
+            "--lib",
+            "--package",
+            "darksoulsiii-practice-tool",
+        ])
+        .status()
+        .map_err(|e| format!("cargo: {}", e))?;
+
+    if !status.success() {
+        return Err("cargo build failed".into());
+    }
+
+    let mut buf = String::new();
+    File::open(project_root().join("jdsd_dsiii_practice_tool.toml"))?.read_to_string(&mut buf)?;
+    File::create(
+        project_root()
+            .join("target")
+            .join("release")
+            .join("jdsd_dsiii_practice_tool.toml"),
+    )?
+    .write_all(buf.as_bytes())?;
+
+    let dll_path = project_root()
+        .join("target")
+        .join("release")
+        .join("libjdsd_dsiii_practice_tool.dll")
+        .canonicalize()?;
+
+    let process = OwnedProcess::find_first_by_name("DarkSoulsIII.exe")
+        .ok_or_else(|| "Could not find process".to_string())?;
+    let syringe = Syringe::for_process(process);
+    syringe.inject(dll_path)?;
+
+    Ok(())
+}
+
 fn print_help() {
     eprintln!(
         r#"
 Tasks:
 
+run ........... compile and start the practice tool
 dist .......... build distribution artifacts
-codegen ....... generate Rust code for the parameters
+codegen ....... generate Rust code: parameters, base addresses, ...
 help .......... print this help
 "#
     );

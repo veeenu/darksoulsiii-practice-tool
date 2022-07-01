@@ -28,6 +28,7 @@ impl PracticeTool {
     fn new() -> Self {
         use simplelog::*;
         hudhook::utils::alloc_console();
+        log_panics::init();
 
         fn load_config() -> Result<config::Config, String> {
             let config_path = crate::util::get_dll_path()
@@ -98,8 +99,6 @@ impl PracticeTool {
 
         let widgets = config.make_commands(&pointers);
 
-        log_panics::init();
-
         {
             let mut params = PARAMS.write();
             wait_option(|| unsafe {
@@ -114,6 +113,8 @@ impl PracticeTool {
                 darksign.icon_id = 116;
             });
         }
+
+        info!("Initialized");
 
         PracticeTool {
             config,

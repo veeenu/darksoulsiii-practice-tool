@@ -1,5 +1,5 @@
 [package]
-name = "jdsd_dsiii_practice_tool"
+name = "darksoulsiii-practice-tool"
 version = "1.2.1"
 authors = ["Andrea Venuta <venutawebdesign@gmail.com>"]
 edition = "2021"

@@ -22,9 +22,8 @@ pub static PARAMS: LazyLock<RwLock<Params>> = LazyLock::new(|| unsafe {
     })
 });
 
-pub static PARAM_NAMES: LazyLock<HashMap<String, HashMap<usize, String>>> = LazyLock::new(|| {
-    serde_json::from_str(&include_str!("param_names.json")).unwrap()
-});
+pub static PARAM_NAMES: LazyLock<HashMap<String, HashMap<usize, String>>> =
+    LazyLock::new(|| serde_json::from_str(&include_str!("param_names.json")).unwrap());
 
 #[repr(C)]
 struct ParamMaster {
@@ -157,14 +156,11 @@ impl Params {
         param_idx: usize,
         visitor: &mut T,
     ) {
-        PARAM_VTABLE
-            .get(param)
-            .and_then(|lambda| {
-                unsafe { self.get_param_idx_ptr(param, param_idx) }.map(|v| (lambda, v))
-            })
-            .map(|(lambda, ptr)| {
-                lambda(ptr, visitor);
-            });
+        if let Some((lambda, ptr)) = PARAM_VTABLE.get(param).and_then(|lambda| {
+            unsafe { self.get_param_idx_ptr(param, param_idx) }.map(|v| (lambda, v))
+        }) {
+            lambda(ptr, visitor);
+        }
     }
 
     /// # Safety
