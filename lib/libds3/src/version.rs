@@ -1,6 +1,6 @@
 use std::ffi::OsString;
-use std::sync::LazyLock;
 use std::os::windows::prelude::OsStringExt;
+use std::sync::LazyLock;
 
 #[derive(Clone, Copy)]
 pub enum Version {

@@ -1,7 +1,7 @@
 #![feature(once_cell)]
 
-mod params;
 pub mod memedit;
+mod params;
 pub mod pointers;
 pub mod version;
 

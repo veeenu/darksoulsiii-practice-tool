@@ -2,8 +2,6 @@
 use std::ffi::c_void;
 use std::mem::size_of;
 
-use rayon::prelude::*;
-
 use memchr::memmem;
 use windows::Win32::Foundation::{CloseHandle, CHAR};
 use windows::Win32::System::Diagnostics::Debug::ReadProcessMemory;
@@ -19,8 +17,10 @@ fn szcmp(source: &[CHAR], s: &str) -> bool {
 
 fn read_base_module_data(pid: u32) -> Option<(usize, Vec<u8>)> {
     let module_snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid) };
-    let mut module_entry = MODULEENTRY32::default();
-    module_entry.dwSize = std::mem::size_of::<MODULEENTRY32>() as _;
+    let mut module_entry = MODULEENTRY32 {
+        dwSize: std::mem::size_of::<MODULEENTRY32>() as _,
+        ..Default::default()
+    };
 
     unsafe { Module32First(module_snapshot, &mut module_entry) };
 
@@ -54,8 +54,10 @@ fn read_base_module_data(pid: u32) -> Option<(usize, Vec<u8>)> {
 
 fn get_base_module_bytes(proc_name: &str) -> Option<(usize, Vec<u8>)> {
     let process_snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
-    let mut process_entry = PROCESSENTRY32::default();
-    process_entry.dwSize = std::mem::size_of::<PROCESSENTRY32>() as _;
+    let mut process_entry = PROCESSENTRY32 {
+        dwSize: std::mem::size_of::<PROCESSENTRY32>() as _,
+        ..Default::default()
+    };
 
     unsafe { Process32First(process_snapshot, &mut process_entry) };
 
@@ -87,7 +89,7 @@ struct Module {
 }
 
 impl Module {
-    fn find_u32<'a>(&'a self, needle: u32) -> impl Iterator<Item = usize> + 'a {
+    fn find_u32(&self, needle: u32) -> impl Iterator<Item = usize> + '_ {
         const N: usize = size_of::<u32>();
         self.bytes
             .array_chunks::<N>()
@@ -103,7 +105,7 @@ impl Module {
             })
     }
 
-    fn find_u64<'a>(&'a self, needle: u64) -> impl Iterator<Item = usize> + 'a {
+    fn find_u64(&self, needle: u64) -> impl Iterator<Item = usize> + '_ {
         const N: usize = size_of::<u64>();
         self.bytes
             .array_chunks::<N>()
@@ -150,8 +152,7 @@ impl Module {
         let rtti_vtable_ptr_abs = rtti_vtable_ptr + self.base_addr;
         println!(
             "rtti vtable ptr  {:08x} ({:08x})",
-            rtti_vtable_ptr,
-            rtti_vtable_ptr_abs,
+            rtti_vtable_ptr, rtti_vtable_ptr_abs,
         );
 
         // let rtti_vtable_base = self.get_u64(rtti_vtable_ptr + 0x8)?;
@@ -180,10 +181,7 @@ fn main() {
 
     println!("addr {:x}", addr);
 
-    let pattern = std::env::args()
-        .skip(1)
-        .next()
-        .expect("Usage: <class name>");
+    let pattern = std::env::args().nth(1).expect("Usage: <class name>");
 
     let m = Module {
         base_addr: addr,

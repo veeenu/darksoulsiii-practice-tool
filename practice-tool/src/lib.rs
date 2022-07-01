@@ -6,7 +6,7 @@ mod pointers;
 mod util;
 mod widgets;
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use imgui::*;
 
@@ -101,7 +101,7 @@ impl PracticeTool {
 
         {
             let mut params = PARAMS.write();
-            wait_option(|| unsafe {
+            if let Some(mut darksign) = wait_option(|| unsafe {
                 if let Err(e) = params.refresh() {
                     error!("{}", e);
                 }
@@ -109,9 +109,9 @@ impl PracticeTool {
             })
             .find(|i| i.id == 117)
             .and_then(|p| p.param)
-            .map(|mut darksign| {
+            {
                 darksign.icon_id = 116;
-            });
+            }
         }
 
         info!("Initialized");
@@ -167,9 +167,7 @@ impl PracticeTool {
             .build(ui, || {
                 ui.text("johndisandonato's Dark Souls III Practice Tool is active");
 
-                if let Some(igt) = libds3::pointers::IGT
-                    .read()
-                {
+                if let Some(igt) = libds3::pointers::IGT.read() {
                     let millis = (igt % 1000) / 10;
                     let total_seconds = igt / 1000;
                     let seconds = total_seconds % 60;

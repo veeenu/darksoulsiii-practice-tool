@@ -23,7 +23,7 @@ pub static PARAMS: LazyLock<RwLock<Params>> = LazyLock::new(|| unsafe {
 });
 
 pub static PARAM_NAMES: LazyLock<HashMap<String, HashMap<usize, String>>> =
-    LazyLock::new(|| serde_json::from_str(&include_str!("param_names.json")).unwrap());
+    LazyLock::new(|| serde_json::from_str(include_str!("param_names.json")).unwrap());
 
 #[repr(C)]
 struct ParamMaster {
@@ -216,7 +216,7 @@ impl Params {
     ///
     /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
     /// params well-formed and loaded into memory) before invoking.
-    unsafe fn get_param_idx<T: 'static>(&self, s: &str, i: usize) -> Option<Param<T>> {
+    unsafe fn _get_param_idx<T: 'static>(&self, s: &str, i: usize) -> Option<Param<T>> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
         if i >= (count as usize) {

@@ -137,15 +137,12 @@ impl Config {
                     chains.speed.clone(),
                     hotkey.clone(),
                 )),
-                CfgCommand::Souls { amount, hotkey } => Box::new(Souls::new(
-                    *amount,
-                    chains.souls.clone(),
-                    hotkey.clone(),
-                )),
-                CfgCommand::Quitout { hotkey } => Box::new(Quitout::new(
-                    chains.quitout.clone(),
-                    hotkey.clone(),
-                )),
+                CfgCommand::Souls { amount, hotkey } => {
+                    Box::new(Souls::new(*amount, chains.souls.clone(), hotkey.clone()))
+                }
+                CfgCommand::Quitout { hotkey } => {
+                    Box::new(Quitout::new(chains.quitout.clone(), hotkey.clone()))
+                }
             })
             .collect()
     }

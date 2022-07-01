@@ -6,8 +6,8 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use dll_syringe::Syringe;
 use dll_syringe::process::OwnedProcess;
+use dll_syringe::Syringe;
 use widestring::U16CString;
 use winapi::ctypes::c_void;
 use winapi::shared::minwindef::FALSE;
@@ -73,7 +73,7 @@ fn dist() -> Result<()> {
             .map_err(|e| format!("{}: Couldn't open file: {}", dst, e))?
             .read_to_end(&mut buf)
             .map_err(|e| format!("{}: Couldn't read file: {}", dst, e))?;
-        zip.start_file(dst.clone(), file_options)
+        zip.start_file(dst, file_options)
             .map_err(|e| format!("{}: Couldn't start zip file: {}", dst, e))?;
         zip.write_all(&buf)
             .map_err(|e| format!("{}: Couldn't write zip: {}", dst, e))?;
