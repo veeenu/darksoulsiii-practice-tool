@@ -4,44 +4,41 @@ use std::ffi::OsString;
 use std::fmt::Display;
 use std::os::windows::prelude::OsStringExt;
 use std::path::PathBuf;
-use std::ptr::null_mut;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use log::*;
 use serde::Deserialize;
 pub(crate) use vk::*;
-use winapi::shared::minwindef::{HMODULE, MAX_PATH};
-use winapi::um::errhandlingapi::GetLastError;
-use winapi::um::libloaderapi::{
+use windows::core::PCSTR;
+use windows::Win32::Foundation::{GetLastError, HINSTANCE, MAX_PATH};
+use windows::Win32::System::LibraryLoader::{
     GetModuleFileNameW, GetModuleHandleExA, GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
     GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
 };
-use winapi::um::winuser::GetAsyncKeyState;
+use windows::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
 
 /// Returns the path of the implementor's DLL.
 pub fn get_dll_path() -> Option<PathBuf> {
-    let mut hmodule: HMODULE = null_mut();
+    let mut hmodule = HINSTANCE(0);
     // SAFETY
     // This is reckless, but it should never fail, and if it does, it's ok to crash
     // and burn.
-    let gmh_result = unsafe {
+    if !unsafe {
         GetModuleHandleExA(
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-            "DllMain".as_ptr() as _,
+            PCSTR("DllMain".as_ptr() as _),
             &mut hmodule,
         )
-    };
-
-    if gmh_result == 0 {
-        error!("get_dll_path: GetModuleHandleExA error: {:x}", unsafe { GetLastError() },);
+        .as_bool()
+    } {
+        error!("get_dll_path: GetModuleHandleExA error: {:x}", unsafe { GetLastError().0 },);
         return None;
     }
 
-    let mut sz_filename = [0u16; MAX_PATH];
+    let mut sz_filename = [0u16; MAX_PATH as usize];
     // SAFETY
     // pointer to sz_filename always defined and MAX_PATH bounds manually checked
-    let len = unsafe { GetModuleFileNameW(hmodule, sz_filename.as_mut_ptr() as _, MAX_PATH as _) }
-        as usize;
+    let len = unsafe { GetModuleFileNameW(hmodule, &mut sz_filename) } as usize;
 
     Some(OsString::from_wide(&sz_filename[..len]).into())
 }

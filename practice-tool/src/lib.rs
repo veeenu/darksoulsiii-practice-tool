@@ -251,4 +251,4 @@ impl ImguiRenderLoop for PracticeTool {
     }
 }
 
-hudhook::hudhook!(|| { [hudhook::hooks::dx11::hook_imgui(PracticeTool::new())] });
+hudhook::hudhook!(PracticeTool::new().into_hook());

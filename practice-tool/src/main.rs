@@ -2,8 +2,11 @@ use hudhook::inject::inject;
 use pkg_version::*;
 use semver::Version;
 use simplelog::*;
-use winapi::shared::windef::*;
-use winapi::um::winuser::*;
+use windows::core::PCSTR;
+use windows::Win32::Foundation::HWND;
+use windows::Win32::UI::WindowsAndMessaging::{
+    MessageBoxA, IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_OK, MB_YESNO,
+};
 
 fn err_to_string<T: std::fmt::Display>(e: T) -> String {
     format!("Error: {}", e)
@@ -78,9 +81,9 @@ fn main() {
 
                 let msgbox_response = unsafe {
                     MessageBoxA(
-                        0 as HWND,
-                        update_msg.as_str().as_ptr() as _,
-                        "Update available\0".as_ptr() as _,
+                        HWND(0),
+                        PCSTR(update_msg.as_str().as_ptr()),
+                        PCSTR("Update available\0".as_ptr()),
                         MB_YESNO | MB_ICONINFORMATION,
                     )
                 };
@@ -94,9 +97,9 @@ fn main() {
             let error_msg = format!("Unexpected error checking for new version: {}\0", e);
             unsafe {
                 MessageBoxA(
-                    0 as HWND,
-                    error_msg.as_str().as_ptr() as _,
-                    "Error\0".as_ptr() as _,
+                    HWND(0),
+                    PCSTR(error_msg.as_str().as_ptr()),
+                    PCSTR("Error\0".as_ptr()),
                     MB_OK | MB_ICONERROR,
                 );
             }
@@ -107,9 +110,9 @@ fn main() {
         let error_msg = format!("{}\0", e);
         unsafe {
             MessageBoxA(
-                0 as HWND,
-                error_msg.as_str().as_ptr() as _,
-                "Error\0".as_ptr() as _,
+                HWND(0),
+                PCSTR(error_msg.as_str().as_ptr()),
+                PCSTR("Error\0".as_ptr()),
                 MB_OK | MB_ICONERROR,
             );
         }

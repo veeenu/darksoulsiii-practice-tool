@@ -1,9 +1,9 @@
-use std::ffi::c_void;
 use std::ops::{BitAnd, BitOr, BitXor, Not};
 use std::ptr::null_mut;
 
-use winapi::um::memoryapi::{ReadProcessMemory, WriteProcessMemory};
-use winapi::um::processthreadsapi::GetCurrentProcess;
+use windows::Win32::Foundation::HANDLE;
+use windows::Win32::System::Diagnostics::Debug::{ReadProcessMemory, WriteProcessMemory};
+use windows::Win32::System::Threading::GetCurrentProcess;
 
 /// Wraps CheatEngine's concept of pointer with nested offsets. Evaluates,
 /// if the evaluation does not fail, to a mutable pointer of type `T`.
@@ -26,7 +26,7 @@ use winapi::um::processthreadsapi::GetCurrentProcess;
 /// fully known.
 #[derive(Clone, Debug)]
 pub struct PointerChain<T> {
-    proc: *const c_void,
+    proc: HANDLE,
     base: *mut T,
     offsets: Vec<usize>,
 }
@@ -49,7 +49,7 @@ impl<T> PointerChain<T> {
         let mut value = 0usize;
         let result = unsafe {
             ReadProcessMemory(
-                self.proc as _,
+                &self.proc,
                 addr as _,
                 &mut value as *mut usize as _,
                 std::mem::size_of::<usize>(),
@@ -57,9 +57,10 @@ impl<T> PointerChain<T> {
             )
         };
 
-        match result {
-            0 => None,
-            _ => Some(value + offs as usize),
+        if result.as_bool() {
+            Some(value + offs as usize)
+        } else {
+            None
         }
     }
 
@@ -83,7 +84,7 @@ impl<T> PointerChain<T> {
             let mut value: T = unsafe { std::mem::zeroed() };
             let result = unsafe {
                 ReadProcessMemory(
-                    self.proc as _,
+                    &self.proc,
                     ptr as _,
                     &mut value as *mut _ as _,
                     std::mem::size_of::<T>(),
@@ -91,9 +92,10 @@ impl<T> PointerChain<T> {
                 )
             };
 
-            match result {
-                0 => None,
-                _ => Some(value),
+            if result.as_bool() {
+                Some(value)
+            } else {
+                None
             }
         } else {
             None
@@ -106,7 +108,7 @@ impl<T> PointerChain<T> {
         if let Some(ptr) = self.eval() {
             let result = unsafe {
                 WriteProcessMemory(
-                    self.proc as _,
+                    self.proc,
                     ptr as _,
                     &mut value as *mut _ as _,
                     std::mem::size_of::<T>(),
@@ -114,10 +116,9 @@ impl<T> PointerChain<T> {
                 )
             };
 
-            match result {
-                0 => None,
-                _ => Some(()),
-            }
+            if result.as_bool() {
+                Some(())
+            } else { None }
         } else {
             None
         }

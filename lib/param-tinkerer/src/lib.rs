@@ -178,4 +178,4 @@ impl ParamTinkerer {
     }
 }
 
-hudhook::hudhook!(|| { [hudhook::hooks::dx11::hook_imgui(ParamTinkerer::new())] });
+hudhook::hudhook!(ParamTinkerer::new().into_hook());
