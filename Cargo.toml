@@ -1,12 +1,14 @@
 [workspace]
 members = [
   "practice-tool", 
-  "lib/hudhook",
-  "lib/imgui-dx11",
   "lib/libds3",
   "lib/macro-param",
   "lib/param-tinkerer",
+  "lib/scripts/memscan",
   "xtask",
+]
+exclude = [
+  "lib/hudhook",
 ]
 
 [profile.dev]

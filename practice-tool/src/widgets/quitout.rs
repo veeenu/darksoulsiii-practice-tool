@@ -1,7 +1,6 @@
+use super::Widget;
 use crate::memedit::PointerChain;
 use crate::util::KeyState;
-
-use super::Widget;
 
 #[derive(Debug)]
 pub(crate) struct Quitout {
@@ -12,11 +11,7 @@ pub(crate) struct Quitout {
 
 impl Quitout {
     pub(crate) fn new(ptr: PointerChain<u8>, hotkey: KeyState) -> Self {
-        Quitout {
-            label: format!("Quitout ({})", hotkey),
-            ptr,
-            hotkey,
-        }
+        Quitout { label: format!("Quitout ({})", hotkey), ptr, hotkey }
     }
 }
 

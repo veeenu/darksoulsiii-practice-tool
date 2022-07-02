@@ -8,9 +8,8 @@ mod widgets;
 
 use std::time::Instant;
 
-use imgui::*;
-
 use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
+use imgui::*;
 use libds3::{wait_option, PARAMS};
 
 use crate::pointers::PointerChains;
@@ -28,6 +27,7 @@ impl PracticeTool {
     fn new() -> Self {
         use simplelog::*;
         hudhook::utils::alloc_console();
+        log_panics::init();
 
         fn load_config() -> Result<config::Config, String> {
             let config_path = crate::util::get_dll_path()
@@ -71,7 +71,7 @@ impl PracticeTool {
                     ),
                 ])
                 .ok();
-            }
+            },
             e => {
                 CombinedLogger::init(vec![TermLogger::new(
                     LevelFilter::Debug, // config.settings.log_level.to_level_filter(),
@@ -85,24 +85,21 @@ impl PracticeTool {
                     Some(Err(e)) => error!("Could not initialize log file: {:?}", e),
                     _ => unreachable!(),
                 }
-            }
+            },
         }
 
         if let Some(err) = config_err {
             debug!("{:?}", err);
         }
 
-        let pointers: PointerChains = pointers::detect_version()
-            .expect("Couldn't detect version!")
-            .into();
+        let pointers: PointerChains =
+            pointers::detect_version().expect("Couldn't detect version!").into();
 
         let widgets = config.make_commands(&pointers);
 
-        log_panics::init();
-
         {
             let mut params = PARAMS.write();
-            wait_option(|| unsafe {
+            if let Some(mut darksign) = wait_option(|| unsafe {
                 if let Err(e) = params.refresh() {
                     error!("{}", e);
                 }
@@ -110,18 +107,14 @@ impl PracticeTool {
             })
             .find(|i| i.id == 117)
             .and_then(|p| p.param)
-            .map(|mut darksign| {
+            {
                 darksign.icon_id = 116;
-            });
+            }
         }
 
-        PracticeTool {
-            config,
-            pointers,
-            widgets,
-            is_shown: false,
-            log: Vec::new(),
-        }
+        info!("Initialized");
+
+        PracticeTool { config, pointers, widgets, is_shown: false, log: Vec::new() }
     }
 
     fn render_visible(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
@@ -165,6 +158,18 @@ impl PracticeTool {
             })
             .build(ui, || {
                 ui.text("johndisandonato's Dark Souls III Practice Tool is active");
+
+                if let Some(igt) = libds3::pointers::IGT.read() {
+                    let millis = (igt % 1000) / 10;
+                    let total_seconds = igt / 1000;
+                    let seconds = total_seconds % 60;
+                    let minutes = total_seconds / 60 % 60;
+                    let hours = total_seconds / 3600;
+                    ui.text(format!(
+                        "IGT {:02}:{:02}:{:02}.{:02}",
+                        hours, minutes, seconds, millis
+                    ));
+                }
 
                 if flags.focused {
                     for w in self.widgets.iter_mut() {
@@ -220,7 +225,7 @@ impl PracticeTool {
 
 impl ImguiRenderLoop for PracticeTool {
     fn render(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
-        if self.config.settings.display.keyup() {
+        if flags.focused && self.config.settings.display.keyup() {
             self.is_shown = !self.is_shown;
             if !self.is_shown {
                 self.pointers.mouse_enable.write(0u8);
@@ -239,12 +244,11 @@ impl ImguiRenderLoop for PracticeTool {
                 let now = Instant::now();
                 self.log.extend(logs.into_iter().map(|l| (now, l)));
             }
-            self.log
-                .retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
+            self.log.retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
         }
 
         self.render_logs(ui, flags);
     }
 }
 
-hudhook::hudhook!(|| { [hudhook::hooks::dx11::hook_imgui(PracticeTool::new())] });
+hudhook::hudhook!(PracticeTool::new().into_hook());

@@ -98,54 +98,41 @@ impl Config {
         self.commands
             .iter()
             .map(|cmd| match cmd {
-                CfgCommand::Flag { flag, hotkey } => Box::new(Flag::new(
-                    &flag.label,
-                    (flag.getter)(chains).clone(),
-                    hotkey.clone(),
-                )) as Box<dyn Widget>,
-                CfgCommand::SavefileManager {
-                    hotkey_load,
-                    hotkey_back,
-                    hotkey_close,
-                } => SavefileManager::new_widget(
-                    hotkey_load.clone(),
-                    hotkey_back.clone(),
-                    hotkey_close.clone(),
-                ),
-                CfgCommand::ItemSpawner {
-                    hotkey_load,
-                    hotkey_back,
-                    hotkey_close,
-                } => Box::new(ItemSpawner::new(
-                    chains.spawn_item_func_ptr,
-                    chains.map_item_man,
-                    chains.gravity.clone(),
-                    hotkey_load.clone(),
-                    hotkey_back.clone(),
-                    hotkey_close.clone(),
-                )),
+                CfgCommand::Flag { flag, hotkey } => {
+                    Box::new(Flag::new(&flag.label, (flag.getter)(chains).clone(), hotkey.clone()))
+                        as Box<dyn Widget>
+                },
+                CfgCommand::SavefileManager { hotkey_load, hotkey_back, hotkey_close } => {
+                    SavefileManager::new_widget(
+                        hotkey_load.clone(),
+                        hotkey_back.clone(),
+                        hotkey_close.clone(),
+                    )
+                },
+                CfgCommand::ItemSpawner { hotkey_load, hotkey_back, hotkey_close } => {
+                    Box::new(ItemSpawner::new(
+                        chains.spawn_item_func_ptr,
+                        chains.map_item_man,
+                        chains.gravity.clone(),
+                        hotkey_load.clone(),
+                        hotkey_back.clone(),
+                        hotkey_close.clone(),
+                    ))
+                },
                 CfgCommand::Position { hotkey, modifier } => Box::new(SavePosition::new(
                     chains.position.clone(),
                     hotkey.clone(),
                     modifier.clone(),
                 )),
-                CfgCommand::CycleSpeed {
-                    cycle_speed,
-                    hotkey,
-                } => Box::new(CycleSpeed::new(
-                    cycle_speed,
-                    chains.speed.clone(),
-                    hotkey.clone(),
-                )),
-                CfgCommand::Souls { amount, hotkey } => Box::new(Souls::new(
-                    *amount,
-                    chains.souls.clone(),
-                    hotkey.clone(),
-                )),
-                CfgCommand::Quitout { hotkey } => Box::new(Quitout::new(
-                    chains.quitout.clone(),
-                    hotkey.clone(),
-                )),
+                CfgCommand::CycleSpeed { cycle_speed, hotkey } => {
+                    Box::new(CycleSpeed::new(cycle_speed, chains.speed.clone(), hotkey.clone()))
+                },
+                CfgCommand::Souls { amount, hotkey } => {
+                    Box::new(Souls::new(*amount, chains.souls.clone(), hotkey.clone()))
+                },
+                CfgCommand::Quitout { hotkey } => {
+                    Box::new(Quitout::new(chains.quitout.clone(), hotkey.clone()))
+                },
             })
             .collect()
     }
@@ -178,10 +165,7 @@ impl std::fmt::Debug for FlagSpec {
 
 impl FlagSpec {
     fn new(label: &str, getter: fn(&PointerChains) -> &Bitflag<u8>) -> FlagSpec {
-        FlagSpec {
-            label: label.to_string(),
-            getter,
-        }
+        FlagSpec { label: label.to_string(), getter }
     }
 }
 
@@ -225,10 +209,7 @@ mod tests {
             "{:#?}",
             toml::from_str::<toml::Value>(include_str!("../../jdsd_dsiii_practice_tool.toml"))
         );
-        println!(
-            "{:#?}",
-            Config::parse(include_str!("../../jdsd_dsiii_practice_tool.toml"))
-        );
+        println!("{:#?}", Config::parse(include_str!("../../jdsd_dsiii_practice_tool.toml")));
     }
 
     #[test]

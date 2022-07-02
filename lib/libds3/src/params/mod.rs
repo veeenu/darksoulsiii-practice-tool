@@ -1,26 +1,28 @@
 mod param_data;
-pub use param_data::*;
-
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ffi::c_void;
-use std::lazy::SyncLazy;
+use std::sync::LazyLock;
 
 use log::{error, info};
+pub use param_data::*;
 use parking_lot::RwLock;
 use widestring::U16CStr;
 
 use crate::version::{Version, VERSION};
 use crate::{wait_option, ParamVisitor};
 
-pub static PARAMS: SyncLazy<RwLock<Params>> = SyncLazy::new(|| unsafe {
+pub static PARAMS: LazyLock<RwLock<Params>> = LazyLock::new(|| unsafe {
     wait_option(|| match Params::new() {
         Ok(p) => Some(RwLock::new(p)),
         Err(e) => {
             info!("Waiting on memory: {}", e);
             None
-        }
+        },
     })
 });
+
+pub static PARAM_NAMES: LazyLock<HashMap<String, HashMap<usize, String>>> =
+    LazyLock::new(|| serde_json::from_str(include_str!("param_names.json")).unwrap());
 
 #[repr(C)]
 struct ParamMaster {
@@ -80,7 +82,8 @@ impl Params {
 
     /// # Safety
     ///
-    /// Accesses raw pointers. Should never crash as the param pointers are static.
+    /// Accesses raw pointers. Should never crash as the param pointers are
+    /// static.
     pub unsafe fn refresh(&mut self) -> Result<(), String> {
         let version = VERSION.ok_or_else(|| String::from("Couldn't detect version"))?;
 
@@ -153,20 +156,18 @@ impl Params {
         param_idx: usize,
         visitor: &mut T,
     ) {
-        PARAM_VTABLE
-            .get(param)
-            .and_then(|lambda| {
-                unsafe { self.get_param_idx_ptr(param, param_idx) }.map(|v| (lambda, v))
-            })
-            .map(|(lambda, ptr)| {
-                lambda(ptr, visitor);
-            });
+        if let Some((lambda, ptr)) = PARAM_VTABLE.get(param).and_then(|lambda| {
+            unsafe { self.get_param_idx_ptr(param, param_idx) }.map(|v| (lambda, v))
+        }) {
+            lambda(ptr, visitor);
+        }
     }
 
     /// # Safety
     ///
-    /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
-    /// params well-formed and loaded into memory) before invoking.
+    /// Accesses raw pointers. Ensure that the param is properly initialized
+    /// (e.g. with the params well-formed and loaded into memory) before
+    /// invoking.
     pub unsafe fn iter_param_ids(&self, s: &str) -> Option<impl Iterator<Item = u64>> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
@@ -178,11 +179,12 @@ impl Params {
 
     /// # Safety
     ///
-    /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
-    /// params well-formed and loaded into memory) before invoking.
+    /// Accesses raw pointers. Ensure that the param is properly initialized
+    /// (e.g. with the params well-formed and loaded into memory) before
+    /// invoking.
     ///
-    /// This is somewhat expensive as it calculates each param's offset at every iteration. If you
-    /// only need the param IDs, use `iter_param_ids`.
+    /// This is somewhat expensive as it calculates each param's offset at every
+    /// iteration. If you only need the param IDs, use `iter_param_ids`.
     pub unsafe fn iter_param<T: 'static>(&self, s: &str) -> Option<impl Iterator<Item = Param<T>>> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
@@ -197,8 +199,9 @@ impl Params {
 
     /// # Safety
     ///
-    /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
-    /// params well-formed and loaded into memory) before invoking.
+    /// Accesses raw pointers. Ensure that the param is properly initialized
+    /// (e.g. with the params well-formed and loaded into memory) before
+    /// invoking.
     unsafe fn get_param_idx_ptr(&self, s: &str, i: usize) -> Option<*const c_void> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
@@ -214,9 +217,10 @@ impl Params {
 
     /// # Safety
     ///
-    /// Accesses raw pointers. Ensure that the param is properly initialized (e.g. with the
-    /// params well-formed and loaded into memory) before invoking.
-    unsafe fn get_param_idx<T: 'static>(&self, s: &str, i: usize) -> Option<Param<T>> {
+    /// Accesses raw pointers. Ensure that the param is properly initialized
+    /// (e.g. with the params well-formed and loaded into memory) before
+    /// invoking.
+    unsafe fn _get_param_idx<T: 'static>(&self, s: &str, i: usize) -> Option<Param<T>> {
         let (param_ptr, count) = self.get_param_ptr(s)?;
 
         if i >= (count as usize) {

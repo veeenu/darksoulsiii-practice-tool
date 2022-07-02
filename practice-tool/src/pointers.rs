@@ -61,7 +61,6 @@ pub(crate) struct BaseAddresses {
     pub mouse_enable: (u64, u64),
 
     // other static pointers
-
     pub map_item_man: u64,
     pub spawn_item_func_ptr: u64,
 

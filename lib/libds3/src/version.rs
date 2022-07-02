@@ -1,6 +1,6 @@
 use std::ffi::OsString;
-use std::lazy::SyncLazy;
 use std::os::windows::prelude::OsStringExt;
+use std::sync::LazyLock;
 
 #[derive(Clone, Copy)]
 pub enum Version {
@@ -10,7 +10,7 @@ pub enum Version {
     Ver115,
 }
 
-pub static VERSION: SyncLazy<Option<Version>> = SyncLazy::new(|| unsafe { detect_version() });
+pub static VERSION: LazyLock<Option<Version>> = LazyLock::new(|| unsafe { detect_version() });
 
 unsafe fn vercmp(ptr: *const [u16; 4], ver: &str) -> bool {
     if let Some(ver_mem) = ptr.as_ref().map(|s| &s[..]).map(OsString::from_wide) {
@@ -22,8 +22,9 @@ unsafe fn vercmp(ptr: *const [u16; 4], ver: &str) -> bool {
 
 /// # Safety
 ///
-/// This must be only executed within a running instance of the DarkSoulsIII.exe process.
-/// The addresses are static and available from the get-go so there is no risk of crashes.
+/// This must be only executed within a running instance of the DarkSoulsIII.exe
+/// process. The addresses are static and available from the get-go so there is
+/// no risk of crashes.
 pub unsafe fn detect_version() -> Option<Version> {
     const VERSION_PTR_104: *mut [u16; 4] = 0x14288C422usize as _;
     const VERSION_PTR_108: *mut [u16; 4] = 0x1428D3F92usize as _;

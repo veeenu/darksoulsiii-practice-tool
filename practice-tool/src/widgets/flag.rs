@@ -1,7 +1,6 @@
+use super::Widget;
 use crate::memedit::Bitflag;
 use crate::util::KeyState;
-
-use super::Widget;
 
 #[derive(Debug)]
 pub(crate) struct Flag {
@@ -12,11 +11,7 @@ pub(crate) struct Flag {
 
 impl Flag {
     pub(crate) fn new(label: &str, bitflag: Bitflag<u8>, hotkey: KeyState) -> Self {
-        Flag {
-            label: format!("{} ({})", label, hotkey),
-            bitflag,
-            hotkey,
-        }
+        Flag { label: format!("{} ({})", label, hotkey), bitflag, hotkey }
     }
 }
 

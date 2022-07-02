@@ -3,9 +3,8 @@ use std::path::{Path, PathBuf};
 
 use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, WindowFlags};
 
-use crate::util::{get_key_code, KeyState};
-
 use super::Widget;
+use crate::util::{get_key_code, KeyState};
 
 const SFM_TAG: &str = "##savefile-manager";
 
@@ -128,12 +127,10 @@ impl Widget for SavefileManager {
             )
             .begin_popup(ui)
         {
-            ChildWindow::new("##savefile-manager-breadcrumbs")
-                .size([240., 14.])
-                .build(ui, || {
-                    ui.text(&self.breadcrumbs);
-                    ui.set_scroll_x(ui.scroll_max_x());
-                });
+            ChildWindow::new("##savefile-manager-breadcrumbs").size([240., 14.]).build(ui, || {
+                ui.text(&self.breadcrumbs);
+                ui.set_scroll_x(ui.scroll_max_x());
+            });
 
             let center_scroll_y = if self.key_down.keyup() {
                 self.dir_stack.next();
@@ -239,10 +236,7 @@ impl DirEntry {
     }
 
     fn values(&self) -> impl IntoIterator<Item = (usize, bool, &str)> {
-        self.list
-            .iter()
-            .enumerate()
-            .map(|(i, f)| (i, i == self.cursor, f.1.as_str()))
+        self.list.iter().enumerate().map(|(i, f)| (i, i == self.cursor, f.1.as_str()))
     }
 
     fn current(&self) -> &PathBuf {
@@ -334,9 +328,9 @@ impl DirStack {
     }
 
     // TODO SAFETY
-    // FS errors would be permission denied (which shouldn't happen but should be reported)
-    // and not a directory (which doesn't happen because we checked for is_dir).
-    // For the moment, I just unwrap.
+    // FS errors would be permission denied (which shouldn't happen but should be
+    // reported) and not a directory (which doesn't happen because we checked
+    // for is_dir). For the moment, I just unwrap.
     fn ls(path: &Path) -> Result<Vec<PathBuf>, String> {
         Ok(std::fs::read_dir(path)
             .map_err(|e| format!("{}", e))?
@@ -348,14 +342,10 @@ impl DirStack {
 
 fn get_savefile_path() -> Result<PathBuf, String> {
     let re = regex::Regex::new(r"^[a-f0-9]+$").unwrap();
-    let savefile_path: PathBuf = [
-        std::env::var("APPDATA")
-            .map_err(|e| format!("{}", e))?
-            .as_str(),
-        "DarkSoulsIII",
-    ]
-    .iter()
-    .collect();
+    let savefile_path: PathBuf =
+        [std::env::var("APPDATA").map_err(|e| format!("{}", e))?.as_str(), "DarkSoulsIII"]
+            .iter()
+            .collect();
     std::fs::read_dir(&savefile_path)
         .map_err(|e| format!("{}", e))?
         .filter_map(|e| e.ok())

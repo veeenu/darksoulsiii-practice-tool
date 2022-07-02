@@ -1,5 +1,5 @@
 [package]
-name = "jdsd_dsiii_practice_tool"
+name = "darksoulsiii-practice-tool"
 version = "1.2.1"
 authors = ["Andrea Venuta <venutawebdesign@gmail.com>"]
 edition = "2021"
@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 name = "libjdsd_dsiii_practice_tool"
 
 [dependencies]
-hudhook = { path = "../lib/hudhook" }
+hudhook = { path = "../lib/hudhook/hudhook" }
 libds3 = { path = "../lib/libds3" }
 log = "0.4.14"
 simplelog = "0.8.0"
@@ -23,7 +23,11 @@ serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.57"
 pkg-version = "1.0.0"
 ureq = { version = "1.4.1", features = ["json"] }
-winapi = { version = "0.3.9", features = ["winuser", "minwindef", "windef", "xinput"] }
+# winapi = { version = "0.3.9", features = ["winuser", "minwindef", "windef", "xinput"] }
+windows = { version = "0.34.0", features = [
+  "Win32_Foundation",
+  "Win32_System_Threading"
+] }
 open = "1.4.0"
 semver = "0.11.0"
 dynasm = "1.0.0"
