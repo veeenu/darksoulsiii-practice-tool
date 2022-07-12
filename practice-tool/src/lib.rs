@@ -8,7 +8,8 @@ mod widgets;
 
 use std::time::Instant;
 
-use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
+use hudhook::hooks::dx11::ImguiDX11Hooks;
+use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
 use imgui::*;
 use libds3::{wait_option, PARAMS};
 
@@ -251,4 +252,4 @@ impl ImguiRenderLoop for PracticeTool {
     }
 }
 
-hudhook::hudhook!(PracticeTool::new().into_hook());
+hudhook::hudhook!(PracticeTool::new().into_hook::<ImguiDX11Hooks>());

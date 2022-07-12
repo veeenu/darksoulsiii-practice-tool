@@ -2,7 +2,8 @@
 
 use std::fmt::Write;
 
-use hudhook::hooks::dx11::{ImguiRenderLoop, ImguiRenderLoopFlags};
+use hudhook::hooks::dx11::ImguiDX11Hooks;
+use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
 use imgui::*;
 use libds3::pointers::MOUSE_ENABLE;
 use libds3::{ParamVisitor, PARAMS, PARAM_NAMES};
@@ -178,4 +179,4 @@ impl ParamTinkerer {
     }
 }
 
-hudhook::hudhook!(ParamTinkerer::new().into_hook());
+hudhook::hudhook!(ParamTinkerer::new().into_hook::<ImguiDX11Hooks>());
