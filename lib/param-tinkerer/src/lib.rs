@@ -25,7 +25,7 @@ impl ParamTinkerer {
 }
 
 impl ImguiRenderLoop for ParamTinkerer {
-    fn render(&mut self, ui: &mut imgui_dx11::imgui::Ui, _: &ImguiRenderLoopFlags) {
+    fn render(&mut self, ui: &mut imgui::Ui, _: &ImguiRenderLoopFlags) {
         if ui.is_key_index_released(0x50) {
             // P key
             self.shown = !self.shown;

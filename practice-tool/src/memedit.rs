@@ -49,7 +49,7 @@ impl<T> PointerChain<T> {
         let mut value = 0usize;
         let result = unsafe {
             ReadProcessMemory(
-                &self.proc,
+                self.proc.clone(),
                 addr as _,
                 &mut value as *mut usize as _,
                 std::mem::size_of::<usize>(),
@@ -84,7 +84,7 @@ impl<T> PointerChain<T> {
             let mut value: T = unsafe { std::mem::zeroed() };
             let result = unsafe {
                 ReadProcessMemory(
-                    &self.proc,
+                    self.proc.clone(),
                     ptr as _,
                     &mut value as *mut _ as _,
                     std::mem::size_of::<T>(),
