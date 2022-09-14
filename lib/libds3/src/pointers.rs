@@ -1,4 +1,6 @@
 use crate::memedit::*;
+use crate::prelude::base_addresses::BaseAddresses;
+use crate::prelude::Version;
 
 pub(crate) struct PointerChains {
     pub(crate) all_no_damage: Bitflag<u8>,

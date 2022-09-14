@@ -65,6 +65,21 @@ impl From<(u32, u32, u32)> for Version {
     }
 }
 
+impl From<(u32, u32, u32)> for Version {
+    fn from(v: (u32, u32, u32)) -> Self {
+        match v {
+            Version::V1_08_0 => (1, 8, 0),
+            Version::V1_09_0 => (1, 9, 0),
+            Version::V1_10_0 => (1, 10, 0),
+            Version::V1_11_0 => (1, 11, 0),
+            Version::V1_12_0 => (1, 12, 0),
+            Version::V1_13_0 => (1, 13, 0),
+            Version::V1_14_0 => (1, 14, 0),
+            Version::V1_15_0 => (1, 15, 0),
+        }
+    }
+}
+
 impl From<Version> for BaseAddresses {
     fn from(v: Version) -> Self {
         match v {

@@ -959,6 +959,7 @@ dependencies = [
  "serde_json",
  "widestring 0.5.1",
  "winapi",
+ "windows 0.34.0",
 ]
 
 [[package]]
