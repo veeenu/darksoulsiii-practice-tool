@@ -24,38 +24,48 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
 };
 use windows::Win32::System::Threading::{CreateProcessW, OpenProcess, *};
 
-const AOBS: &[(&str, &str)] = &[
-    ("WorldChrMan", "48 8B 1D ?? ?? ?? 04 48 8B F9 48 85 DB ?? ?? 8B 11 85 D2 ?? ?? 8D"),
-    ("WorldChrManDbg", "48 8B 05 ?? ?? ?? ?? 66 0F 7F 44 24 40 48 85 C0"),
-    ("MenuMan", "48 89 15 ?? ?? ?? ?? 44 8b 82 ?? ?? ?? ?? 44 8b 8a ?? ?? ?? ?? 48 8b c3"),
-    ("BaseD", "48 8B 0D ?? ?? ?? ?? 48 85 C9 74 26 44 8B"),
-    ("SprjDebugEvent", "48 8B 05 ?? ?? ?? ?? 41 0F B6 D8 8B EA"),
-    ("Debug", "4C 8D 05 ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ?? 48 83 3D ?? ?? ?? ?? 00"),
-    ("Grend", "F0 80 3d ?? ?? ?? ?? 00 48 8b 15 ?? ?? ?? ?? 0f 10 02"), // ???
-    ("BaseHBD", "48 8B 0D ?? ?? ?? ?? 41 B0 01 E8 ?? ?? ?? ?? 48 8B D3 48 8B CF"),
+const AOBS: &[(&str, &str, usize, usize)] = &[
+    ("WorldChrMan", "48 8B 1D ?? ?? ?? 04 48 8B F9 48 85 DB ?? ?? 8B 11 85 D2 ?? ?? 8D", 3, 7),
+    ("WorldChrManDbg", "48 8B 05 ?? ?? ?? ?? 66 0F 7F 44 24 40 48 85 C0", 3, 7),
+    ("MenuMan", "48 89 15 ?? ?? ?? ?? 44 8b 82 ?? ?? ?? ?? 44 8b 8a ?? ?? ?? ?? 48 8b c3", 3, 7),
+    ("BaseD", "48 8B 0D ?? ?? ?? ?? 48 85 C9 74 26 44 8B", 3, 7),
+    ("SprjDebugEvent", "48 8B 05 ?? ?? ?? ?? 41 0F B6 D8 8B EA", 3, 7),
+    (
+        "Debug",
+        "C6 05 ?? ?? ?? ?? 01 48 8B 8C 24 ?? ?? ?? ?? 48 33 CC E8 ?? ?? ?? ?? 4C 8D 9C 24",
+        2, 7,
+    ),
+    (
+        "Grend",
+        "C6 05 ?? ?? ?? ?? 00 C6 05 ?? ?? ?? ?? 00 C6 05 ?? ?? ?? ?? 00 C6 05 ?? ?? ?? ?? 00 4C \
+         8B 05 ?? ?? ?? ?? 4C 89 44 24 58",
+        2, 7,
+    ), // ???
+    ("BaseHBD", "48 8B 0D ?? ?? ?? ?? 41 B0 01 E8 ?? ?? ?? ?? 48 8B D3 48 8B CF", 3, 7),
+    ("MapItemMan", "48 8B 0D ?? ?? ?? ?? 48 8B 89 ?? ?? ?? ?? E8 ?? ?? ?? ?? E9", 3, 7),
+    (
+        "SpawnItemFuncPtr",
+        "E8 ?? ?? ?? ?? C7 44 24 20 00 01 00 00 4C 8D 4C 24 40 41 B8 2C 00 00 00 48 8B D3",
+        1, 5,
+    ),
 ];
 
-static AOBS_README: LazyLock<Vec<(&str, usize, Vec<&str>)>> = LazyLock::new(|| vec![
-    ("XA", 3, vec![
-        "48 8B 83 ?? ?? ?? ?? 48 8B 10 48 85 D2 ?? ?? 8B"
-    ])
-]);
+static AOBS_README: LazyLock<Vec<(&str, usize, Vec<&str>)>> =
+    LazyLock::new(|| vec![("XA", 3, vec!["48 8B 83 ?? ?? ?? ?? 48 8B 10 48 85 D2 ?? ?? 8B"])]);
 
-static AOBS_DIRECT: LazyLock<Vec<(&str, Vec<&str>)>> = LazyLock::new(|| vec![
-]);
+static AOBS_DIRECT: LazyLock<Vec<(&str, Vec<&str>)>> = LazyLock::new(|| {
+    vec![("FormatString", vec![
+        "3C 00 54 00 45 00 58 00 54 00 46 00 4F 00 52 00 4D 00 41 00 54 00",
+    ])]
+});
 
-// 114   │     base_hbd: 0x14472AC60,
-//
-// 122   │     mesh_lo:  0x14472AD4C,           // mesh (low hit)  XXX base_hbd + EC
-// 123   │     mesh_hi:  0x14472AD4D,           // mesh (high hit) XXX base_hbd + ED
-// 124   │     instaqo: 0x1447103D8,            // XXX MenuMan
-// 125   │     version_string_ptr: 0x1428D3F92, // version string
-// 126   │     base_souls: 0x1446FEE88,         // souls base ptr XXX SprjDebugEvent
-// 127   │     mouse_enable: (0x1447103D8, 0x54), // XXX MenuMan
+// 122   │     mesh_lo:  0x14472AD4C,           // mesh (low hit)  XXX base_hbd
+// + EC 123   │     mesh_hi:  0x14472AD4D,           // mesh (high hit) XXX
+// base_hbd + ED 125   │     version_string_ptr: 0x1428D3F92, // version string
 // 128   │     version: "1.08",
 // 129   │     format_string: 0x142952940,
-//                  3C 00 54 00 45 00 58 00 54 00 46 00 4F 00 52 00 4D 00 41 00 54 00
-// 130   │     spawn_item_func_ptr: 0x1407B6230,
+//                  3C 00 54 00 45 00 58 00 54 00 46 00 4F 00 52 00 4D 00 41 00
+// 54 00 130   │     spawn_item_func_ptr: 0x1407B6230,
 // 131   │     map_item_man: 0x1447163f0,
 //
 
@@ -187,27 +197,28 @@ fn get_base_module_bytes(exe_path: &Path) -> Option<(usize, Vec<u8>)> {
 fn find_aobs(bytes: Vec<u8>) -> Vec<(&'static str, usize)> {
     let mut aob_offsets = AOBS
         .into_par_iter()
-        .filter_map(|(name, aob)| {
+        .filter_map(|(name, aob, offs_read, offs_final)| {
             if let Some(r) = naive_search(&bytes, &into_needle(aob)) {
-                Some((name, r))
+                Some((name, r, offs_read, offs_final))
             } else {
                 eprintln!("{name:24} not found");
                 None
             }
         })
-        .map(|offset| {
+        .map(|(name, offset, c, f)| {
             (
-                offset.0,
-                offset.1,
-                u32::from_le_bytes(bytes[offset.1 + 3..offset.1 + 7].try_into().unwrap()),
+                name,
+                offset,
+                *f,
+                u32::from_le_bytes(bytes[offset + c..offset + c + 4].try_into().unwrap()),
             )
         })
-        .map(|offset| (*offset.0, (offset.2 + 7) as usize + offset.1))
+        .map(|(name, offset, f, val)| (*name, (val + f as u32) as usize + offset))
         .collect::<Vec<_>>();
 
     aob_offsets.sort_by(|a, b| a.0.cmp(b.0));
 
-    // 
+    //
     let mut aob_offsets_direct = AOBS_DIRECT
         .iter()
         .filter_map(|(name, aob)| {
@@ -224,12 +235,12 @@ fn find_aobs(bytes: Vec<u8>) -> Vec<(&'static str, usize)> {
 
     aob_offsets.extend(aob_offsets_direct.into_iter());
 
-    // 
+    //
     let mut aob_offsets_readme = AOBS_README
         .iter()
         .filter_map(|(name, offs, aob)| {
             if let Some(r) = aob.iter().find_map(|aob| naive_search(&bytes, &into_needle(aob))) {
-                let r = u32::from_le_bytes((&bytes[r + offs .. r + offs + 4]).try_into().unwrap());
+                let r = u32::from_le_bytes((&bytes[r + offs..r + offs + 4]).try_into().unwrap());
                 Some((*name, r as usize))
             } else {
                 eprintln!("{name:24} not found");
@@ -361,7 +372,8 @@ pub(crate) fn bytes_at(addr: u32) {
 
 pub(crate) fn bytes_at_xd() {
     get_base_addresses();
-    // let exe = Path::new("C:/Users/andrea/DS3Patches/DARK SOULS III 1.08/Game/DarkSoulsIII.exe");
+    // let exe = Path::new("C:/Users/andrea/DS3Patches/DARK SOULS III
+    // 1.08/Game/DarkSoulsIII.exe");
 
     // let version = get_file_version(&exe);
     // let exe = exe.canonicalize().unwrap();
@@ -373,4 +385,3 @@ pub(crate) fn bytes_at_xd() {
     //     println!("{k} {v:08x}");
     // }
 }
-

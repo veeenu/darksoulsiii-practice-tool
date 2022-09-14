@@ -56,9 +56,9 @@ pub(crate) struct BaseAddresses {
 
     pub mesh_lo: u64,
     pub mesh_hi: u64,
-    pub instaqo: u64,
-    pub base_souls: u64,
-    pub mouse_enable: (u64, u64),
+    pub menu_man: u64,
+    //pub base_souls: u64,
+    pub mouse_enable_offs: u64,
 
     // other static pointers
     pub map_item_man: u64,
@@ -93,10 +93,10 @@ const VER104: BaseAddresses = BaseAddresses {
 
     mesh_lo: 0x1446C3BBC,            // mesh (low hit)
     mesh_hi: 0x1446C3BBD,            // mesh (high hit)
-    instaqo: 0x1446A9280,            // insta qo
+    menu_man: 0x1446A9280,            // insta qo
     version_string_ptr: 0x14288C422, // version string
-    base_souls: 0x144704268,         // souls base ptr
-    mouse_enable: (0x1446A9280, 0x54),
+    //base_souls: 0x144704268,         // souls base ptr
+    mouse_enable_offs: 0x54,
     version: "1.04",
     format_string: 0x142952940,
     spawn_item_func_ptr: 0x1407abc00,
@@ -121,10 +121,10 @@ const VER108: BaseAddresses = BaseAddresses {
     offs_no_update_ai: 0xD,          // no update ai
     mesh_lo: 0x14472AD4C,            // mesh (low hit)
     mesh_hi: 0x14472AD4D,            // mesh (high hit)
-    instaqo: 0x1447103D8,            // insta qo
+    menu_man: 0x1447103D8,            // insta qo
     version_string_ptr: 0x1428D3F92, // version string
-    base_souls: 0x1446FEE88,         // souls base ptr
-    mouse_enable: (0x1447103D8, 0x54),
+    //base_souls: 0x1446FEE88,         // souls base ptr
+    mouse_enable_offs: 0x54,
     version: "1.08",
     format_string: 0x142952940,
     spawn_item_func_ptr: 0x1407B6230,
@@ -149,10 +149,10 @@ const VER112: BaseAddresses = BaseAddresses {
     offs_no_update_ai: 0xD,          // no update ai
     mesh_lo: 0x14476130C,            // mesh (low hit)
     mesh_hi: 0x14476130D,            // mesh (high hit)
-    instaqo: 0x144746988,            // insta qo
+    menu_man: 0x144746988,            // insta qo
     version_string_ptr: 0x1428FD262, // version string
-    base_souls: 0x144704268,         // souls base ptr
-    mouse_enable: (0x144746988, 0x54),
+    //base_souls: 0x144704268,         // souls base ptr
+    mouse_enable_offs: 0x54,
     version: "1.12",
     format_string: 0x142952940,
     spawn_item_func_ptr: 0x1407BB750,
@@ -177,10 +177,10 @@ const VER115: BaseAddresses = BaseAddresses {
     offs_no_update_ai: 0xD,          // no update ai
     mesh_lo: 0x144766C6C,            // mesh (low hit)
     mesh_hi: 0x144766C6D,            // mesh (high hit)
-    instaqo: 0x14474C2E8,            // insta qo
+    menu_man: 0x14474C2E8,            // insta qo
     version_string_ptr: 0x142900782, // version string
-    base_souls: 0x144704268,         // souls base ptr
-    mouse_enable: (0x14474C2E8, 0x54),
+    //base_souls: 0x144704268,         // souls base ptr
+    mouse_enable_offs: 0x54,
     version: "1.15",
     format_string: 0x142952940,
     spawn_item_func_ptr: 0x1407BBA70,
@@ -207,7 +207,6 @@ impl From<BaseAddresses> for PointerChains {
             xa,
             world_chr_man_dbg,
             base_hbd,
-            base_souls,
             offs_all_no_damage,
             offs_player_exterminate,
             offs_no_goods_consume,
@@ -216,12 +215,15 @@ impl From<BaseAddresses> for PointerChains {
             offs_speed,
             mesh_hi,
             mesh_lo,
-            instaqo,
-            mouse_enable,
+            menu_man,
+            mouse_enable_offs,
             spawn_item_func_ptr,
             map_item_man,
             ..
         } = b;
+
+        const MESH_HI: usize = 0xEC;
+        const MESH_LO: usize = 0xED;
 
         PointerChains {
             all_no_damage: bitflag!(0b1; debug + offs_all_no_damage as usize),
@@ -249,12 +251,12 @@ impl From<BaseAddresses> for PointerChains {
                 pointer_chain!(world_chr_man, 0x40, 0x28, 0x74),
                 pointer_chain!(world_chr_man, 0x40, 0x28, 0x80),
             ),
-            souls: pointer_chain!(base_souls as _, 0x3d0, 0x74),
+            souls: pointer_chain!(sprj_debug_event as _, 0x3d0, 0x74),
             map_item_man,
             spawn_item_func_ptr,
             world_chr_man,
-            mouse_enable: pointer_chain!(mouse_enable.0 as _, mouse_enable.1 as _),
-            quitout: pointer_chain!(instaqo as _, 0x250),
+            mouse_enable: pointer_chain!(menu_man as _, mouse_enable_offs as _),
+            quitout: pointer_chain!(menu_man as _, 0x250),
         }
     }
 }
