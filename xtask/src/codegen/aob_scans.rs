@@ -52,6 +52,7 @@ const AOBS: &[(&str, &str, usize, usize)] = &[
         1,
         5,
     ),
+    ("Param", "48 8B 0D ?? ?? ?? ?? 48 85 C9 74 0B 4C 8B C0 48 8B D7", 3, 7)
 ];
 
 static AOBS_README: LazyLock<Vec<(&str, usize, Vec<&str>)>> =
