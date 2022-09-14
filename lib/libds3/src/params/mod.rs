@@ -8,7 +8,8 @@ pub use param_data::*;
 use parking_lot::RwLock;
 use widestring::U16CStr;
 
-use crate::version::{Version, VERSION};
+use crate::prelude::base_addresses::*;
+use crate::version::VERSION;
 use crate::{wait_option, ParamVisitor};
 
 pub static PARAMS: LazyLock<RwLock<Params>> = LazyLock::new(|| unsafe {
@@ -59,15 +60,6 @@ pub struct Param<T: 'static> {
     pub param: Option<&'static mut T>,
 }
 
-const fn param_ptr(v: Version) -> usize {
-    match v {
-        Version::Ver104 => 0x1446E2A80,
-        Version::Ver108 => 0x144749DD0,
-        Version::Ver112 => 0x144780660,
-        Version::Ver115 => 0x144785FE0,
-    }
-}
-
 pub struct Params(BTreeMap<String, (*const c_void, isize)>);
 unsafe impl Send for Params {}
 unsafe impl Sync for Params {}
@@ -85,11 +77,10 @@ impl Params {
     /// Accesses raw pointers. Should never crash as the param pointers are
     /// static.
     pub unsafe fn refresh(&mut self) -> Result<(), String> {
-        let version = VERSION.ok_or_else(|| String::from("Couldn't detect version"))?;
-
-        let base: &ParamMaster = std::ptr::read(param_ptr(version) as *const *const ParamMaster)
-            .as_ref()
-            .ok_or_else(|| "Invalid param base address".to_string())?;
+        let base: &ParamMaster =
+            std::ptr::read(BaseAddresses::from(*VERSION).param as *const *const ParamMaster)
+                .as_ref()
+                .ok_or_else(|| "Invalid param base address".to_string())?;
 
         let m = Params::param_entries_from_master(base)?;
         self.0 = m;

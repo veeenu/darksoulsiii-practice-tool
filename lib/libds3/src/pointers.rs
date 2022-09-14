@@ -1,40 +1,39 @@
 use crate::memedit::*;
 use crate::prelude::base_addresses::BaseAddresses;
-use crate::prelude::Version;
+use crate::prelude::{Version, VERSION};
 
-pub(crate) struct PointerChains {
-    pub(crate) all_no_damage: Bitflag<u8>,
-    pub(crate) no_death: Bitflag<u8>,
-    pub(crate) one_shot: Bitflag<u8>,
-    pub(crate) inf_stamina: Bitflag<u8>,
-    pub(crate) inf_focus: Bitflag<u8>,
-    pub(crate) inf_consumables: Bitflag<u8>,
-    pub(crate) deathcam: Bitflag<u8>,
-    pub(crate) evt_draw: Bitflag<u8>,
-    pub(crate) evt_disable: Bitflag<u8>,
-    pub(crate) ai_disable: Bitflag<u8>,
-    pub(crate) rend_chr: Bitflag<u8>,
-    pub(crate) rend_obj: Bitflag<u8>,
-    pub(crate) rend_map: Bitflag<u8>,
-    pub(crate) rend_mesh_hi: Bitflag<u8>,
-    pub(crate) rend_mesh_lo: Bitflag<u8>,
-    pub(crate) all_draw_hit: Bitflag<u8>,
-    pub(crate) ik_foot_ray: Bitflag<u8>,
-    pub(crate) debug_sphere_1: Bitflag<u8>,
-    pub(crate) debug_sphere_2: Bitflag<u8>,
-    pub(crate) gravity: Bitflag<u8>,
-    pub(crate) speed: PointerChain<f32>,
-    pub(crate) position: (PointerChain<f32>, PointerChain<[f32; 3]>),
-    pub(crate) souls: PointerChain<u32>,
-    pub(crate) quitout: PointerChain<u8>,
-    pub(crate) mouse_enable: PointerChain<u8>,
+pub struct PointerChains {
+    pub all_no_damage: Bitflag<u8>,
+    pub no_death: Bitflag<u8>,
+    pub one_shot: Bitflag<u8>,
+    pub inf_stamina: Bitflag<u8>,
+    pub inf_focus: Bitflag<u8>,
+    pub inf_consumables: Bitflag<u8>,
+    pub deathcam: Bitflag<u8>,
+    pub evt_draw: Bitflag<u8>,
+    pub evt_disable: Bitflag<u8>,
+    pub ai_disable: Bitflag<u8>,
+    pub rend_chr: Bitflag<u8>,
+    pub rend_obj: Bitflag<u8>,
+    pub rend_map: Bitflag<u8>,
+    pub rend_mesh_hi: Bitflag<u8>,
+    pub rend_mesh_lo: Bitflag<u8>,
+    pub all_draw_hit: Bitflag<u8>,
+    pub ik_foot_ray: Bitflag<u8>,
+    pub debug_sphere_1: Bitflag<u8>,
+    pub debug_sphere_2: Bitflag<u8>,
+    pub gravity: Bitflag<u8>,
+    pub speed: PointerChain<f32>,
+    pub position: (PointerChain<f32>, PointerChain<[f32; 3]>),
+    pub souls: PointerChain<u32>,
+    pub quitout: PointerChain<u8>,
+    pub mouse_enable: PointerChain<u8>,
 
     #[allow(unused)]
-    pub(crate) world_chr_man: usize,
-    pub(crate) map_item_man: u64,
-    pub(crate) spawn_item_func_ptr: u64,
+    pub world_chr_man: usize,
+    pub map_item_man: u64,
+    pub spawn_item_func_ptr: u64,
 }
-
 
 impl From<BaseAddresses> for PointerChains {
     fn from(b: BaseAddresses) -> Self {
@@ -46,23 +45,51 @@ impl From<BaseAddresses> for PointerChains {
             xa,
             world_chr_man_dbg,
             base_hbd,
-            offs_all_no_damage,
-            offs_player_exterminate,
-            offs_no_goods_consume,
-            offs_deathcam,
-            offs_no_update_ai,
-            offs_speed,
-            mesh_hi,
-            mesh_lo,
             menu_man,
-            mouse_enable_offs,
             spawn_item_func_ptr,
             map_item_man,
             ..
         } = b;
 
-        const MESH_HI: usize = 0xEC;
-        const MESH_LO: usize = 0xED;
+        let offs_all_no_damage = 9;
+        let offs_player_exterminate = 1;
+        let offs_no_goods_consume = match *VERSION {
+            // Version::V1_04_0 => 0x1ECA,
+            Version::V1_08_0 => 0x1EDA,
+            Version::V1_09_0 => todo!(),
+            Version::V1_10_0 => todo!(),
+            Version::V1_11_0 => todo!(),
+            Version::V1_12_0 => 0x1EE2,
+            Version::V1_13_0 => todo!(),
+            Version::V1_14_0 => todo!(),
+            Version::V1_15_0 => 0x1EEA,
+        };
+        let offs_deathcam = match *VERSION {
+            // Version::V1_04_0 => 0x88,
+            Version::V1_08_0 => 0x88,
+            Version::V1_09_0
+            | Version::V1_10_0
+            | Version::V1_11_0
+            | Version::V1_12_0
+            | Version::V1_13_0
+            | Version::V1_14_0
+            | Version::V1_15_0 => 0x90,
+        };
+        let offs_speed = match *VERSION {
+            // Version::V1_04_0 => 0xa38,
+            Version::V1_08_0 => 0xa38,
+            Version::V1_09_0
+            | Version::V1_10_0
+            | Version::V1_11_0
+            | Version::V1_12_0
+            | Version::V1_13_0
+            | Version::V1_14_0
+            | Version::V1_15_0 => 0xa58,
+        };
+        let offs_no_update_ai = 0xD;
+        let mesh_hi = 0xEC;
+        let mesh_lo = 0xED;
+        let mouse_enable_offs = 0x54;
 
         PointerChains {
             all_no_damage: bitflag!(0b1; debug + offs_all_no_damage as usize),
@@ -78,8 +105,8 @@ impl From<BaseAddresses> for PointerChains {
             rend_chr: bitflag!(0b1; grend + 2),
             rend_obj: bitflag!(0b1; grend + 1),
             rend_map: bitflag!(0b1; grend),
-            rend_mesh_hi: bitflag!(0b1; mesh_hi as usize),
-            rend_mesh_lo: bitflag!(0b1; mesh_lo as usize),
+            rend_mesh_hi: bitflag!(0b1; base_hbd + mesh_hi as usize),
+            rend_mesh_lo: bitflag!(0b1; base_hbd + mesh_lo as usize),
             all_draw_hit: bitflag!(0b1; world_chr_man_dbg as usize, 0x66),
             ik_foot_ray: bitflag!(0b1; world_chr_man_dbg as usize, 0x6B),
             debug_sphere_1: bitflag!(0b1; base_hbd as usize, 0x30),
@@ -91,8 +118,8 @@ impl From<BaseAddresses> for PointerChains {
                 pointer_chain!(world_chr_man, 0x40, 0x28, 0x80),
             ),
             souls: pointer_chain!(sprj_debug_event as _, 0x3d0, 0x74),
-            map_item_man,
-            spawn_item_func_ptr,
+            map_item_man: map_item_man as _,
+            spawn_item_func_ptr: spawn_item_func_ptr as _,
             world_chr_man,
             mouse_enable: pointer_chain!(menu_man as _, mouse_enable_offs as _),
             quitout: pointer_chain!(menu_man as _, 0x250),
