@@ -1,5 +1,6 @@
+use libds3::memedit::PointerChain;
+
 use super::Widget;
-use crate::memedit::PointerChain;
 use crate::util::KeyState;
 
 #[derive(Debug)]

@@ -12,10 +12,10 @@ pub mod prelude {
     pub use crate::params::*;
     pub use crate::pointers::*;
     pub use crate::version::*;
+    pub use crate::{wait_option, ParamStruct, ParamVisitor};
 }
 
 use std::time::Duration;
-
 
 pub fn wait_option<T, F: FnMut() -> Option<T>>(mut f: F) -> T {
     loop {

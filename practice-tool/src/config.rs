@@ -3,8 +3,7 @@ use std::str::FromStr;
 use log::LevelFilter;
 use serde::Deserialize;
 
-use crate::memedit::*;
-use crate::pointers::PointerChains;
+use libds3::prelude::*;
 use crate::util;
 use crate::util::KeyState;
 use crate::widgets::cycle_speed::CycleSpeed;

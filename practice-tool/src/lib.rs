@@ -2,7 +2,6 @@
 
 mod config;
 mod memedit;
-mod pointers;
 mod util;
 mod widgets;
 
@@ -11,9 +10,7 @@ use std::time::Instant;
 use hudhook::hooks::dx11::ImguiDX11Hooks;
 use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
 use imgui::*;
-use libds3::{wait_option, PARAMS};
-
-use crate::pointers::PointerChains;
+use libds3::prelude::*;
 
 struct PracticeTool {
     config: config::Config,
@@ -93,8 +90,7 @@ impl PracticeTool {
             debug!("{:?}", err);
         }
 
-        let pointers: PointerChains =
-            pointers::detect_version().expect("Couldn't detect version!").into();
+        let pointers = PointerChains::new();
 
         let widgets = config.make_commands(&pointers);
 

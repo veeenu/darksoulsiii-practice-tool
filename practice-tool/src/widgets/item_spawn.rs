@@ -7,8 +7,9 @@ use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, Slider, Win
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer};
 
+use libds3::memedit::Bitflag;
+
 use super::Widget;
-use crate::memedit::Bitflag;
 use crate::util::{get_key_code, KeyState};
 
 const ISP_TAG: &str = "##item-spawn";

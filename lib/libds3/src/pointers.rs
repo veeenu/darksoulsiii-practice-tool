@@ -1,3 +1,8 @@
+use std::ptr::null_mut;
+
+use windows::core::PCSTR;
+use windows::Win32::System::LibraryLoader::GetModuleHandleA;
+
 use crate::memedit::*;
 use crate::prelude::base_addresses::BaseAddresses;
 use crate::prelude::{Version, VERSION};
@@ -124,5 +129,15 @@ impl From<BaseAddresses> for PointerChains {
             mouse_enable: pointer_chain!(menu_man as _, mouse_enable_offs as _),
             quitout: pointer_chain!(menu_man as _, 0x250),
         }
+    }
+}
+
+impl PointerChains {
+    pub fn new() -> Self {
+        let base_module_address = unsafe { GetModuleHandleA(PCSTR(null_mut())) }.0 as usize;
+        let base_addresses = BaseAddresses::from(*crate::version::VERSION)
+            .with_module_base_addr(base_module_address);
+
+        base_addresses.into()
     }
 }
