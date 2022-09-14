@@ -394,6 +394,25 @@ fn codegen_version_enum(ver: &[VersionData]) -> String {
     string.push_str("    }\n");
     string.push_str("}\n\n");
 
+    // impl From<Version> for (u32, u32, u32)
+
+    string.push_str("impl From<(u32, u32, u32)> for Version {\n");
+    string.push_str("    fn from(v: (u32, u32, u32)) -> Self {\n");
+    string.push_str("        match v {\n");
+
+    for v in ver {
+        let Version(maj, min, patch) = v.version;
+        writeln!(
+            string,
+            "            Version::V{maj}_{min:02}_{patch} => ({maj}, {min}, {patch}),"
+        )
+        .unwrap();
+    }
+
+    string.push_str("        }\n");
+    string.push_str("    }\n");
+    string.push_str("}\n\n");
+
     // impl From<Version> for BaseAddresses
 
     string.push_str("impl From<Version> for BaseAddresses {\n");
