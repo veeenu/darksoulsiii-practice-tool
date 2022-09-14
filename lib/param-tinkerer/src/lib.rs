@@ -5,10 +5,10 @@ use std::fmt::Write;
 use hudhook::hooks::dx11::ImguiDX11Hooks;
 use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
 use imgui::*;
-use libds3::pointers::MOUSE_ENABLE;
-use libds3::{ParamVisitor, PARAMS, PARAM_NAMES};
+use libds3::prelude::*;
 
 struct ParamTinkerer {
+    pointers: PointerChains,
     shown: bool,
     selected_param: usize,
     selected_param_id: usize,
@@ -20,7 +20,12 @@ impl ParamTinkerer {
         hudhook::utils::alloc_console();
         hudhook::utils::simplelog();
 
-        ParamTinkerer { shown: false, selected_param: 0, selected_param_id: 0 }
+        ParamTinkerer {
+            shown: false,
+            selected_param: 0,
+            selected_param_id: 0,
+            pointers: PointerChains::new(),
+        }
     }
 }
 
@@ -29,7 +34,7 @@ impl ImguiRenderLoop for ParamTinkerer {
         if ui.is_key_index_released(0x50) {
             // P key
             self.shown = !self.shown;
-            MOUSE_ENABLE.write(if self.shown { 1 } else { 0 });
+            self.pointers.mouse_enable.write(if self.shown { 1 } else { 0 });
         }
 
         if !self.shown {

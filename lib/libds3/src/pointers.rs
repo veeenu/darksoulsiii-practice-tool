@@ -33,6 +33,7 @@ pub struct PointerChains {
     pub souls: PointerChain<u32>,
     pub quitout: PointerChain<u8>,
     pub mouse_enable: PointerChain<u8>,
+    pub igt: PointerChain<u32>,
 
     #[allow(unused)]
     pub world_chr_man: usize,
@@ -49,6 +50,7 @@ impl From<BaseAddresses> for PointerChains {
             grend,
             xa,
             world_chr_man_dbg,
+            base_a,
             base_hbd,
             menu_man,
             spawn_item_func_ptr,
@@ -91,6 +93,17 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_14_0
             | Version::V1_15_0 => 0xa58,
         };
+        let offs_igt = match *VERSION {
+            // Version::V1_04_0 => 0x9c,
+            Version::V1_08_0
+            | Version::V1_09_0
+            | Version::V1_10_0
+            | Version::V1_11_0
+            | Version::V1_12_0
+            | Version::V1_13_0
+            | Version::V1_14_0
+            | Version::V1_15_0 => 0xa4,
+        };
         let offs_no_update_ai = 0xD;
         let mesh_hi = 0xEC;
         let mesh_lo = 0xED;
@@ -127,6 +140,7 @@ impl From<BaseAddresses> for PointerChains {
             spawn_item_func_ptr: spawn_item_func_ptr as _,
             world_chr_man,
             mouse_enable: pointer_chain!(menu_man as _, mouse_enable_offs as _),
+            igt: pointer_chain!(base_a as _, offs_igt),
             quitout: pointer_chain!(menu_man as _, 0x250),
         }
     }

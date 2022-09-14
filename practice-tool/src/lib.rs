@@ -1,7 +1,6 @@
 #![feature(once_cell)]
 
 mod config;
-mod memedit;
 mod util;
 mod widgets;
 
@@ -156,7 +155,7 @@ impl PracticeTool {
             .build(ui, || {
                 ui.text("johndisandonato's Dark Souls III Practice Tool is active");
 
-                if let Some(igt) = libds3::pointers::IGT.read() {
+                if let Some(igt) = self.pointers.igt.read() {
                     let millis = (igt % 1000) / 10;
                     let total_seconds = igt / 1000;
                     let seconds = total_seconds % 60;

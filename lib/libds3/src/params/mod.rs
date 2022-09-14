@@ -7,6 +7,8 @@ use log::{error, info};
 pub use param_data::*;
 use parking_lot::RwLock;
 use widestring::U16CStr;
+use windows::Win32::System::LibraryLoader::GetModuleHandleA;
+use windows::core::PCSTR;
 
 use crate::prelude::base_addresses::*;
 use crate::version::VERSION;
@@ -77,10 +79,18 @@ impl Params {
     /// Accesses raw pointers. Should never crash as the param pointers are
     /// static.
     pub unsafe fn refresh(&mut self) -> Result<(), String> {
-        let base: &ParamMaster =
-            std::ptr::read(BaseAddresses::from(*VERSION).param as *const *const ParamMaster)
-                .as_ref()
-                .ok_or_else(|| "Invalid param base address".to_string())?;
+        let addresses: BaseAddresses = (*VERSION).into();
+        let module_base_addr = GetModuleHandleA(PCSTR(std::ptr::null_mut())).0 as usize;
+        let base_ptr = addresses.param + module_base_addr;
+        let base_ptr = *(base_ptr as *const *const c_void) as usize;
+        let base: &ParamMaster = (base_ptr as *const ParamMaster) // std::ptr::read(base_ptr as *const *const ParamMaster)
+            .as_ref()
+            .ok_or_else(|| "Invalid param base address".to_string())?;
+        // let base: &ParamMaster =
+        //     std::ptr::read(BaseAddresses::from(*VERSION).param as *const *const ParamMaster)
+        //         .as_ref()
+        //         .ok_or_else(|| "Invalid param base address".to_string())?;
+        info!("b");
 
         let m = Params::param_entries_from_master(base)?;
         self.0 = m;

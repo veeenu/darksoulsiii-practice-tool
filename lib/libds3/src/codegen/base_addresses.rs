@@ -6,6 +6,7 @@ pub struct BaseAddresses {
     pub world_chr_man: usize,
     pub world_chr_man_dbg: usize,
     pub menu_man: usize,
+    pub base_a: usize,
     pub base_d: usize,
     pub sprj_debug_event: usize,
     pub debug: usize,
@@ -24,6 +25,7 @@ impl BaseAddresses {
             world_chr_man: self.world_chr_man + base,
             world_chr_man_dbg: self.world_chr_man_dbg + base,
             menu_man: self.menu_man + base,
+            base_a: self.base_a + base,
             base_d: self.base_d + base,
             sprj_debug_event: self.sprj_debug_event + base,
             debug: self.debug + base,
@@ -100,6 +102,7 @@ impl From<Version> for BaseAddresses {
 }
 
 pub const BASE_ADDRESSES_1_08_0: BaseAddresses = BaseAddresses {
+    base_a: 0x4704268,
     base_d: 0x4707b58,
     base_hbd: 0x472ac60,
     debug: 0x472d049,
@@ -116,6 +119,7 @@ pub const BASE_ADDRESSES_1_08_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_09_0: BaseAddresses = BaseAddresses {
+    base_a: 0x47043a8,
     base_d: 0x4707c98,
     base_hbd: 0x472ada0,
     debug: 0x472d189,
@@ -132,6 +136,7 @@ pub const BASE_ADDRESSES_1_09_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_10_0: BaseAddresses = BaseAddresses {
+    base_a: 0x47043a8,
     base_d: 0x4707c98,
     base_hbd: 0x472ada0,
     debug: 0x472d189,
@@ -148,6 +153,7 @@ pub const BASE_ADDRESSES_1_10_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_11_0: BaseAddresses = BaseAddresses {
+    base_a: 0x4737698,
     base_d: 0x473afa0,
     base_hbd: 0x475e0a0,
     debug: 0x4760488,
@@ -164,6 +170,7 @@ pub const BASE_ADDRESSES_1_11_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_12_0: BaseAddresses = BaseAddresses {
+    base_a: 0x473a818,
     base_d: 0x473e120,
     base_hbd: 0x4761220,
     debug: 0x4763608,
@@ -180,6 +187,7 @@ pub const BASE_ADDRESSES_1_12_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_13_0: BaseAddresses = BaseAddresses {
+    base_a: 0x473e018,
     base_d: 0x4741920,
     base_hbd: 0x4764a20,
     debug: 0x4766e08,
@@ -196,6 +204,7 @@ pub const BASE_ADDRESSES_1_13_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_14_0: BaseAddresses = BaseAddresses {
+    base_a: 0x4740178,
     base_d: 0x4743a80,
     base_hbd: 0x4766b80,
     debug: 0x4768f68,
@@ -212,6 +221,7 @@ pub const BASE_ADDRESSES_1_14_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_15_0: BaseAddresses = BaseAddresses {
+    base_a: 0x4740178,
     base_d: 0x4743a80,
     base_hbd: 0x4766b80,
     debug: 0x4768f68,
