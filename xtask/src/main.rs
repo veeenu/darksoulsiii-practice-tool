@@ -1,3 +1,5 @@
+#![feature(once_cell)]
+
 mod codegen;
 
 use std::env;
@@ -24,8 +26,11 @@ type Result<T> = std::result::Result<T, DynError>;
 //
 
 fn main() -> Result<()> {
+    dotenv::dotenv().ok();
+
     let task = env::args().nth(1);
     match task.as_deref() {
+        Some("xd") => xd()?,
         Some("dist") => dist()?,
         Some("run") => run()?,
         Some("codegen") => codegen::codegen()?,
@@ -37,6 +42,11 @@ fn main() -> Result<()> {
 
 // Tasks
 //
+
+fn xd() -> Result<()> {
+    codegen::aob_scans::bytes_at_xd();
+    Ok(())
+}
 
 fn dist() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());

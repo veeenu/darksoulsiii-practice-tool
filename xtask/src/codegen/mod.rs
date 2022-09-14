@@ -9,6 +9,8 @@ use regex::Regex;
 
 use crate::{project_root, Result};
 
+pub(crate) mod aob_scans;
+
 pub(crate) fn codegen() -> Result<()> {
     checkout_paramdex()?;
     run_python_script()?;
