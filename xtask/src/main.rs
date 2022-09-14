@@ -30,7 +30,7 @@ fn main() -> Result<()> {
 
     let task = env::args().nth(1);
     match task.as_deref() {
-        Some("xd") => xd()?,
+        Some("cg_base_addrs") => codegen::aob_scans::get_base_addresses(),
         Some("dist") => dist()?,
         Some("run") => run()?,
         Some("codegen") => codegen::codegen()?,
@@ -42,11 +42,6 @@ fn main() -> Result<()> {
 
 // Tasks
 //
-
-fn xd() -> Result<()> {
-    codegen::aob_scans::bytes_at_xd();
-    Ok(())
-}
 
 fn dist() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
