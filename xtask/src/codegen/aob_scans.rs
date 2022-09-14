@@ -310,6 +310,13 @@ fn codegen_base_addresses_struct() -> String {
             .collect::<Vec<_>>()
             .join("")
     });
+    generated.push_str({
+        &AOBS_README
+            .iter()
+            .map(|(name, ..)| format!("    pub {}: usize,\n", AsSnakeCase(name)))
+            .collect::<Vec<_>>()
+            .join("")
+    });
     generated.push_str("}\n\n");
     generated.push_str("impl BaseAddresses {\n");
     generated.push_str("    pub fn with_module_base_addr(self, base: usize) -> BaseAddresses {\n");
@@ -327,6 +334,15 @@ fn codegen_base_addresses_struct() -> String {
         &AOBS_DIRECT
             .iter()
             .map(|(name, _)| {
+                format!("            {}: self.{} + base,\n", AsSnakeCase(name), AsSnakeCase(name))
+            })
+            .collect::<Vec<_>>()
+            .join(""),
+    );
+    generated.push_str(
+        &AOBS_README
+            .iter()
+            .map(|(name, ..)| {
                 format!("            {}: self.{} + base,\n", AsSnakeCase(name), AsSnakeCase(name))
             })
             .collect::<Vec<_>>()
@@ -396,8 +412,8 @@ fn codegen_version_enum(ver: &[VersionData]) -> String {
 
     // impl From<Version> for (u32, u32, u32)
 
-    string.push_str("impl From<(u32, u32, u32)> for Version {\n");
-    string.push_str("    fn from(v: (u32, u32, u32)) -> Self {\n");
+    string.push_str("impl From<Version> for (u32, u32, u32) {\n");
+    string.push_str("    fn from(v: Version) -> Self {\n");
     string.push_str("        match v {\n");
 
     for v in ver {

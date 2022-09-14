@@ -1,7 +1,9 @@
-use std::ffi::OsString;
-use std::os::windows::prelude::OsStringExt;
+use std::ptr::null_mut;
 use std::sync::LazyLock;
 
+use log::*;
+
+use widestring::U16CString;
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::MAX_PATH;
 use windows::Win32::Storage::FileSystem::{

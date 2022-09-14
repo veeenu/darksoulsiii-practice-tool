@@ -14,6 +14,7 @@ pub struct BaseAddresses {
     pub map_item_man: usize,
     pub spawn_item_func_ptr: usize,
     pub format_string: usize,
+    pub xa: usize,
 }
 
 impl BaseAddresses {
@@ -30,6 +31,7 @@ impl BaseAddresses {
             map_item_man: self.map_item_man + base,
             spawn_item_func_ptr: self.spawn_item_func_ptr + base,
             format_string: self.format_string + base,
+            xa: self.xa + base,
         }
     }
 }
@@ -65,8 +67,8 @@ impl From<(u32, u32, u32)> for Version {
     }
 }
 
-impl From<(u32, u32, u32)> for Version {
-    fn from(v: (u32, u32, u32)) -> Self {
+impl From<Version> for (u32, u32, u32) {
+    fn from(v: Version) -> Self {
         match v {
             Version::V1_08_0 => (1, 8, 0),
             Version::V1_09_0 => (1, 9, 0),
