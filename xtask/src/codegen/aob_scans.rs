@@ -345,7 +345,7 @@ fn codegen_base_addresses_struct() -> String {
         &AOBS_README
             .iter()
             .map(|(name, ..)| {
-                format!("            {}: self.{} + base,\n", AsSnakeCase(name), AsSnakeCase(name))
+                format!("            {}: self.{},\n", AsSnakeCase(name), AsSnakeCase(name))
             })
             .collect::<Vec<_>>()
             .join(""),

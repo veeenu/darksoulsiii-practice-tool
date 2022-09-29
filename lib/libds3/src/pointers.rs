@@ -1,5 +1,6 @@
 use std::ptr::null_mut;
 
+use log::debug;
 use windows::core::PCSTR;
 use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 
@@ -43,6 +44,8 @@ pub struct PointerChains {
 
 impl From<BaseAddresses> for PointerChains {
     fn from(b: BaseAddresses) -> Self {
+        debug!("{:?}", b);
+
         let BaseAddresses {
             world_chr_man,
             sprj_debug_event,
@@ -70,6 +73,7 @@ impl From<BaseAddresses> for PointerChains {
             Version::V1_13_0 => todo!(),
             Version::V1_14_0 => todo!(),
             Version::V1_15_0 => 0x1EEA,
+            Version::V1_15_1 => todo!(),
         };
         let offs_deathcam = match *VERSION {
             // Version::V1_04_0 => 0x88,
@@ -81,6 +85,7 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_13_0
             | Version::V1_14_0
             | Version::V1_15_0 => 0x90,
+            Version::V1_15_1 => todo!(),
         };
         let offs_speed = match *VERSION {
             // Version::V1_04_0 => 0xa38,
@@ -92,6 +97,7 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_13_0
             | Version::V1_14_0
             | Version::V1_15_0 => 0xa58,
+            Version::V1_15_1 => todo!(),
         };
         let offs_igt = match *VERSION {
             // Version::V1_04_0 => 0x9c,
@@ -103,6 +109,7 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_13_0
             | Version::V1_14_0
             | Version::V1_15_0 => 0xa4,
+            Version::V1_15_1 => todo!(),
         };
         let offs_no_update_ai = 0xD;
         let mesh_hi = 0xEC;

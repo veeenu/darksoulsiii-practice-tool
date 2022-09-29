@@ -162,6 +162,7 @@ impl PracticeTool {
                 #[cfg(debug_assertions)]
                 {
                     if ui.button("Close") {
+                        self.pointers.cursor_show.set(false);
                         hudhook::lifecycle::eject();
                     }
                 }
