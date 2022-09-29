@@ -65,24 +65,24 @@ impl ImguiRenderLoop for ParamTinkerer {
 impl ParamTinkerer {
     pub fn render_params(&mut self, ui: &imgui::Ui) {
         let params = PARAMS.write();
+        const COLUMN1: f32 = 240.;
+        const COLUMN2: f32 = 480.;
+        const COLUMN3: f32 = 480.;
 
         ChildWindow::new("##param_child_wnd")
             .flags(WindowFlags::NO_SCROLLBAR)
-            .size([500., 450.])
+            .size([COLUMN1 + COLUMN2 + COLUMN3 + 10., 405.])
             .build(ui, || {
-                const COLUMN1: f32 = 240.;
-                const COLUMN2: f32 = 240.;
-                const COLUMN3: f32 = 500.;
-
-                ui.columns(2, "##param_columns", false);
+                ui.columns(3, "##param_columns", false);
                 ui.set_column_offset(0, 0.);
-                ui.set_column_offset(1, 250.);
+                ui.set_column_offset(1, COLUMN1 + 10.);
+                ui.set_column_offset(1, COLUMN1 + COLUMN2 + 20.);
 
                 let param_entries = {
                     ui.set_current_column_width(COLUMN1 + 10.);
 
                     ui.push_item_width(-1.);
-                    ListBox::new("##param_names").size([COLUMN1, 220.]).build(ui, || {
+                    ListBox::new("##param_names").size([COLUMN1, 400.]).build(ui, || {
                         for (idx, k) in params.keys().enumerate() {
                             if Selectable::new(k).selected(idx == self.selected_param).build(ui) {
                                 self.selected_param = idx;
@@ -102,17 +102,19 @@ impl ParamTinkerer {
 
                     let mut buf = String::new();
                     ui.push_item_width(-1.);
-                    ListBox::new("##param_ids").size([COLUMN2, 220.]).build(ui, || {
+                    ListBox::new("##param_ids").size([COLUMN2, 400.]).build(ui, || {
                         for (idx, id) in param_entries.enumerate() {
-                            let param_repr = PARAM_NAMES
+                            buf.clear();
+                            if let Some(id_name) = PARAM_NAMES
                                 .get(param_name)
                                 .and_then(|param_id_names| param_id_names.get(&(id as usize)))
-                                .unwrap_or_else(|| {
-                                    buf.clear();
-                                    write!(buf, "{}", id).ok();
-                                    &buf
-                                });
-                            if Selectable::new(param_repr)
+                            {
+                                write!(buf, "{id} - {id_name}").ok();
+                            } else {
+                                write!(buf, "{id}").ok();
+                            }
+
+                            if Selectable::new(&buf)
                                 .selected(idx == self.selected_param_id)
                                 .build(ui)
                             {
@@ -173,9 +175,9 @@ impl ParamTinkerer {
                         }
                     }
 
-                    ui.columns(1, "##param_columns2", false);
+                    ui.next_column();
 
-                    ListBox::new("##param_detail").size([COLUMN3, 220.]).build(ui, || {
+                    ListBox::new("##param_detail").size([COLUMN3, 400.]).build(ui, || {
                         let _token = ui.push_item_width(120.);
                         params.visit_param_item(param_name, param_idx, &mut ImguiParamVisitor(ui));
                     });
