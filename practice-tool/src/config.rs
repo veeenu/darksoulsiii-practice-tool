@@ -1,11 +1,12 @@
 use std::str::FromStr;
 
+use libds3::prelude::*;
 use log::LevelFilter;
 use serde::Deserialize;
 
-use libds3::prelude::*;
 use crate::util;
 use crate::util::KeyState;
+use crate::widgets::character_stats::CharacterStatsEdit;
 use crate::widgets::cycle_speed::CycleSpeed;
 use crate::widgets::flag::Flag;
 use crate::widgets::item_spawn::ItemSpawner;
@@ -54,6 +55,11 @@ enum CfgCommand {
         #[serde(rename = "cycle_speed")]
         cycle_speed: Vec<f32>,
         hotkey: KeyState,
+    },
+    CharacterStats {
+        #[serde(rename = "character_stats")]
+        hotkey_open: KeyState,
+        hotkey_close: KeyState,
     },
     Souls {
         #[serde(rename = "souls")]
@@ -121,6 +127,13 @@ impl Config {
                     hotkey.clone(),
                     modifier.clone(),
                 )),
+                CfgCommand::CharacterStats { hotkey_open, hotkey_close } => {
+                    Box::new(CharacterStatsEdit::new(
+                        hotkey_open.clone(),
+                        hotkey_close.clone(),
+                        chains.character_stats.clone(),
+                    ))
+                },
                 CfgCommand::CycleSpeed { cycle_speed, hotkey } => {
                     Box::new(CycleSpeed::new(cycle_speed, chains.speed.clone(), hotkey.clone()))
                 },

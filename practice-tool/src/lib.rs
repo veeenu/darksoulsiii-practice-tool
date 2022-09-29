@@ -12,6 +12,7 @@ use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
 use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
+use widgets::{BUTTON_HEIGHT, BUTTON_WIDTH};
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_RSHIFT};
 
 struct FontIDs {
@@ -159,12 +160,23 @@ impl PracticeTool {
                     w.render(ui);
                 }
 
-                #[cfg(debug_assertions)]
+                if ui.button_with_size("Close", [
+                    BUTTON_WIDTH * widgets::scaling_factor(ui),
+                    BUTTON_HEIGHT,
+                ]) {
+                    self.ui_state = UiState::Closed;
+                    self.pointers.cursor_show.set(false);
+                }
+
+                if option_env!("CARGO_XTASK_DIST").is_none()
+                    && ui.button_with_size("Eject", [
+                        BUTTON_WIDTH * widgets::scaling_factor(ui),
+                        BUTTON_HEIGHT,
+                    ])
                 {
-                    if ui.button("Close") {
-                        self.pointers.cursor_show.set(false);
-                        hudhook::lifecycle::eject();
-                    }
+                    self.ui_state = UiState::Closed;
+                    self.pointers.cursor_show.set(false);
+                    hudhook::lifecycle::eject();
                 }
             });
     }

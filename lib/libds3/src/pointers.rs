@@ -24,6 +24,8 @@ pub struct CharacterStats {
     pub intelligence: i32,
     pub faith: i32,
     pub luck: i32,
+    pub unk1: i32,
+    pub unk2: i32,
     pub vitality: i32,
     pub level: i32,
     pub souls: i32,
