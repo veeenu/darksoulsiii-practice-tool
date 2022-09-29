@@ -9,7 +9,6 @@ use crate::memedit::*;
 use crate::prelude::base_addresses::BaseAddresses;
 use crate::prelude::{Version, VERSION};
 
-//
 // Character stats
 //
 
@@ -96,14 +95,14 @@ impl From<BaseAddresses> for PointerChains {
         let offs_no_goods_consume = match *VERSION {
             // Version::V1_04_0 => 0x1ECA,
             Version::V1_08_0 => 0x1EDA,
-            Version::V1_09_0 => todo!(),
-            Version::V1_10_0 => todo!(),
-            Version::V1_11_0 => todo!(),
+            Version::V1_09_0 => 0x1EDA, // todo
+            Version::V1_10_0 => 0x1EDA, // todo
+            Version::V1_11_0 => 0x1EDA, // todo
             Version::V1_12_0 => 0x1EE2,
-            Version::V1_13_0 => todo!(),
-            Version::V1_14_0 => todo!(),
+            Version::V1_13_0 => 0x1EE2, // todo
+            Version::V1_14_0 => 0x1EE2, // todo
             Version::V1_15_0 => 0x1EEA,
-            Version::V1_15_1 => todo!(),
+            Version::V1_15_1 => 0x1EEA,
         };
         let offs_deathcam = match *VERSION {
             // Version::V1_04_0 => 0x88,
@@ -114,8 +113,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_12_0
             | Version::V1_13_0
             | Version::V1_14_0
-            | Version::V1_15_0 => 0x90,
-            Version::V1_15_1 => todo!(),
+            | Version::V1_15_0
+            | Version::V1_15_1 => 0x90,
         };
         let offs_speed = match *VERSION {
             // Version::V1_04_0 => 0xa38,
@@ -126,8 +125,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_12_0
             | Version::V1_13_0
             | Version::V1_14_0
-            | Version::V1_15_0 => 0xa58,
-            Version::V1_15_1 => todo!(),
+            | Version::V1_15_0
+            | Version::V1_15_1 => 0xa58,
         };
         let offs_igt = match *VERSION {
             // Version::V1_04_0 => 0x9c,
@@ -138,8 +137,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_12_0
             | Version::V1_13_0
             | Version::V1_14_0
-            | Version::V1_15_0 => 0xa4,
-            Version::V1_15_1 => todo!(),
+            | Version::V1_15_0
+            | Version::V1_15_1 => 0xa4,
         };
         let offs_no_update_ai = 0xD;
         let mesh_hi = 0xEC;

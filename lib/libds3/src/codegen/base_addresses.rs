@@ -250,7 +250,7 @@ pub const BASE_ADDRESSES_1_15_1: BaseAddresses = BaseAddresses {
     map_item_man: 0x4769240,
     menu_man: 0x4763258,
     param: 0x479b8c0,
-    spawn_item_func_ptr: 0,
+    spawn_item_func_ptr: 0x7c3cd0,
     sprj_debug_event: 0x4751eb8,
     world_chr_man: 0x477fdb8,
     world_chr_man_dbg: 0x477fed8,
