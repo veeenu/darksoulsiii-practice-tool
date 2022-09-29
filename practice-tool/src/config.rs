@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
+use libds3::prelude::*;
 use log::LevelFilter;
 use serde::Deserialize;
 
-use crate::memedit::*;
-use crate::pointers::PointerChains;
 use crate::util;
 use crate::util::KeyState;
+use crate::widgets::character_stats::CharacterStatsEdit;
 use crate::widgets::cycle_speed::CycleSpeed;
 use crate::widgets::flag::Flag;
 use crate::widgets::item_spawn::ItemSpawner;
@@ -40,7 +40,6 @@ enum CfgCommand {
     ItemSpawner {
         #[serde(rename = "item_spawner")]
         hotkey_load: KeyState,
-        hotkey_back: KeyState,
         hotkey_close: KeyState,
     },
     Flag {
@@ -56,6 +55,11 @@ enum CfgCommand {
         #[serde(rename = "cycle_speed")]
         cycle_speed: Vec<f32>,
         hotkey: KeyState,
+    },
+    CharacterStats {
+        #[serde(rename = "character_stats")]
+        hotkey_open: KeyState,
+        hotkey_close: KeyState,
     },
     Souls {
         #[serde(rename = "souls")]
@@ -109,13 +113,12 @@ impl Config {
                         hotkey_close.clone(),
                     )
                 },
-                CfgCommand::ItemSpawner { hotkey_load, hotkey_back, hotkey_close } => {
+                CfgCommand::ItemSpawner { hotkey_load, hotkey_close } => {
                     Box::new(ItemSpawner::new(
-                        chains.spawn_item_func_ptr,
-                        chains.map_item_man,
+                        chains.spawn_item_func_ptr as usize,
+                        chains.map_item_man as usize,
                         chains.gravity.clone(),
                         hotkey_load.clone(),
-                        hotkey_back.clone(),
                         hotkey_close.clone(),
                     ))
                 },
@@ -124,6 +127,13 @@ impl Config {
                     hotkey.clone(),
                     modifier.clone(),
                 )),
+                CfgCommand::CharacterStats { hotkey_open, hotkey_close } => {
+                    Box::new(CharacterStatsEdit::new(
+                        hotkey_open.clone(),
+                        hotkey_close.clone(),
+                        chains.character_stats.clone(),
+                    ))
+                },
                 CfgCommand::CycleSpeed { cycle_speed, hotkey } => {
                     Box::new(CycleSpeed::new(cycle_speed, chains.speed.clone(), hotkey.clone()))
                 },

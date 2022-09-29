@@ -1,5 +1,6 @@
+use libds3::memedit::Bitflag;
+
 use super::Widget;
-use crate::memedit::Bitflag;
 use crate::util::KeyState;
 
 #[derive(Debug)]

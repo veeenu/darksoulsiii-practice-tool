@@ -1,3 +1,5 @@
+#![feature(once_cell)]
+
 mod codegen;
 
 use std::env;
@@ -24,6 +26,8 @@ type Result<T> = std::result::Result<T, DynError>;
 //
 
 fn main() -> Result<()> {
+    dotenv::dotenv().ok();
+
     let task = env::args().nth(1);
     match task.as_deref() {
         Some("dist") => dist()?,
@@ -42,7 +46,8 @@ fn dist() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
     let status = Command::new(cargo)
         .current_dir(project_root())
-        .args(&["build", "--release"])
+        .env("CARGO_XTASK_DIST", "true")
+        .args(&["build", "--release", "--package", "darksoulsiii-practice-tool"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
 
@@ -96,7 +101,7 @@ fn run() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
     let status = Command::new(&cargo)
         .current_dir(project_root())
-        .args(&["build", "--release", "--lib", "--package", "darksoulsiii-practice-tool"])
+        .args(&["build", "--lib", "--package", "darksoulsiii-practice-tool"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
 
@@ -107,13 +112,13 @@ fn run() -> Result<()> {
     let mut buf = String::new();
     File::open(project_root().join("jdsd_dsiii_practice_tool.toml"))?.read_to_string(&mut buf)?;
     File::create(
-        project_root().join("target").join("release").join("jdsd_dsiii_practice_tool.toml"),
+        project_root().join("target").join("debug").join("jdsd_dsiii_practice_tool.toml"),
     )?
     .write_all(buf.as_bytes())?;
 
     let dll_path = project_root()
         .join("target")
-        .join("release")
+        .join("debug")
         .join("libjdsd_dsiii_practice_tool.dll")
         .canonicalize()?;
 

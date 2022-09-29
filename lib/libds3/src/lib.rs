@@ -1,13 +1,21 @@
 #![feature(once_cell)]
 
+pub mod codegen;
 pub mod memedit;
-mod params;
+pub mod params;
 pub mod pointers;
 pub mod version;
 
-use std::time::Duration;
+pub mod prelude {
+    pub use crate::codegen::*;
+    pub use crate::memedit::*;
+    pub use crate::params::*;
+    pub use crate::pointers::*;
+    pub use crate::version::*;
+    pub use crate::{wait_option, ParamStruct, ParamVisitor};
+}
 
-pub use params::*;
+use std::time::Duration;
 
 pub fn wait_option<T, F: FnMut() -> Option<T>>(mut f: F) -> T {
     loop {

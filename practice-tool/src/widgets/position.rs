@@ -1,5 +1,6 @@
+use libds3::memedit::PointerChain;
+
 use super::Widget;
-use crate::memedit::PointerChain;
 use crate::util::KeyState;
 
 #[derive(Debug)]
@@ -55,22 +56,47 @@ impl Widget for SavePosition {
         };
 
         let _token = ui.begin_disabled(!valid);
-        ui.text(format!(
-            "[{:9.2}  {:9.2}  {:9.2}  {:9.2}]",
-            read_pos[0], read_pos[1], read_pos[2], read_pos[3]
-        ));
-        ui.same_line();
-        if ui.small_button(format!("Load pos ({})", self.hotkey)) {
+        let button_width = super::BUTTON_WIDTH * super::scaling_factor(ui);
+
+        if ui.button_with_size(format!("Load ({})", self.hotkey), [
+            button_width * 0.33 - 4.,
+            super::BUTTON_HEIGHT,
+        ]) {
             self.load_position();
         }
-        ui.text(format!(
-            "[{:9.2}  {:9.2}  {:9.2}  {:9.2}]",
-            saved_pos[1], saved_pos[3], saved_pos[2], saved_pos[0],
-        ));
         ui.same_line();
-        if ui.small_button(format!("Save pos ({} + {})", self.modifier, self.hotkey)) {
+        if ui.button_with_size(format!("Save ({} + {})", self.modifier, self.hotkey), [
+            button_width * 0.67 - 4.,
+            super::BUTTON_HEIGHT,
+        ]) {
             self.save_position();
         }
+        ui.text(format!(
+            "{:7.1} {:7.1} {:7.1} {:7.1}",
+            read_pos[0], read_pos[1], read_pos[2], read_pos[3]
+        ));
+        ui.text(format!(
+            "{:7.1} {:7.1} {:7.1} {:7.1}",
+            saved_pos[0], saved_pos[1], saved_pos[2], saved_pos[3],
+        ));
+
+        // let _token = ui.begin_disabled(!valid);
+        // ui.text(format!(
+        //     "[{:7.1}  {:7.1}  {:7.1}  {:7.1}]",
+        //     read_pos[0], read_pos[1], read_pos[2], read_pos[3]
+        // ));
+        // ui.same_line();
+        // if ui.small_button(format!("Load pos ({})", self.hotkey)) {
+        //     self.load_position();
+        // }
+        // ui.text(format!(
+        //     "[{:7.1}  {:7.1}  {:7.1}  {:7.1}]",
+        //     saved_pos[1], saved_pos[3], saved_pos[2], saved_pos[0],
+        // ));
+        // ui.same_line();
+        // if ui.small_button(format!("Save pos ({} + {})", self.modifier, self.hotkey)) {
+        //     self.save_position();
+        // }
     }
 
     fn interact(&mut self) {

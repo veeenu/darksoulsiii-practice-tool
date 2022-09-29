@@ -1,27 +1,42 @@
 #![feature(once_cell)]
 
 mod config;
-mod memedit;
-mod pointers;
 mod util;
 mod widgets;
 
 use std::time::Instant;
 
+use const_format::formatcp;
 use hudhook::hooks::dx11::ImguiDX11Hooks;
 use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
 use imgui::*;
-use libds3::{wait_option, PARAMS};
+use libds3::prelude::*;
+use pkg_version::*;
+use widgets::{BUTTON_HEIGHT, BUTTON_WIDTH};
+use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_RSHIFT};
 
-use crate::pointers::PointerChains;
+struct FontIDs {
+    small: FontId,
+    normal: FontId,
+    big: FontId,
+}
+
+unsafe impl Send for FontIDs {}
+unsafe impl Sync for FontIDs {}
+
+enum UiState {
+    MenuOpen,
+    Closed,
+    Hidden,
+}
 
 struct PracticeTool {
     config: config::Config,
     widgets: Vec<Box<dyn widgets::Widget>>,
     pointers: PointerChains,
     log: Vec<(Instant, String)>,
-
-    is_shown: bool,
+    ui_state: UiState,
+    fonts: Option<FontIDs>,
 }
 
 impl PracticeTool {
@@ -93,8 +108,7 @@ impl PracticeTool {
             debug!("{:?}", err);
         }
 
-        let pointers: PointerChains =
-            pointers::detect_version().expect("Couldn't detect version!").into();
+        let pointers = PointerChains::new();
 
         let widgets = config.make_commands(&pointers);
 
@@ -115,10 +129,17 @@ impl PracticeTool {
 
         info!("Initialized");
 
-        PracticeTool { config, pointers, widgets, is_shown: false, log: Vec::new() }
+        PracticeTool {
+            config,
+            pointers,
+            widgets,
+            ui_state: UiState::Closed,
+            log: Vec::new(),
+            fonts: None,
+        }
     }
 
-    fn render_visible(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
+    fn render_visible(&mut self, ui: &imgui::Ui, flags: &ImguiRenderLoopFlags) {
         imgui::Window::new("##tool_window")
             .position([16., 16.], Condition::Always)
             .bg_alpha(0.8)
@@ -138,10 +159,29 @@ impl PracticeTool {
                 for w in self.widgets.iter_mut() {
                     w.render(ui);
                 }
+
+                if ui.button_with_size("Close", [
+                    BUTTON_WIDTH * widgets::scaling_factor(ui),
+                    BUTTON_HEIGHT,
+                ]) {
+                    self.ui_state = UiState::Closed;
+                    self.pointers.cursor_show.set(false);
+                }
+
+                if option_env!("CARGO_XTASK_DIST").is_none()
+                    && ui.button_with_size("Eject", [
+                        BUTTON_WIDTH * widgets::scaling_factor(ui),
+                        BUTTON_HEIGHT,
+                    ])
+                {
+                    self.ui_state = UiState::Closed;
+                    self.pointers.cursor_show.set(false);
+                    hudhook::lifecycle::eject();
+                }
             });
     }
 
-    fn render_closed(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
+    fn render_closed(&mut self, ui: &imgui::Ui, flags: &ImguiRenderLoopFlags) {
         let stack_tokens = vec![
             ui.push_style_var(StyleVar::WindowRounding(0.)),
             ui.push_style_var(StyleVar::FrameBorderSize(0.)),
@@ -160,7 +200,61 @@ impl PracticeTool {
             .build(ui, || {
                 ui.text("johndisandonato's Dark Souls III Practice Tool is active");
 
-                if let Some(igt) = libds3::pointers::IGT.read() {
+                ui.same_line();
+
+                if ui.small_button("Open") {
+                    self.ui_state = UiState::MenuOpen;
+                }
+
+                ui.same_line();
+
+                if ui.small_button("Help") {
+                    ui.open_popup("##help_window");
+                }
+
+                PopupModal::new("##help_window")
+                    .resizable(false)
+                    .movable(false)
+                    .title_bar(false)
+                    .build(ui, || {
+                        self.pointers.cursor_show.set(true);
+                        ui.text(formatcp!(
+                            "Dark Souls III Practice Tool v{}.{}.{}",
+                            pkg_version_major!() as usize,
+                            pkg_version_minor!() as usize,
+                            pkg_version_patch!() as usize,
+                        ));
+                        ui.separator();
+                        ui.text(format!(
+                            "Press the {} key to open/close the tool's\ninterface.\n\nYou can \
+                             toggle flags/launch commands by\nclicking in the UI or by \
+                             pressing\nthe hotkeys (in the parentheses).\n\nYou can configure \
+                             your tool by editing\nthe jdsd_dsiii_practice_tool.toml file with\na \
+                             text editor. If you break something,\njust download a fresh \
+                             file!\n\nThank you for using my tool! <3\n",
+                            self.config.settings.display
+                        ));
+                        ui.separator();
+                        ui.text("-- johndisandonato");
+                        ui.text("   https://twitch.tv/johndisandonato");
+                        if ui.is_item_clicked() {
+                            open::that("https://twitch.tv/johndisandonato").ok();
+                        }
+                        ui.separator();
+                        if ui.button("Close") {
+                            ui.close_current_popup();
+                            self.pointers.cursor_show.set(false);
+                        }
+                        ui.same_line();
+                        if ui.button("Submit issue") {
+                            open::that(
+                                "https://github.com/veeenu/eldenring-practice-tool/issues/new",
+                            )
+                            .ok();
+                        }
+                    });
+
+                if let Some(igt) = self.pointers.igt.read() {
                     let millis = (igt % 1000) / 10;
                     let total_seconds = igt / 1000;
                     let seconds = total_seconds % 60;
@@ -184,7 +278,15 @@ impl PracticeTool {
         }
     }
 
-    fn render_logs(&mut self, ui: &mut imgui::Ui, _flags: &ImguiRenderLoopFlags) {
+    fn render_hidden(&mut self, ui: &imgui::Ui, flags: &ImguiRenderLoopFlags) {
+        if flags.focused && !ui.io().want_capture_keyboard {
+            for w in self.widgets.iter_mut() {
+                w.interact();
+            }
+        }
+    }
+
+    fn render_logs(&mut self, ui: &imgui::Ui, _flags: &ImguiRenderLoopFlags) {
         let io = ui.io();
 
         let [dw, dh] = io.display_size;
@@ -222,22 +324,59 @@ impl PracticeTool {
             st.pop();
         }
     }
+
+    fn set_font<'a>(&mut self, ui: &'a imgui::Ui) -> imgui::FontStackToken<'a> {
+        let width = ui.io().display_size[0];
+        let font_id = self
+            .fonts
+            .as_mut()
+            .map(|fonts| {
+                if width > 2000. {
+                    fonts.big
+                } else if width > 1200. {
+                    fonts.normal
+                } else {
+                    fonts.small
+                }
+            })
+            .unwrap();
+
+        ui.push_font(font_id)
+    }
 }
 
 impl ImguiRenderLoop for PracticeTool {
     fn render(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
-        if flags.focused && self.config.settings.display.keyup() {
-            self.is_shown = !self.is_shown;
-            if !self.is_shown {
-                self.pointers.mouse_enable.write(0u8);
+        let font_token = self.set_font(ui);
+
+        if flags.focused && !ui.io().want_capture_keyboard && self.config.settings.display.keyup() {
+            let rshift = unsafe { GetAsyncKeyState(VK_RSHIFT.0 as _) < 0 };
+
+            self.ui_state = match (&self.ui_state, rshift) {
+                (UiState::Hidden, _) => UiState::Closed,
+                (_, true) => UiState::Hidden,
+                (UiState::MenuOpen, _) => UiState::Closed,
+                (UiState::Closed, _) => UiState::MenuOpen,
+            };
+
+            match &self.ui_state {
+                UiState::MenuOpen => {},
+                UiState::Closed => self.pointers.cursor_show.set(false),
+                UiState::Hidden => self.pointers.cursor_show.set(false),
             }
         }
 
-        if self.is_shown {
-            self.pointers.mouse_enable.write(1u8);
-            self.render_visible(ui, flags);
-        } else {
-            self.render_closed(ui, flags);
+        match &self.ui_state {
+            UiState::MenuOpen => {
+                self.pointers.cursor_show.set(true);
+                self.render_visible(ui, flags);
+            },
+            UiState::Closed => {
+                self.render_closed(ui, flags);
+            },
+            UiState::Hidden => {
+                self.render_hidden(ui, flags);
+            },
         }
 
         for w in &mut self.widgets {
@@ -249,6 +388,28 @@ impl ImguiRenderLoop for PracticeTool {
         }
 
         self.render_logs(ui, flags);
+        drop(font_token);
+    }
+
+    fn initialize(&mut self, ctx: &mut imgui::Context) {
+        let mut fonts = ctx.fonts();
+        self.fonts = Some(FontIDs {
+            small: fonts.add_font(&[FontSource::TtfData {
+                data: include_bytes!("../../lib/data/ComicMono.ttf"),
+                size_pixels: 11.,
+                config: None,
+            }]),
+            normal: fonts.add_font(&[FontSource::TtfData {
+                data: include_bytes!("../../lib/data/ComicMono.ttf"),
+                size_pixels: 18.,
+                config: None,
+            }]),
+            big: fonts.add_font(&[FontSource::TtfData {
+                data: include_bytes!("../../lib/data/ComicMono.ttf"),
+                size_pixels: 24.,
+                config: None,
+            }]),
+        });
     }
 }
 

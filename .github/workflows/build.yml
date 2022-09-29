@@ -1,0 +1,50 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          submodules: recursive
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          target: x86_64-pc-windows-msvc
+
+      - name: Distribution build
+        run: cargo xtask dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: jdsd_er_practice_tool
+          path: target/dist/jdsd_er_practice_tool.zip
+
+      - name: Remove nightly release asset
+        uses: flcdrg/remove-release-asset-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_id: 78556083
+          asset_name: jdsd_darksoulsiii_practice_tool.zip
+
+      - name: Upload nightly release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: https://uploads.github.com/repos/veeenu/darksoulsiii-practice-tool/releases/78556083/assets{?name,label}
+          asset_path: target/dist/jdsd_dsiii_practice_tool.zip
+          asset_name: jdsd_dsiii_practice_tool.zip
+          asset_content_type: application/zip
+          
+
+

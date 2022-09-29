@@ -1,5 +1,6 @@
+use libds3::memedit::PointerChain;
+
 use super::Widget;
-use crate::memedit::PointerChain;
 use crate::util::KeyState;
 
 #[derive(Debug)]
@@ -12,7 +13,7 @@ pub(crate) struct Souls {
 
 impl Souls {
     pub(crate) fn new(amount: u32, ptr: PointerChain<u32>, hotkey: KeyState) -> Self {
-        Souls { label: format!("Souls ({})", hotkey), ptr, hotkey, amount }
+        Souls { label: format!("Add {} Souls ({})", amount, hotkey), ptr, hotkey, amount }
     }
 
     fn add(&self) -> Option<u32> {
@@ -27,18 +28,12 @@ impl Souls {
 
 impl Widget for Souls {
     fn render(&mut self, ui: &imgui::Ui) {
+        let scale = super::scaling_factor(ui);
         let souls = self.ptr.read();
         let _token = ui.begin_disabled(souls.is_none());
 
-        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
+        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH * scale, super::BUTTON_HEIGHT]) {
             self.add();
-        }
-        ui.same_line();
-
-        if let Some(souls) = souls {
-            ui.text(format!("[{:>10}]", souls));
-        } else {
-            ui.text("[          ]");
         }
     }
 
