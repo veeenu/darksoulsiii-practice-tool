@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::ptr::null_mut;
 
 use log::debug;
@@ -7,6 +8,32 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 use crate::memedit::*;
 use crate::prelude::base_addresses::BaseAddresses;
 use crate::prelude::{Version, VERSION};
+
+//
+// Character stats
+//
+
+#[derive(Debug, Clone)]
+#[repr(C)]
+pub struct CharacterStats {
+    pub vigor: i32,
+    pub attunement: i32,
+    pub endurance: i32,
+    pub strength: i32,
+    pub dexterity: i32,
+    pub intelligence: i32,
+    pub faith: i32,
+    pub luck: i32,
+    pub vitality: i32,
+    pub level: i32,
+    pub souls: i32,
+}
+
+impl Display for CharacterStats {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "CharacterStats {{ }}")
+    }
+}
 
 pub struct PointerChains {
     pub all_no_damage: Bitflag<u8>,
@@ -31,6 +58,7 @@ pub struct PointerChains {
     pub gravity: Bitflag<u8>,
     pub speed: PointerChain<f32>,
     pub position: (PointerChain<f32>, PointerChain<[f32; 3]>),
+    pub character_stats: PointerChain<CharacterStats>,
     pub souls: PointerChain<u32>,
     pub quitout: PointerChain<u8>,
     pub cursor_show: Bitflag<u8>,
@@ -44,7 +72,7 @@ pub struct PointerChains {
 
 impl From<BaseAddresses> for PointerChains {
     fn from(b: BaseAddresses) -> Self {
-        debug!("{:?}", b);
+        debug!("{:#?}", b);
 
         let BaseAddresses {
             world_chr_man,
@@ -142,6 +170,7 @@ impl From<BaseAddresses> for PointerChains {
                 pointer_chain!(world_chr_man, 0x40, 0x28, 0x74),
                 pointer_chain!(world_chr_man, 0x40, 0x28, 0x80),
             ),
+            character_stats: pointer_chain!(base_a, 0x10, 0x44),
             souls: pointer_chain!(sprj_debug_event as _, 0x3d0, 0x74),
             map_item_man: map_item_man as _,
             spawn_item_func_ptr: spawn_item_func_ptr as _,

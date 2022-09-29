@@ -3,18 +3,18 @@ use std::ffi::c_void;
 use std::fmt::Display;
 use std::sync::LazyLock;
 
-use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, Slider, WindowFlags};
+use imgui::*;
+use libds3::memedit::Bitflag;
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer};
 
-use libds3::memedit::Bitflag;
-
 use super::Widget;
-use crate::util::{get_key_code, KeyState};
+use crate::util::KeyState;
 
-const ISP_TAG: &str = "##item-spawn";
-static ITEM_ID_TREE: LazyLock<ItemIDTree> =
-    LazyLock::new(|| serde_json::from_str(include_str!("item_ids.json")).unwrap());
+// const ISP_TAG: &str = "##item-spawn";
+// static ITEM_ID_TREE: LazyLock<ItemIDTree> =
+//     LazyLock::new(||
+// serde_json::from_str(include_str!("item_ids.json")).unwrap());
 
 static INFUSION_TYPES: [(u32, &str); 16] = [
     (0, "Normal"),
@@ -51,186 +51,189 @@ static UPGRADES: [(u32, &str); 11] = [
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-enum ItemIDTree {
-    Node { node: String, children: Vec<ItemIDTree> },
+enum ItemIDNode {
     Leaf { id: HexU32, desc: String },
+    Node { node: String, children: Vec<ItemIDNode> },
 }
 
 #[derive(Debug)]
-struct Stack<'a> {
-    stack: Vec<(&'a ItemIDTree, usize)>,
+enum ItemIDNodeRef<'a> {
+    Leaf { node: &'a str, value: u32 },
+    Node { node: &'a str, children: Vec<ItemIDNodeRef<'a>> },
 }
 
-impl<'a> Stack<'a> {
-    fn new(tree: &'a ItemIDTree) -> Self {
-        Stack { stack: vec![(tree, 0)] }
-    }
+impl<'a> ItemIDNodeRef<'a> {
+    fn render(&self, ui: &imgui::Ui, current: &mut u32, filtered: bool) {
+        match self {
+            ItemIDNodeRef::Leaf { node, value } => {
+                unsafe { imgui_sys::igUnindent(imgui_sys::igGetTreeNodeToLabelSpacing()) };
+                TreeNode::<&str>::new(*node)
+                    .label::<&str, &str>(node)
+                    .flags(if current == value {
+                        TreeNodeFlags::LEAF
+                            | TreeNodeFlags::SELECTED
+                            | TreeNodeFlags::NO_TREE_PUSH_ON_OPEN
+                    } else {
+                        TreeNodeFlags::LEAF | TreeNodeFlags::NO_TREE_PUSH_ON_OPEN
+                    })
+                    .build(ui, || {});
+                unsafe { imgui_sys::igIndent(imgui_sys::igGetTreeNodeToLabelSpacing()) };
+                if ui.is_item_clicked() {
+                    *current = *value;
+                }
+            },
+            ItemIDNodeRef::Node { node, children } => {
+                let n = TreeNode::<&str>::new(*node).label::<&str, &str>(node);
 
-    fn enter(&mut self, idx: usize) {
-        let (last_tree, last_idx) = self.stack.last_mut().unwrap();
-        match last_tree {
-            ItemIDTree::Node { children, .. } => {
-                if idx < children.len() {
-                    *last_idx = idx;
-                    if let ItemIDTree::Node { .. } = children[idx] {
-                        self.stack.push((&children[idx], 0));
+                let n = if filtered { n.opened(filtered, Condition::Always) } else { n };
+
+                n.flags(TreeNodeFlags::SPAN_AVAIL_WIDTH).build(ui, || {
+                    for node in children {
+                        node.render(ui, current, filtered);
                     }
-                }
-            },
-            ItemIDTree::Leaf { .. } => unreachable!(),
-        }
-    }
-
-    fn enter_here(&mut self) {
-        let (last_tree, last_idx) = self.stack.last_mut().unwrap();
-        let idx = *last_idx;
-        match last_tree {
-            ItemIDTree::Node { children, .. } => {
-                if let ItemIDTree::Node { .. } = children[idx] {
-                    self.stack.push((&children[idx], 0));
-                }
-            },
-            ItemIDTree::Leaf { .. } => unreachable!(),
-        }
-    }
-
-    fn exit(&mut self) {
-        if self.stack.len() > 1 {
-            self.stack.pop();
-        }
-    }
-
-    fn prev(&mut self) {
-        let (_, last_idx) = self.stack.last_mut().unwrap();
-        *last_idx = last_idx.saturating_sub(1);
-    }
-
-    fn next(&mut self) {
-        let (last_tree, last_idx) = self.stack.last_mut().unwrap();
-        match last_tree {
-            ItemIDTree::Node { children, .. } => {
-                *last_idx = usize::min(*last_idx + 1, children.len() - 1);
-            },
-            ItemIDTree::Leaf { .. } => unreachable!(),
-        }
-    }
-
-    fn current(&self) -> Option<&ItemIDTree> {
-        match self.stack.last()? {
-            &(ItemIDTree::Node { children, .. }, idx) => {
-                if idx >= children.len() {
-                    None
-                } else {
-                    Some(&children[idx])
-                }
-            },
-            _ => unreachable!(),
-        }
-    }
-
-    fn values(&self) -> impl IntoIterator<Item = (usize, bool, &ItemIDTree)> {
-        let (last_tree, last_idx) = self.stack.last().unwrap();
-        match last_tree {
-            ItemIDTree::Node { children, .. } => {
-                children.iter().enumerate().map(|(idx, node)| (idx, idx == *last_idx, node))
-            },
-            ItemIDTree::Leaf { .. } => unreachable!(), // no Leaf is ever pushed on the stack
-        }
-    }
-
-    fn breadcrumbs(&self) -> String {
-        if self.stack.len() == 1 {
-            String::from(" / ")
-        } else {
-            let mut breadcrumbs = String::new();
-            for e in self.stack[..self.stack.len()].iter().skip(1) {
-                breadcrumbs.push_str(" / ");
-                breadcrumbs.push_str(match e {
-                    (ItemIDTree::Node { node, .. }, _) => node,
-                    _ => unreachable!(),
                 });
-            }
-            breadcrumbs
+            },
         }
     }
 }
+
+impl<'a> From<&'a ItemIDNode> for ItemIDNodeRef<'a> {
+    fn from(v: &'a ItemIDNode) -> Self {
+        match v {
+            ItemIDNode::Leaf { id, desc } => ItemIDNodeRef::Leaf { node: &desc, value: id.0 },
+            ItemIDNode::Node { node, children } => ItemIDNodeRef::Node {
+                node,
+                children: children.iter().map(ItemIDNodeRef::from).collect(),
+            },
+        }
+    }
+}
+
+impl ItemIDNode {
+    fn filter(&self, filter: &str) -> Option<ItemIDNodeRef> {
+        if filter.is_empty() {
+            Some(ItemIDNodeRef::from(self))
+        } else {
+            match self {
+                ItemIDNode::Leaf { id, desc } => {
+                    if string_match(filter, desc) {
+                        Some(ItemIDNodeRef::Leaf { node: desc, value: id.0 })
+                    } else {
+                        None
+                    }
+                },
+                ItemIDNode::Node { node, children } => {
+                    let children: Vec<_> = children
+                        .iter()
+                        .filter_map(|c| c.filter(filter).map(ItemIDNodeRef::from))
+                        .collect();
+                    if children.is_empty() {
+                        None
+                    } else {
+                        Some(ItemIDNodeRef::Node { node, children })
+                    }
+                },
+            }
+        }
+    }
+}
+
+fn string_match(needle: &str, haystack: &str) -> bool {
+    let needle = needle.chars().flat_map(char::to_lowercase);
+    let mut haystack = haystack.chars().flat_map(char::to_lowercase);
+
+    'o: for c in needle {
+        for d in &mut haystack {
+            if c == d {
+                continue 'o;
+            }
+        }
+        return false;
+    }
+    true
+}
+
+const ISP_TAG: &str = "##item-spawn";
+static ITEM_ID_TREE: LazyLock<Vec<ItemIDNode>> =
+    LazyLock::new(|| serde_json::from_str(include_str!("item_ids.json")).unwrap());
 
 #[derive(Debug)]
 pub(crate) struct ItemSpawner<'a> {
-    label: String,
-    key_back: KeyState,
-    key_close: KeyState,
-    key_load: KeyState,
-    key_down: KeyState,
-    key_enter: KeyState,
-    key_up: KeyState,
-    stack: Stack<'a>,
-    breadcrumbs: String,
-    spawn_instance: ItemSpawnInstance,
+    func_ptr: usize,
+    map_item_man: usize,
+    hotkey_load: KeyState,
+    hotkey_close: KeyState,
     sentinel: Bitflag<u8>,
-    infusion_idx: usize,
-    upgrade_idx: usize,
+
+    label_load: String,
+    label_close: String,
+
+    qty: u32,
+    item_id: u32,
+    durability: u32,
+    upgrade: usize,
+    infusion_type: usize,
+
+    filter_string: String,
     log: Option<Vec<String>>,
+    item_id_tree: Vec<ItemIDNodeRef<'a>>,
 }
 
-impl<'a> ItemSpawner<'a> {
+impl ItemSpawner<'_> {
     pub(crate) fn new(
-        spawn_item_func_ptr: u64,
-        map_item_man: u64,
+        func_ptr: usize,
+        map_item_man: usize,
         sentinel: Bitflag<u8>,
-        key_load: KeyState,
-        key_back: KeyState,
-        key_close: KeyState,
+        hotkey_load: KeyState,
+        hotkey_close: KeyState,
     ) -> Self {
-        let label = format!("Item Spawn (spawn with {})", key_load);
-        let stack = Stack::new(&ITEM_ID_TREE);
-
-        let spawn_instance = ItemSpawnInstance {
-            spawn_item_func_ptr,
+        let label_load = format!("Spawn item ({})", hotkey_load);
+        let label_close = format!("Close ({})", hotkey_close);
+        ItemSpawner {
+            func_ptr,
             map_item_man,
+            hotkey_load,
+            hotkey_close,
+            label_load,
+            label_close,
+            sentinel,
             qty: 1,
             durability: 100,
-            item_id: 0,
-            infusion: 0,
+            item_id: 0x40000000 + 2919,
             upgrade: 0,
-        };
-
-        ItemSpawner {
-            label,
-            key_back,
-            key_close,
-            key_load,
-            key_down: KeyState::new(get_key_code("down").unwrap()),
-            key_up: KeyState::new(get_key_code("up").unwrap()),
-            key_enter: KeyState::new(get_key_code("return").unwrap()),
-            stack,
+            infusion_type: 0,
+            filter_string: String::new(),
             log: None,
-            breadcrumbs: " /".to_string(),
-            spawn_instance,
-            sentinel,
-            infusion_idx: 0,
-            upgrade_idx: 0,
+            item_id_tree: ITEM_ID_TREE.iter().map(ItemIDNodeRef::from).collect(),
         }
     }
 
-    fn spawn_item(&mut self) {
-        let id = if let Some(ItemIDTree::Leaf { id, desc }) = self.stack.current() {
-            Some((id.0, desc.clone()))
-        } else {
-            None
-        };
-
+    fn spawn(&mut self) {
         if self.sentinel.get().is_none() {
             self.write_log("Not spawning item when not in game".into());
             return;
         }
 
-        if let Some((id, desc)) = id {
-            self.spawn_instance.item_id = id;
-            self.spawn_instance.infusion = INFUSION_TYPES[self.infusion_idx].0;
-            self.spawn_instance.upgrade = UPGRADES[self.upgrade_idx].0;
-            self.write_log(format!("Spawning {}: {}", desc, self.spawn_instance));
-            unsafe { self.spawn_instance.spawn() };
+        let upgrade = UPGRADES[self.upgrade].0;
+        let infusion = INFUSION_TYPES[self.infusion_type].0;
+
+        let i = ItemSpawnInstance {
+            spawn_item_func_ptr: self.func_ptr as _,
+            map_item_man: self.map_item_man as _,
+            qty: self.qty,
+            durability: self.durability,
+            upgrade,
+            infusion,
+            item_id: self.item_id,
+        };
+
+        self.write_log(format!(
+            "Spawning {} #{} {} {}",
+            i.qty, self.item_id, UPGRADES[self.upgrade].1, INFUSION_TYPES[self.infusion_type].1,
+        ));
+
+        unsafe {
+            i.spawn();
         }
     }
 
@@ -246,104 +249,69 @@ impl<'a> ItemSpawner<'a> {
     }
 }
 
-impl<'a> Widget for ItemSpawner<'a> {
+impl Widget for ItemSpawner<'_> {
     fn render(&mut self, ui: &imgui::Ui) {
-        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
+        if ui.button_with_size("Spawn item", [
+            super::BUTTON_WIDTH * super::scaling_factor(ui),
+            super::BUTTON_HEIGHT,
+        ]) {
             ui.open_popup(ISP_TAG);
         }
-        let [cx, cy] = ui.cursor_pos();
-        let [wx, wy] = ui.window_pos();
-        let [x, y] = [cx + wx, cy + wy - super::BUTTON_HEIGHT];
-        unsafe {
-            imgui_sys::igSetNextWindowPos(
-                imgui_sys::ImVec2 { x, y },
-                Condition::Always as _,
-                imgui_sys::ImVec2 { x: 0., y: 0. },
-            )
-        };
 
         let style_tokens =
-            [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, [0., 0., 0., 0.])];
+            [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
 
         if let Some(_token) = PopupModal::new(ISP_TAG)
             .flags(
                 WindowFlags::NO_TITLE_BAR
                     | WindowFlags::NO_RESIZE
                     | WindowFlags::NO_MOVE
-                    | WindowFlags::NO_SCROLLBAR
-                    | WindowFlags::ALWAYS_AUTO_RESIZE,
+                    | WindowFlags::NO_SCROLLBAR,
             )
             .begin_popup(ui)
         {
-            ChildWindow::new("##item-spawn-breadcrumbs").size([240., 14.]).build(ui, || {
-                ui.text(&self.breadcrumbs);
-                ui.set_scroll_x(ui.scroll_max_x());
-            });
+            let button_height = super::BUTTON_HEIGHT * super::scaling_factor(ui);
 
-            ListBox::new("##item-spawn-list").size([240., 100.]).build(ui, || {
-                if Selectable::new(format!(".. Up one dir ({})", self.key_back)).build(ui) {
-                    self.stack.exit();
+            {
+                let _tok = ui.push_item_width(-1.);
+                if InputText::new(ui, "##item-spawn-filter", &mut self.filter_string)
+                    .hint("Filter...")
+                    .build()
+                {
+                    self.item_id_tree =
+                        ITEM_ID_TREE.iter().filter_map(|n| n.filter(&self.filter_string)).collect();
                 }
-
-                let center_scroll_y = if self.key_down.keyup() {
-                    self.stack.next();
-                    true
-                } else if self.key_up.keyup() {
-                    self.stack.prev();
-                    true
-                } else {
-                    false
-                };
-
-                if self.key_enter.keyup() {
-                    self.stack.enter_here();
-                }
-
-                let mut goto: Option<usize> = None;
-                for (idx, is_selected, i) in self.stack.values() {
-                    let repr = match i {
-                        ItemIDTree::Node { node, .. } => node,
-                        ItemIDTree::Leaf { desc, .. } => desc,
-                    };
-                    if Selectable::new(repr).selected(is_selected).build(ui) {
-                        goto = Some(idx);
-                    }
-
-                    if center_scroll_y && is_selected {
-                        ui.set_scroll_here_y();
-                    }
-                }
-
-                if let Some(idx) = goto {
-                    self.stack.enter(idx);
-                    self.breadcrumbs = self.stack.breadcrumbs();
+            }
+            ChildWindow::new("##item-spawn-list").size([400., 200.]).build(ui, || {
+                for node in &self.item_id_tree {
+                    node.render(ui, &mut self.item_id, !self.filter_string.is_empty());
                 }
             });
 
-            Slider::new("Qty", 0, 256).build(ui, &mut self.spawn_instance.qty);
-            Slider::new("Dur", 0, 9999).build(ui, &mut self.spawn_instance.durability);
-
-            ui.set_next_item_width(240.);
-
+            ui.set_next_item_width(195.);
             ui.combo(
-                "##item-spawn-infusion",
-                &mut self.infusion_idx,
+                "##item-spawn-infusion-type",
+                &mut self.infusion_type,
                 &INFUSION_TYPES,
                 |(_, label)| Cow::Borrowed(label),
             );
 
-            ui.set_next_item_width(240.);
-
-            ui.combo("##item-spawn-upgrade", &mut self.upgrade_idx, &UPGRADES, |(_, label)| {
+            ui.same_line();
+            ui.set_next_item_width(195.);
+            ui.combo("##item-spawn-upgrade", &mut self.upgrade, &UPGRADES, |(_, label)| {
                 Cow::Borrowed(label)
             });
 
-            if ui.button_with_size(format!("Spawn item ({})", self.key_load), [240., 20.]) {
-                self.spawn_item();
+            Slider::new("Qty", 1, 99).build(ui, &mut self.qty);
+            Slider::new("Dur", 0, 9999).build(ui, &mut self.durability);
+            if self.hotkey_load.keyup()
+                || ui.button_with_size(&self.label_load, [400., button_height])
+            {
+                self.spawn();
             }
 
-            if self.key_close.keyup()
-                || ui.button_with_size(format!("Close ({})", self.key_close), [240., 20.])
+            if self.hotkey_close.keyup()
+                || ui.button_with_size(&self.label_close, [400., button_height])
             {
                 ui.close_current_popup();
             }
@@ -352,17 +320,14 @@ impl<'a> Widget for ItemSpawner<'a> {
         style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
-    fn interact(&mut self) {
-        if self.key_back.keyup() {
-            self.stack.exit();
-            self.breadcrumbs = self.stack.breadcrumbs();
-        } else if self.key_load.keyup() {
-            self.spawn_item();
-        }
-    }
-
     fn log(&mut self) -> Option<Vec<String>> {
         self.log.take()
+    }
+
+    fn interact(&mut self) {
+        if self.hotkey_load.keyup() {
+            self.spawn();
+        }
     }
 }
 
