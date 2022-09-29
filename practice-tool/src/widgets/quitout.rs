@@ -18,7 +18,9 @@ impl Quitout {
 
 impl Widget for Quitout {
     fn render(&mut self, ui: &imgui::Ui) {
-        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
+        let scale = super::scaling_factor(ui);
+
+        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH * scale, super::BUTTON_HEIGHT]) {
             self.ptr.write(1);
         }
     }
@@ -28,8 +30,4 @@ impl Widget for Quitout {
             self.ptr.write(1);
         }
     }
-
-    // fn interact_ui(&mut self) {
-    //     self.ptr.write(1);
-    // }
 }
