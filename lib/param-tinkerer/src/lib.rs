@@ -34,7 +34,7 @@ impl ImguiRenderLoop for ParamTinkerer {
         if ui.is_key_index_released(0x50) {
             // P key
             self.shown = !self.shown;
-            self.pointers.mouse_enable.write(if self.shown { 1 } else { 0 });
+            self.pointers.cursor_show.set(self.shown);
         }
 
         if !self.shown {

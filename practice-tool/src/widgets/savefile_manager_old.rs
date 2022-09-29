@@ -1,12 +1,9 @@
 use std::cmp::Ordering;
-use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
-use imgui::*;
-use log::error;
+use imgui::{ChildWindow, Condition, ListBox, PopupModal, Selectable, WindowFlags};
 
-use super::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
+use super::Widget;
 use crate::util::{get_key_code, KeyState};
 
 const SFM_TAG: &str = "##savefile-manager";
@@ -40,10 +37,7 @@ pub(crate) struct SavefileManager {
     dir_stack: DirStack,
     savefile_path: PathBuf,
     breadcrumbs: String,
-    savefile_name: String,
     log: Option<String>,
-
-    input_edited: bool,
 }
 
 impl SavefileManager {
@@ -84,68 +78,44 @@ impl SavefileManager {
             key_enter: KeyState::new(get_key_code("return").unwrap()),
             dir_stack,
             savefile_path,
-            savefile_name: String::new(),
             log: None,
-            breadcrumbs: "/".to_string(),
-            input_edited: false,
+            breadcrumbs: " /".to_string(),
         })
     }
 
     fn load_savefile(&mut self) {
-        if let Some(src_path) = self.dir_stack.current() {
-            if src_path.is_file() {
-                self.log = match load_savefile(src_path, &self.savefile_path) {
-                    Ok(()) => Some(format!(
-                        "Loaded {}/{}",
-                        if self.breadcrumbs == "/" { "" } else { &self.breadcrumbs },
-                        src_path.file_name().unwrap().to_str().unwrap()
-                    )),
-                    Err(e) => Some(format!("Error loading savefile: {}", e)),
-                };
-            }
-        } else {
-            error!("No current path! Can't load savefile.");
+        let src_path = self.dir_stack.current();
+        if src_path.is_file() {
+            self.log = match load_savefile(src_path, &self.savefile_path) {
+                Ok(()) => Some(format!(
+                    "Loaded {} / {}",
+                    self.breadcrumbs,
+                    src_path.file_name().unwrap().to_str().unwrap()
+                )),
+                Err(e) => Some(format!("Error loading savefile: {}", e)),
+            };
         }
-    }
-
-    fn import_savefile(&mut self) {
-        if self.savefile_name.is_empty() {
-            self.log = Some(String::from("Cannot save to empty filename"));
-            return;
-        }
-        if self.savefile_name.contains('/') || self.savefile_name.contains('\\') {
-            self.log = Some(String::from("Savefile name cannot contain path separator"));
-            return;
-        }
-        let mut dst_path = PathBuf::from(self.dir_stack.path());
-        dst_path.push(&self.savefile_name);
-        self.log = match import_savefile(&dst_path, &self.savefile_path) {
-            Ok(()) => {
-                self.savefile_name.clear();
-                self.dir_stack.refresh();
-                Some(format!(
-                    "Imported {}/{}",
-                    if self.breadcrumbs == "/" { "" } else { &self.breadcrumbs },
-                    dst_path.file_name().unwrap().to_str().unwrap()
-                ))
-            },
-            Err(e) => Some(format!("Error importing savefile: {}", e)),
-        };
     }
 }
 
 impl Widget for SavefileManager {
     fn render(&mut self, ui: &imgui::Ui) {
-        let scale = scaling_factor(ui);
-        let button_width = BUTTON_WIDTH * scale;
-
-        if ui.button_with_size(&self.label, [button_width, BUTTON_HEIGHT]) {
+        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH, super::BUTTON_HEIGHT]) {
             ui.open_popup(SFM_TAG);
-            self.dir_stack.refresh();
         }
+        let [cx, cy] = ui.cursor_pos();
+        let [wx, wy] = ui.window_pos();
+        let [x, y] = [cx + wx, cy + wy];
+        unsafe {
+            imgui_sys::igSetNextWindowPos(
+                imgui_sys::ImVec2 { x, y },
+                Condition::Always as _,
+                imgui_sys::ImVec2 { x: 0., y: 0. },
+            )
+        };
 
         let style_tokens =
-            [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
+            [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, [0., 0., 0., 0.])];
 
         if let Some(_token) = PopupModal::new(SFM_TAG)
             .flags(
@@ -157,12 +127,10 @@ impl Widget for SavefileManager {
             )
             .begin_popup(ui)
         {
-            ChildWindow::new("##savefile-manager-breadcrumbs")
-                .size([button_width, 20. * scale])
-                .build(ui, || {
-                    ui.text(&self.breadcrumbs);
-                    ui.set_scroll_x(ui.scroll_max_x());
-                });
+            ChildWindow::new("##savefile-manager-breadcrumbs").size([240., 14.]).build(ui, || {
+                ui.text(&self.breadcrumbs);
+                ui.set_scroll_x(ui.scroll_max_x());
+            });
 
             let center_scroll_y = if self.key_down.keyup() {
                 self.dir_stack.next();
@@ -178,11 +146,9 @@ impl Widget for SavefileManager {
                 self.dir_stack.enter();
             }
 
-            ListBox::new(SFM_TAG).size([button_width, 200. * scale]).build(ui, || {
+            ListBox::new(SFM_TAG).size([240., 100.]).build(ui, || {
                 if Selectable::new(format!(".. Up one dir ({})", self.key_back)).build(ui) {
                     self.dir_stack.exit();
-                    self.breadcrumbs = self.dir_stack.breadcrumbs();
-                    self.dir_stack.refresh();
                 }
 
                 let mut goto: Option<usize> = None;
@@ -203,47 +169,14 @@ impl Widget for SavefileManager {
                 }
             });
 
-            if ui.button_with_size(format!("Load savefile ({})", self.key_load), [
-                button_width,
-                BUTTON_HEIGHT,
-            ]) {
+            if ui.button_with_size(format!("Load savefile ({})", self.key_load), [240., 20.]) {
                 self.load_savefile();
             }
 
-            ui.separator();
-
-            {
-                let _tok = ui.push_item_width(button_width * 174. / 240.);
-                ui.input_text("##savefile_name", &mut self.savefile_name).hint("file name").build();
-                self.input_edited = ui.is_item_active();
-            }
-
-            ui.same_line();
-
-            if ui.button_with_size("Import", [button_width * 58. / 240., BUTTON_HEIGHT]) {
-                self.import_savefile();
-            }
-
-            ui.separator();
-
-            if ui.button_with_size("Show folder", [button_width, BUTTON_HEIGHT]) {
-                let path = self.dir_stack.path().to_owned();
-                let path = if path.is_file() { path.parent().unwrap() } else { &path };
-
-                if let Err(e) =
-                    Command::new("explorer.exe").arg(OsStr::new(path.to_str().unwrap())).spawn()
-                {
-                    self.log = Some(format!("Couldn't show folder: {}", e));
-                };
-            }
-
-            if ui.button_with_size(format!("Close ({})", self.key_close), [
-                button_width,
-                BUTTON_HEIGHT,
-            ]) || self.key_close.keyup()
+            if ui.button_with_size(format!("Close ({})", self.key_close), [240., 20.])
+                || self.key_close.keyup()
             {
                 ui.close_current_popup();
-                self.dir_stack.refresh();
             }
         }
 
@@ -251,13 +184,10 @@ impl Widget for SavefileManager {
     }
 
     fn interact(&mut self) {
-        if self.input_edited {
-            return;
-        }
-        if self.key_back.keydown() {
+        if self.key_back.keyup() {
             self.dir_stack.exit();
             self.breadcrumbs = self.dir_stack.breadcrumbs();
-        } else if self.key_load.keydown() {
+        } else if self.key_load.keyup() {
             self.load_savefile();
         }
     }
@@ -272,11 +202,10 @@ impl Widget for SavefileManager {
 struct DirEntry {
     list: Vec<(PathBuf, String)>,
     cursor: usize,
-    path: PathBuf,
 }
 
 impl DirEntry {
-    fn new(path: &Path, cursor: Option<usize>) -> DirEntry {
+    fn new(path: &Path) -> DirEntry {
         let mut list = DirStack::ls(path).unwrap();
 
         list.sort_by(|a, b| {
@@ -291,7 +220,7 @@ impl DirEntry {
             }
         });
 
-        let list: Vec<_> = list
+        let list = list
             .into_iter()
             .map(|a| {
                 let repr = if a.is_dir() {
@@ -303,25 +232,15 @@ impl DirEntry {
             })
             .collect();
 
-        let max_len = list.len();
-
-        DirEntry { list, cursor: cursor.unwrap_or(0).min(max_len), path: PathBuf::from(path) }
+        DirEntry { list, cursor: 0 }
     }
 
-    fn values(&self, directories_only: bool) -> impl IntoIterator<Item = (usize, bool, &str)> {
-        self.list
-            .iter()
-            .filter(move |(d, _)| !directories_only || d.is_dir())
-            .enumerate()
-            .map(|(i, f)| (i, i == self.cursor, f.1.as_str()))
+    fn values(&self) -> impl IntoIterator<Item = (usize, bool, &str)> {
+        self.list.iter().enumerate().map(|(i, f)| (i, i == self.cursor, f.1.as_str()))
     }
 
-    fn current(&self) -> Option<&PathBuf> {
-        self.list.get(self.cursor).as_ref().map(|i| &i.0)
-    }
-
-    fn path(&self) -> &PathBuf {
-        &self.path
+    fn current(&self) -> &PathBuf {
+        &self.list[self.cursor].0
     }
 
     fn goto(&mut self, idx: usize) {
@@ -341,23 +260,25 @@ impl DirEntry {
 
 #[derive(Debug)]
 struct DirStack {
-    top: DirEntry,
     stack: Vec<DirEntry>,
 }
 
 impl DirStack {
     fn new(path: &Path) -> Result<Self, String> {
-        Ok(DirStack { top: DirEntry::new(path, None), stack: Vec::new() })
+        let stack = vec![DirEntry::new(path)];
+
+        Ok(DirStack { stack })
     }
 
     fn enter(&mut self) {
-        let new_entry = self
-            .stack
-            .last()
-            .unwrap_or(&self.top)
-            .current()
-            .filter(|current_entry| current_entry.is_dir())
-            .map(|current_entry| DirEntry::new(current_entry, None));
+        let new_entry = {
+            let current_entry = self.stack.last().unwrap().current();
+            if current_entry.is_dir() {
+                Some(DirEntry::new(current_entry))
+            } else {
+                None
+            }
+        };
 
         if let Some(e) = new_entry {
             self.stack.push(e);
@@ -365,7 +286,7 @@ impl DirStack {
     }
 
     fn exit(&mut self) -> bool {
-        if self.stack.is_empty() {
+        if self.stack.len() <= 1 {
             true
         } else {
             self.stack.pop().unwrap();
@@ -374,51 +295,36 @@ impl DirStack {
     }
 
     fn breadcrumbs(&self) -> String {
-        if self.stack.is_empty() {
-            String::from("/")
+        if self.stack.len() == 1 {
+            String::from(" / ")
         } else {
             let mut breadcrumbs = String::new();
-            for e in &self.stack {
-                breadcrumbs.push('/');
-                breadcrumbs.push_str(e.path().file_name().unwrap().to_str().unwrap());
+            for e in self.stack[..self.stack.len() - 1].iter() {
+                breadcrumbs.push_str(" / ");
+                breadcrumbs.push_str(e.current().file_name().unwrap().to_str().unwrap());
             }
             breadcrumbs
         }
     }
 
     fn values(&self) -> impl IntoIterator<Item = (usize, bool, &str)> {
-        match self.stack.last() {
-            Some(d) => d.values(false).into_iter(),
-            None => self.top.values(true).into_iter(),
-        }
+        self.stack.last().unwrap().values()
     }
 
-    fn current(&self) -> Option<&PathBuf> {
-        self.stack.last().unwrap_or(&self.top).current()
-    }
-
-    fn path(&self) -> &PathBuf {
-        self.stack.last().unwrap_or(&self.top).path()
+    fn current(&self) -> &PathBuf {
+        self.stack.last().unwrap().current()
     }
 
     fn goto(&mut self, idx: usize) {
-        self.stack.last_mut().unwrap_or(&mut self.top).goto(idx);
+        self.stack.last_mut().unwrap().goto(idx);
     }
 
     fn prev(&mut self) {
-        self.stack.last_mut().unwrap_or(&mut self.top).prev();
+        self.stack.last_mut().unwrap().prev();
     }
 
     fn next(&mut self) {
-        self.stack.last_mut().unwrap_or(&mut self.top).next();
-    }
-
-    fn refresh(&mut self) {
-        if let Some(l) = self.stack.last_mut() {
-            *l = DirEntry::new(l.path(), Some(l.cursor));
-        } else {
-            self.top = DirEntry::new(self.top.path(), Some(self.top.cursor));
-        }
+        self.stack.last_mut().unwrap().next();
     }
 
     // TODO SAFETY
@@ -452,11 +358,5 @@ fn get_savefile_path() -> Result<PathBuf, String> {
 fn load_savefile(src: &Path, dest: &Path) -> Result<(), std::io::Error> {
     let buf = std::fs::read(src)?;
     std::fs::write(dest, &buf)?;
-    Ok(())
-}
-
-fn import_savefile(src: &Path, dest: &Path) -> Result<(), std::io::Error> {
-    let buf = std::fs::read(dest)?;
-    std::fs::write(src, &buf)?;
     Ok(())
 }

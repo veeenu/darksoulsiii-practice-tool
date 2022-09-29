@@ -491,7 +491,7 @@ pub(crate) fn get_base_addresses() {
                 println!("\nVERSION {}: {:?}", version.to_fromsoft_string(), exe);
 
                 let (_base_addr, bytes) = get_base_module_bytes(&exe).unwrap();
-                let aobs = find_aobs(bytes.clone());
+                let aobs = find_aobs(bytes);
                 processed_versions.insert(version);
                 Some(VersionData { version, aobs })
             }

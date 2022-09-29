@@ -32,7 +32,7 @@ pub struct PointerChains {
     pub position: (PointerChain<f32>, PointerChain<[f32; 3]>),
     pub souls: PointerChain<u32>,
     pub quitout: PointerChain<u8>,
-    pub mouse_enable: PointerChain<u8>,
+    pub cursor_show: Bitflag<u8>,
     pub igt: PointerChain<u32>,
 
     #[allow(unused)]
@@ -139,10 +139,16 @@ impl From<BaseAddresses> for PointerChains {
             map_item_man: map_item_man as _,
             spawn_item_func_ptr: spawn_item_func_ptr as _,
             world_chr_man,
-            mouse_enable: pointer_chain!(menu_man as _, mouse_enable_offs as _),
+            cursor_show: bitflag!(0b1; menu_man as _, mouse_enable_offs as _),
             igt: pointer_chain!(base_a as _, offs_igt),
             quitout: pointer_chain!(menu_man as _, 0x250),
         }
+    }
+}
+
+impl Default for PointerChains {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
