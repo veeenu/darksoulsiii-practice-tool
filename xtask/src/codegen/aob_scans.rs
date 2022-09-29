@@ -478,7 +478,7 @@ fn codegen_base_addresses_path() -> PathBuf {
         .join("base_addresses.rs")
 }
 
-pub(crate) fn get_base_addresses() {
+pub(crate) fn codegen_base_addresses() {
     let mut processed_versions: HashSet<Version> = HashSet::new();
 
     let mut version_data = patches_paths()

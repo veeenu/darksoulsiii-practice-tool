@@ -15,6 +15,7 @@ pub(crate) fn codegen() -> Result<()> {
     checkout_paramdex()?;
     run_python_script()?;
     codegen_param_names()?;
+    aob_scans::codegen_base_addresses();
 
     Ok(())
 }

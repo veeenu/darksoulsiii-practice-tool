@@ -30,7 +30,6 @@ fn main() -> Result<()> {
 
     let task = env::args().nth(1);
     match task.as_deref() {
-        Some("cg_base_addrs") => codegen::aob_scans::get_base_addresses(),
         Some("dist") => dist()?,
         Some("run") => run()?,
         Some("codegen") => codegen::codegen()?,
