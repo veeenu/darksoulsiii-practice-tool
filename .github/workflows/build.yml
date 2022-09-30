@@ -26,8 +26,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: jdsd_er_practice_tool
-          path: target/dist/jdsd_er_practice_tool.zip
+          name: jdsd_dsiii_practice_tool
+          path: target/dist/jdsd_dsiii_practice_tool.zip
 
       - name: Remove nightly release asset
         uses: flcdrg/remove-release-asset-action@v1
