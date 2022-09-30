@@ -536,6 +536,7 @@ version = "1.3.0"
 dependencies = [
  "chrono",
  "const_format",
+ "dll-syringe",
  "dynasm",
  "dynasmrt",
  "hex",
@@ -711,8 +712,7 @@ dependencies = [
 [[package]]
 name = "dll-syringe"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9bc7c64d025965e51bc0f6208ebdef936f962dd0e14a44f4dbb19e082ac18898"
+source = "git+https://github.com/veeenu/dll-syringe?branch=bump-ntapi#86258fca220bcecb0a25587bb663db98af8a854c"
 dependencies = [
  "bincode",
  "cstr",
@@ -1353,7 +1353,7 @@ dependencies = [
  "libc",
  "log",
  "miow",
- "ntapi",
+ "ntapi 0.3.7",
  "winapi",
 ]
 
@@ -1554,6 +1554,15 @@ name = "ntapi"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c28774a7fd2fbb4f0babd8237ce554b73af68021b5f695a3cebd6c59bac0980f"
+dependencies = [
+ "winapi",
+]
+
+[[package]]
+name = "ntapi"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc51db7b362b205941f71232e56c625156eb9a929f8cf74a428fd5bc094a4afc"
 dependencies = [
  "winapi",
 ]
@@ -2512,14 +2521,14 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.24.7"
+version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54cb4ebf3d49308b99e6e9dc95e989e2fdbdc210e4f67c39db0bb89ba927001c"
+checksum = "7890fff842b8db56f2033ebee8f6efe1921475c3830c115995552914fb967580"
 dependencies = [
  "cfg-if 1.0.0",
  "core-foundation-sys 0.8.3",
  "libc",
- "ntapi",
+ "ntapi 0.4.0",
  "once_cell",
  "winapi",
 ]

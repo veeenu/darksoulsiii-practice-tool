@@ -35,7 +35,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           release_id: 78556083
-          asset_name: jdsd_darksoulsiii_practice_tool.zip
+          asset_name: jdsd_dsiii_practice_tool.zip
 
       - name: Upload nightly release asset
         uses: actions/upload-release-asset@v1

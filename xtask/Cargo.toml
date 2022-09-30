@@ -8,7 +8,7 @@ widestring = "0.5.1"
 zip = "0.5.13"
 regex = "1.5.5"
 serde_json = "1.0.73"
-dll-syringe = "0.13.1"
+dll-syringe = { git = "https://github.com/veeenu/dll-syringe", branch = "bump-ntapi" }
 rayon = "1.5.3"
 heck = "0.4.0"
 textwrap = "0.15.0"
