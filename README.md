@@ -14,7 +14,7 @@ To run the tool, extract all files from the zip archive and double-click the
 `.exe` file he tool will automatically appear over the game, and it can be
 toggled by pressing `0`.
 
-You can download the **latest stable release** [here](https://github.com/veeenu/eldenring-practice-tool/releases/latest).
+You can download the **latest stable release** [here](https://github.com/veeenu/darksoulsiii-practice-tool/releases/latest).
 
 If you need help, **please first read** the [Known Issues](#known-issues) and [FAQ](#troubleshooting--faq) sections for
 solutions, or ways to get in touch.

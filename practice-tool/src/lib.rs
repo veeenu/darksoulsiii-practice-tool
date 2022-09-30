@@ -248,7 +248,7 @@ impl PracticeTool {
                         ui.same_line();
                         if ui.button("Submit issue") {
                             open::that(
-                                "https://github.com/veeenu/eldenring-practice-tool/issues/new",
+                                "https://github.com/veeenu/darksoulsiii-practice-tool/issues/new",
                             )
                             .ok();
                         }
