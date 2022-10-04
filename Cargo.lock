@@ -712,7 +712,7 @@ dependencies = [
 [[package]]
 name = "dll-syringe"
 version = "0.13.1"
-source = "git+https://github.com/veeenu/dll-syringe?branch=bump-ntapi#86258fca220bcecb0a25587bb663db98af8a854c"
+source = "git+https://github.com/veeenu/dll-syringe?branch=bump-ntapi#3bf61f2e9148482f36ee85502e66d7fd1fedda4f"
 dependencies = [
  "bincode",
  "cstr",
@@ -1177,9 +1177,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.133"
+version = "0.2.134"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0f80d65747a3e43d1596c7c5492d95d5edddaabd45a7fcdb02b95f644164966"
+checksum = "329c933548736bc49fd575ee68c89e8be4d260064184389a5b77517cddd99ffb"
 
 [[package]]
 name = "libds3"
@@ -2727,9 +2727,9 @@ checksum = "dcc811dc4066ac62f84f11307873c4850cb653bfa9b1719cee2bd2204a4bc5dd"
 
 [[package]]
 name = "unicode-linebreak"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba853b89cad55680dd3cf06f2798cb1ad8d483f0e2dfa14138d7e789ecee5c4e"
+checksum = "c5faade31a542b8b35855fff6e8def199853b2da8da256da52f52f1316ee3137"
 dependencies = [
  "hashbrown",
  "regex",
