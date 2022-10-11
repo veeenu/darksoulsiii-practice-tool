@@ -712,7 +712,7 @@ dependencies = [
 [[package]]
 name = "dll-syringe"
 version = "0.13.1"
-source = "git+https://github.com/veeenu/dll-syringe?branch=bump-ntapi#3bf61f2e9148482f36ee85502e66d7fd1fedda4f"
+source = "git+https://github.com/OpenByteDev/dll-syringe#4df16ccc9c114d47e62b0b47194890622f195039"
 dependencies = [
  "bincode",
  "cstr",

@@ -10,6 +10,7 @@ use crate::widgets::character_stats::CharacterStatsEdit;
 use crate::widgets::cycle_speed::CycleSpeed;
 use crate::widgets::flag::Flag;
 use crate::widgets::item_spawn::ItemSpawner;
+use crate::widgets::nudge_pos::NudgePosition;
 use crate::widgets::position::SavePosition;
 use crate::widgets::quitout::Quitout;
 use crate::widgets::savefile_manager::SavefileManager;
@@ -70,6 +71,11 @@ enum CfgCommand {
         #[serde(rename = "quitout")]
         hotkey: KeyState,
     },
+    NudgePosition {
+        nudge: f32,
+        nudge_up: KeyState,
+        nudge_down: KeyState,
+    },
 }
 
 #[derive(Deserialize, Debug)]
@@ -127,6 +133,14 @@ impl Config {
                     hotkey.clone(),
                     modifier.clone(),
                 )),
+                CfgCommand::NudgePosition { nudge, nudge_up, nudge_down } => {
+                    Box::new(NudgePosition::new(
+                        chains.position.clone().1,
+                        *nudge,
+                        nudge_up.clone(),
+                        nudge_down.clone(),
+                    ))
+                },
                 CfgCommand::CharacterStats { hotkey_open, hotkey_close } => {
                     Box::new(CharacterStatsEdit::new(
                         hotkey_open.clone(),

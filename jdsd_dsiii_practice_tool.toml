@@ -22,6 +22,7 @@ commands = [
   { flag = "debug_sphere_1", hotkey = "F9" },
   { flag = "debug_sphere_2", hotkey = "F9" },
   { flag = "gravity", hotkey = "F10" },
+  { nudge = 1.0, nudge_up = "[", nudge_down = "]" },
   { position = "H", modifier = "rshift" },
   { position = "J", modifier = "rshift" },
   { position = "K", modifier = "rshift" },
