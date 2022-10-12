@@ -7,8 +7,8 @@ use log::{error, info};
 pub use param_data::*;
 use parking_lot::RwLock;
 use widestring::U16CStr;
-use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 use windows::core::PCSTR;
+use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 
 use crate::prelude::base_addresses::*;
 use crate::version::VERSION;
@@ -87,8 +87,8 @@ impl Params {
             .as_ref()
             .ok_or_else(|| "Invalid param base address".to_string())?;
         // let base: &ParamMaster =
-        //     std::ptr::read(BaseAddresses::from(*VERSION).param as *const *const ParamMaster)
-        //         .as_ref()
+        //     std::ptr::read(BaseAddresses::from(*VERSION).param as *const *const
+        // ParamMaster)         .as_ref()
         //         .ok_or_else(|| "Invalid param base address".to_string())?;
         info!("b");
 

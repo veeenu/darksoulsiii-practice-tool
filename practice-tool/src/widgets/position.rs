@@ -94,8 +94,8 @@ impl Widget for SavePosition {
         //     saved_pos[1], saved_pos[3], saved_pos[2], saved_pos[0],
         // ));
         // ui.same_line();
-        // if ui.small_button(format!("Save pos ({} + {})", self.modifier, self.hotkey)) {
-        //     self.save_position();
+        // if ui.small_button(format!("Save pos ({} + {})", self.modifier,
+        // self.hotkey)) {     self.save_position();
         // }
     }
 

@@ -54,16 +54,17 @@ const AOBS: &[(&str, &str, usize, usize)] = &[
         1,
         5,
     ),
-    ("Param", "48 8B 0D ?? ?? ?? ?? 48 85 C9 74 0B 4C 8B C0 48 8B D7", 3, 7)
+    ("Param", "48 8B 0D ?? ?? ?? ?? 48 85 C9 74 0B 4C 8B C0 48 8B D7", 3, 7),
 ];
 
 static AOBS_README: LazyLock<Vec<(&str, usize, Vec<&str>)>> =
     LazyLock::new(|| vec![("XA", 3, vec!["48 8B 83 ?? ?? ?? ?? 48 8B 10 48 85 D2 ?? ?? 8B"])]);
 
 static AOBS_DIRECT: LazyLock<Vec<(&str, Vec<&str>)>> = LazyLock::new(|| {
-    vec![("FormatString", vec![
-        "3C 00 54 00 45 00 58 00 54 00 46 00 4F 00 52 00 4D 00 41 00 54 00",
-    ])]
+    vec![
+        ("FormatString", vec!["3C 00 54 00 45 00 58 00 54 00 46 00 4F 00 52 00 4D 00 41 00 54 00"]),
+        ("NoLogo", vec!["E8 ?? ?? ?? FF 90 4D 8B C7 49 8B D4 48 8B C8 E8 ?? ?? ?? FF"]),
+    ]
 });
 
 #[derive(PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy)]
@@ -511,4 +512,3 @@ pub(crate) fn codegen_base_addresses() {
 
     File::create(codegen_base_addresses_path()).unwrap().write_all(codegen.as_bytes()).unwrap();
 }
-

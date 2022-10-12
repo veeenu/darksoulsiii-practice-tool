@@ -68,7 +68,7 @@ impl From<(u32, u32, u32)> for Version {
             (maj, min, patch) => {
                 log::error!("Unrecognized version {maj}.{min:02}.{patch}");
                 panic!()
-            }
+            },
         }
     }
 }
@@ -257,4 +257,3 @@ pub const BASE_ADDRESSES_1_15_1: BaseAddresses = BaseAddresses {
     format_string: 0x2991650,
     xa: 0x1f90,
 };
-
