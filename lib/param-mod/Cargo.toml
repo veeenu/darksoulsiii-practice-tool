@@ -1,10 +1,10 @@
 [package]
-name = "no-logo"
+name = "param-mod"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "dinput8nologo"
+name = "dinput8"
 crate-type = ["cdylib"]
 
 [dependencies]

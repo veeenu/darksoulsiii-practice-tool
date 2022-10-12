@@ -5,6 +5,8 @@ members = [
   "lib/macro-param",
   "lib/param-tinkerer",
   "lib/scripts/memscan",
+  "lib/no-logo",
+  "lib/param-mod",
   "xtask",
 ]
 exclude = [

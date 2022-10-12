@@ -4,6 +4,7 @@ use std::ffi::c_void;
 use std::sync::LazyLock;
 
 use libds3::prelude::*;
+use windows::Win32::System::Console::AllocConsole;
 use windows::core::{GUID, HRESULT, PCSTR};
 use windows::Win32::Foundation::{BOOL, HINSTANCE};
 use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryA};
@@ -35,14 +36,35 @@ static STATE: LazyLock<State> = LazyLock::new(|| unsafe {
 
 fn initialize() {
     LazyLock::force(&STATE);
+    unsafe { AllocConsole() };
+}
+
+fn no_logo() {
+    let pointer_chains = PointerChains::new();
+    pointer_chains
+        .no_logo
+        .write([
+            0x48, 0x31, 0xC0, 0x48, 0x89, 0x02, 0x49, 0x89, 0x04, 0x24, 0x90, 0x90, 0x90, 0x90,
+            0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+        ])
+        .unwrap();
 }
 
 fn patch() {
-    let pointer_chains = PointerChains::new();
-    pointer_chains.no_logo.write([
-        0x48, 0x31, 0xC0, 0x48, 0x89, 0x02, 0x49, 0x89, 0x04, 0x24, 0x90, 0x90, 0x90, 0x90, 0x90,
-        0x90, 0x90, 0x90, 0x90, 0x90,
-    ]).unwrap();
+    no_logo();
+
+    let mut params = PARAMS.write();
+    let item_lot_param = wait_option(|| unsafe {
+        params.refresh().ok();
+        params.get_item_lot_param()
+    })
+    .find(|i| i.id == 11700000)
+    .and_then(|p| p.param);
+
+    if let Some(item_lot_param) = item_lot_param {
+        item_lot_param.lot_item_base_point01 = 1000;
+        item_lot_param.lot_item_base_point02 = 1000;
+    }
 }
 
 #[no_mangle]
