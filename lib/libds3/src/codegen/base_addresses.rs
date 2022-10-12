@@ -16,6 +16,7 @@ pub struct BaseAddresses {
     pub spawn_item_func_ptr: usize,
     pub param: usize,
     pub format_string: usize,
+    pub no_logo: usize,
     pub xa: usize,
 }
 
@@ -35,6 +36,7 @@ impl BaseAddresses {
             spawn_item_func_ptr: self.spawn_item_func_ptr + base,
             param: self.param + base,
             format_string: self.format_string + base,
+            no_logo: self.no_logo + base,
             xa: self.xa,
         }
     }
@@ -68,7 +70,7 @@ impl From<(u32, u32, u32)> for Version {
             (maj, min, patch) => {
                 log::error!("Unrecognized version {maj}.{min:02}.{patch}");
                 panic!()
-            },
+            }
         }
     }
 }
@@ -119,6 +121,7 @@ pub const BASE_ADDRESSES_1_08_0: BaseAddresses = BaseAddresses {
     world_chr_man: 0x472cf58,
     world_chr_man_dbg: 0x472d078,
     format_string: 0x2952940,
+    no_logo: 0xbd6acf,
     xa: 0x1f80,
 };
 
@@ -136,6 +139,7 @@ pub const BASE_ADDRESSES_1_09_0: BaseAddresses = BaseAddresses {
     world_chr_man: 0x472d098,
     world_chr_man_dbg: 0x472d1b8,
     format_string: 0x2952670,
+    no_logo: 0xbd708f,
     xa: 0x1f80,
 };
 
@@ -153,6 +157,7 @@ pub const BASE_ADDRESSES_1_10_0: BaseAddresses = BaseAddresses {
     world_chr_man: 0x472d098,
     world_chr_man_dbg: 0x472d1b8,
     format_string: 0x2952670,
+    no_logo: 0xbd70ff,
     xa: 0x1f80,
 };
 
@@ -170,6 +175,7 @@ pub const BASE_ADDRESSES_1_11_0: BaseAddresses = BaseAddresses {
     world_chr_man: 0x4760398,
     world_chr_man_dbg: 0x47604b8,
     format_string: 0x297ae40,
+    no_logo: 0xbe6f8f,
     xa: 0x1f88,
 };
 
@@ -187,6 +193,7 @@ pub const BASE_ADDRESSES_1_12_0: BaseAddresses = BaseAddresses {
     world_chr_man: 0x4763518,
     world_chr_man_dbg: 0x4763638,
     format_string: 0x297d2e0,
+    no_logo: 0xbe7d9f,
     xa: 0x1f88,
 };
 
@@ -204,6 +211,7 @@ pub const BASE_ADDRESSES_1_13_0: BaseAddresses = BaseAddresses {
     world_chr_man: 0x4766d18,
     world_chr_man_dbg: 0x4766e38,
     format_string: 0x297f9f0,
+    no_logo: 0xbe993f,
     xa: 0x1f90,
 };
 
@@ -221,6 +229,7 @@ pub const BASE_ADDRESSES_1_14_0: BaseAddresses = BaseAddresses {
     world_chr_man: 0x4768e78,
     world_chr_man_dbg: 0x4768f98,
     format_string: 0x2980a00,
+    no_logo: 0xbe9c0f,
     xa: 0x1f90,
 };
 
@@ -238,6 +247,7 @@ pub const BASE_ADDRESSES_1_15_0: BaseAddresses = BaseAddresses {
     world_chr_man: 0x4768e78,
     world_chr_man_dbg: 0x4768f98,
     format_string: 0x2980a30,
+    no_logo: 0xbe9d0f,
     xa: 0x1f90,
 };
 
@@ -255,5 +265,7 @@ pub const BASE_ADDRESSES_1_15_1: BaseAddresses = BaseAddresses {
     world_chr_man: 0x477fdb8,
     world_chr_man_dbg: 0x477fed8,
     format_string: 0x2991650,
+    no_logo: 0xbf42bf,
     xa: 0x1f90,
 };
+
