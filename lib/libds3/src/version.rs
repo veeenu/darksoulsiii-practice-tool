@@ -17,12 +17,12 @@ pub static VERSION: LazyLock<Version> = LazyLock::new(get_version);
 fn get_version() -> Version {
     let file_path = {
         let mut buf = vec![0u16; MAX_PATH as usize];
-        unsafe { GetModuleFileNameW(GetModuleHandleW(PCWSTR(null_mut())), &mut buf) };
+        unsafe { GetModuleFileNameW(GetModuleHandleW(None).unwrap(), &mut buf) };
         U16CString::from_vec_truncate(buf)
     };
 
     let mut version_info_size =
-        unsafe { GetFileVersionInfoSizeW(PCWSTR(file_path.as_ptr()), null_mut()) };
+        unsafe { GetFileVersionInfoSizeW(PCWSTR(file_path.as_ptr()), None) };
     let mut version_info_buf = vec![0u8; version_info_size as usize];
     unsafe {
         GetFileVersionInfoW(

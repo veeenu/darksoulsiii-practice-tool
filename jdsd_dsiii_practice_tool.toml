@@ -32,5 +32,5 @@ commands = [
 ]
 
 [settings]
-log_level = "DEBUG"
+log_level = "INFO"
 display = "0"

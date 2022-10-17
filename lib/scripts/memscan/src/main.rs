@@ -16,7 +16,7 @@ fn szcmp(source: &[CHAR], s: &str) -> bool {
 }
 
 fn read_base_module_data(pid: u32) -> Option<(usize, Vec<u8>)> {
-    let module_snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid) };
+    let module_snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid) }.ok()?;
     let mut module_entry =
         MODULEENTRY32 { dwSize: std::mem::size_of::<MODULEENTRY32>() as _, ..Default::default() };
 
@@ -24,7 +24,7 @@ fn read_base_module_data(pid: u32) -> Option<(usize, Vec<u8>)> {
 
     loop {
         if szcmp(&module_entry.szModule, "eldenring.exe") {
-            let process = unsafe { OpenProcess(PROCESS_ALL_ACCESS, true, pid) };
+            let process = unsafe { OpenProcess(PROCESS_ALL_ACCESS, true, pid) }.ok()?;
             let mut buf = vec![0u8; module_entry.modBaseSize as usize];
             let mut bytes_read = 0usize;
             unsafe {
@@ -33,7 +33,7 @@ fn read_base_module_data(pid: u32) -> Option<(usize, Vec<u8>)> {
                     module_entry.modBaseAddr as *mut c_void,
                     buf.as_mut_ptr() as *mut c_void,
                     module_entry.modBaseSize as usize,
-                    &mut bytes_read,
+                    Some(&mut bytes_read),
                 )
             };
             println!("Read {} out of {} bytes", bytes_read, module_entry.modBaseSize);
@@ -48,7 +48,7 @@ fn read_base_module_data(pid: u32) -> Option<(usize, Vec<u8>)> {
 }
 
 fn get_base_module_bytes(proc_name: &str) -> Option<(usize, Vec<u8>)> {
-    let process_snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+    let process_snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) }.ok()?;
     let mut process_entry =
         PROCESSENTRY32 { dwSize: std::mem::size_of::<PROCESSENTRY32>() as _, ..Default::default() };
 

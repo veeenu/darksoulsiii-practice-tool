@@ -105,7 +105,7 @@ fn naive_search(bytes: &[u8], pattern: &[Option<u8>]) -> Option<usize> {
 }
 
 fn read_base_module_data(proc_name: &str, pid: u32) -> Option<(usize, Vec<u8>)> {
-    let module_snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid) };
+    let module_snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid) }.ok()?;
     let mut module_entry =
         MODULEENTRY32 { dwSize: std::mem::size_of::<MODULEENTRY32>() as _, ..Default::default() };
 
@@ -113,7 +113,7 @@ fn read_base_module_data(proc_name: &str, pid: u32) -> Option<(usize, Vec<u8>)> 
 
     loop {
         if szcmp(&module_entry.szModule, proc_name) {
-            let process = unsafe { OpenProcess(PROCESS_ALL_ACCESS, true, pid) };
+            let process = unsafe { OpenProcess(PROCESS_ALL_ACCESS, true, pid) }.ok()?;
             let mut buf = vec![0u8; module_entry.modBaseSize as usize];
             let mut bytes_read = 0usize;
             unsafe {
@@ -122,7 +122,7 @@ fn read_base_module_data(proc_name: &str, pid: u32) -> Option<(usize, Vec<u8>)> 
                     module_entry.modBaseAddr as *mut c_void,
                     buf.as_mut_ptr() as *mut c_void,
                     module_entry.modBaseSize as usize,
-                    &mut bytes_read,
+                    Some(&mut bytes_read),
                 )
             };
             println!("Read {:x} out of {:x} bytes", bytes_read, module_entry.modBaseSize);
@@ -148,11 +148,11 @@ fn get_base_module_bytes(exe_path: &Path) -> Option<(usize, Vec<u8>)> {
         CreateProcessW(
             PCWSTR(exe.as_ptr()),
             PWSTR(null_mut()),
-            null(),
-            null(),
+            None,
+            None,
             BOOL::from(false),
             DEBUG_PROCESS | DETACHED_PROCESS,
-            null(),
+            None,
             PCWSTR(null()),
             &startup_info,
             &mut process_info,
@@ -259,7 +259,7 @@ fn get_file_version(file: &Path) -> Version {
     file_path.push(0 as char);
     let file_path = widestring::U16CString::from_str(file_path).unwrap();
     let mut version_info_size =
-        unsafe { GetFileVersionInfoSizeW(PCWSTR(file_path.as_ptr()), null_mut()) };
+        unsafe { GetFileVersionInfoSizeW(PCWSTR(file_path.as_ptr()), None) };
     let mut version_info_buf = vec![0u8; version_info_size as usize];
     unsafe {
         GetFileVersionInfoW(

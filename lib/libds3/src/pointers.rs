@@ -1,8 +1,6 @@
 use std::fmt::Display;
-use std::ptr::null_mut;
 
 use log::debug;
-use windows::core::PCSTR;
 use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 
 use crate::memedit::*;
@@ -96,6 +94,14 @@ impl From<BaseAddresses> for PointerChains {
         let offs_player_exterminate = 1;
         let offs_no_goods_consume = match *VERSION {
             // Version::V1_04_0 => 0x1ECA,
+            Version::V1_03_1 => 0x1ECA,
+            Version::V1_03_2 => 0x1ECA,
+            Version::V1_04_1 => 0x1ECA,
+            Version::V1_04_2 => 0x1ECA,
+            Version::V1_04_3 => 0x1ECA,
+            Version::V1_05_0 => 0x1ECA,
+            Version::V1_05_1 => 0x1ECA,
+            // Above this, the offsets are not checked.
             Version::V1_08_0 => 0x1EDA,
             Version::V1_09_0 => 0x1EDA, // todo
             Version::V1_10_0 => 0x1EDA, // todo
@@ -108,6 +114,14 @@ impl From<BaseAddresses> for PointerChains {
         };
         let offs_deathcam = match *VERSION {
             // Version::V1_04_0 => 0x88,
+            Version::V1_03_1 => 0x88,
+            Version::V1_03_2 => 0x88,
+            Version::V1_04_1 => 0x88,
+            Version::V1_04_2 => 0x88,
+            Version::V1_04_3 => 0x88,
+            Version::V1_05_0 => 0x88,
+            Version::V1_05_1 => 0x88,
+            // Above this, the offsets are not checked.
             Version::V1_08_0 => 0x88,
             Version::V1_09_0
             | Version::V1_10_0
@@ -119,7 +133,14 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1 => 0x90,
         };
         let offs_speed = match *VERSION {
-            // Version::V1_04_0 => 0xa38,
+            Version::V1_03_1 => 0xa38,
+            Version::V1_03_2 => 0xa38,
+            Version::V1_04_1 => 0xa38,
+            Version::V1_04_2 => 0xa38,
+            Version::V1_04_3 => 0xa38,
+            Version::V1_05_0 => 0xa38,
+            Version::V1_05_1 => 0xa38,
+            // Above this, the offsets are not checked.
             Version::V1_08_0 => 0xa38,
             Version::V1_09_0
             | Version::V1_10_0
@@ -131,7 +152,14 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1 => 0xa58,
         };
         let offs_igt = match *VERSION {
-            // Version::V1_04_0 => 0x9c,
+            Version::V1_03_1 => 0x9c,
+            Version::V1_03_2 => 0x9c,
+            Version::V1_04_1 => 0x9c,
+            Version::V1_04_2 => 0x9c,
+            Version::V1_04_3 => 0x9c,
+            Version::V1_05_0 => 0x9c,
+            Version::V1_05_1 => 0x9c,
+            // Above this, the offsets are not checked.
             Version::V1_08_0
             | Version::V1_09_0
             | Version::V1_10_0
@@ -194,7 +222,7 @@ impl Default for PointerChains {
 
 impl PointerChains {
     pub fn new() -> Self {
-        let base_module_address = unsafe { GetModuleHandleA(PCSTR(null_mut())) }.0 as usize;
+        let base_module_address = unsafe { GetModuleHandleA(None) }.unwrap().0 as usize;
         let base_addresses = BaseAddresses::from(*crate::version::VERSION)
             .with_module_base_addr(base_module_address);
 

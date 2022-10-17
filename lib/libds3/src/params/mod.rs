@@ -7,7 +7,6 @@ use log::{error, info};
 pub use param_data::*;
 use parking_lot::RwLock;
 use widestring::U16CStr;
-use windows::core::PCSTR;
 use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 
 use crate::prelude::base_addresses::*;
@@ -80,7 +79,7 @@ impl Params {
     /// static.
     pub unsafe fn refresh(&mut self) -> Result<(), String> {
         let addresses: BaseAddresses = (*VERSION).into();
-        let module_base_addr = GetModuleHandleA(PCSTR(std::ptr::null_mut())).0 as usize;
+        let module_base_addr = GetModuleHandleA(None).map_err(|e| e.to_string())?.0 as usize;
         let base_ptr = addresses.param + module_base_addr;
         let base_ptr = *(base_ptr as *const *const c_void) as usize;
         let base: &ParamMaster = (base_ptr as *const ParamMaster) // std::ptr::read(base_ptr as *const *const ParamMaster)

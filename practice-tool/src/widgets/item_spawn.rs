@@ -100,7 +100,7 @@ impl<'a> ItemIDNodeRef<'a> {
 impl<'a> From<&'a ItemIDNode> for ItemIDNodeRef<'a> {
     fn from(v: &'a ItemIDNode) -> Self {
         match v {
-            ItemIDNode::Leaf { id, desc } => ItemIDNodeRef::Leaf { node: &desc, value: id.0 },
+            ItemIDNode::Leaf { id, desc } => ItemIDNodeRef::Leaf { node: desc, value: id.0 },
             ItemIDNode::Node { node, children } => ItemIDNodeRef::Node {
                 node,
                 children: children.iter().map(ItemIDNodeRef::from).collect(),

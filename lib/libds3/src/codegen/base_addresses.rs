@@ -44,6 +44,13 @@ impl BaseAddresses {
 
 #[derive(Clone, Copy)]
 pub enum Version {
+    V1_03_1,
+    V1_03_2,
+    V1_04_1,
+    V1_04_2,
+    V1_04_3,
+    V1_05_0,
+    V1_05_1,
     V1_08_0,
     V1_09_0,
     V1_10_0,
@@ -58,6 +65,13 @@ pub enum Version {
 impl From<(u32, u32, u32)> for Version {
     fn from(v: (u32, u32, u32)) -> Self {
         match v {
+            (1, 3, 1) => Version::V1_03_1,
+            (1, 3, 2) => Version::V1_03_2,
+            (1, 4, 1) => Version::V1_04_1,
+            (1, 4, 2) => Version::V1_04_2,
+            (1, 4, 3) => Version::V1_04_3,
+            (1, 5, 0) => Version::V1_05_0,
+            (1, 5, 1) => Version::V1_05_1,
             (1, 8, 0) => Version::V1_08_0,
             (1, 9, 0) => Version::V1_09_0,
             (1, 10, 0) => Version::V1_10_0,
@@ -78,6 +92,13 @@ impl From<(u32, u32, u32)> for Version {
 impl From<Version> for (u32, u32, u32) {
     fn from(v: Version) -> Self {
         match v {
+            Version::V1_03_1 => (1, 3, 1),
+            Version::V1_03_2 => (1, 3, 2),
+            Version::V1_04_1 => (1, 4, 1),
+            Version::V1_04_2 => (1, 4, 2),
+            Version::V1_04_3 => (1, 4, 3),
+            Version::V1_05_0 => (1, 5, 0),
+            Version::V1_05_1 => (1, 5, 1),
             Version::V1_08_0 => (1, 8, 0),
             Version::V1_09_0 => (1, 9, 0),
             Version::V1_10_0 => (1, 10, 0),
@@ -94,6 +115,13 @@ impl From<Version> for (u32, u32, u32) {
 impl From<Version> for BaseAddresses {
     fn from(v: Version) -> Self {
         match v {
+            Version::V1_03_1 => BASE_ADDRESSES_1_03_1,
+            Version::V1_03_2 => BASE_ADDRESSES_1_03_2,
+            Version::V1_04_1 => BASE_ADDRESSES_1_04_1,
+            Version::V1_04_2 => BASE_ADDRESSES_1_04_2,
+            Version::V1_04_3 => BASE_ADDRESSES_1_04_3,
+            Version::V1_05_0 => BASE_ADDRESSES_1_05_0,
+            Version::V1_05_1 => BASE_ADDRESSES_1_05_1,
             Version::V1_08_0 => BASE_ADDRESSES_1_08_0,
             Version::V1_09_0 => BASE_ADDRESSES_1_09_0,
             Version::V1_10_0 => BASE_ADDRESSES_1_10_0,
@@ -106,6 +134,132 @@ impl From<Version> for BaseAddresses {
         }
     }
 }
+
+pub const BASE_ADDRESSES_1_03_1: BaseAddresses = BaseAddresses {
+    base_a: 0x469adf8,
+    base_d: 0x469e6d8,
+    base_hbd: 0x46c17b0,
+    debug: 0x46c3b98,
+    grend: 0x44b9000,
+    map_item_man: 0x469a988,
+    menu_man: 0x46a6f60,
+    param: 0x46e0760,
+    spawn_item_func_ptr: 0x7ab590,
+    sprj_debug_event: 0x4695a68,
+    world_chr_man: 0x46c3aa8,
+    world_chr_man_dbg: 0x46c3bc8,
+    format_string: 0x2905920,
+    no_logo: 0xbbafdf,
+    xa: 0x1f70,
+};
+
+pub const BASE_ADDRESSES_1_03_2: BaseAddresses = BaseAddresses {
+    base_a: 0x469bdf8,
+    base_d: 0x469f6d8,
+    base_hbd: 0x46c27b0,
+    debug: 0x46c4b98,
+    grend: 0x44ba000,
+    map_item_man: 0x469b988,
+    menu_man: 0x46a7f60,
+    param: 0x46e1760,
+    spawn_item_func_ptr: 0x7ab590,
+    sprj_debug_event: 0x4696a68,
+    world_chr_man: 0x46c4aa8,
+    world_chr_man_dbg: 0x46c4bc8,
+    format_string: 0x2905ac0,
+    no_logo: 0xbbafdf,
+    xa: 0x1f70,
+};
+
+pub const BASE_ADDRESSES_1_04_1: BaseAddresses = BaseAddresses {
+    base_a: 0x469d118,
+    base_d: 0x46a09f8,
+    base_hbd: 0x46c3ad0,
+    debug: 0x46c5eb8,
+    grend: 0x44bb000,
+    map_item_man: 0x469cca8,
+    menu_man: 0x46a9280,
+    param: 0x46e2a80,
+    spawn_item_func_ptr: 0x7abc00,
+    sprj_debug_event: 0x4697d88,
+    world_chr_man: 0x46c5dc8,
+    world_chr_man_dbg: 0x46c5ee8,
+    format_string: 0x2906ae0,
+    no_logo: 0xbbb0cf,
+    xa: 0x1f70,
+};
+
+pub const BASE_ADDRESSES_1_04_2: BaseAddresses = BaseAddresses {
+    base_a: 0x469d118,
+    base_d: 0x46a09f8,
+    base_hbd: 0x46c3ad0,
+    debug: 0x46c5eb8,
+    grend: 0x44bb000,
+    map_item_man: 0x469cca8,
+    menu_man: 0x46a9280,
+    param: 0x46e2a80,
+    spawn_item_func_ptr: 0x7abc00,
+    sprj_debug_event: 0x4697d88,
+    world_chr_man: 0x46c5dc8,
+    world_chr_man_dbg: 0x46c5ee8,
+    format_string: 0x2906cf0,
+    no_logo: 0xbbb0cf,
+    xa: 0x1f70,
+};
+
+pub const BASE_ADDRESSES_1_04_3: BaseAddresses = BaseAddresses {
+    base_a: 0x469d118,
+    base_d: 0x46a09f8,
+    base_hbd: 0x46c3ad0,
+    debug: 0x46c5eb8,
+    grend: 0x44bb000,
+    map_item_man: 0x469cca8,
+    menu_man: 0x46a9280,
+    param: 0x46e2a80,
+    spawn_item_func_ptr: 0x7abc00,
+    sprj_debug_event: 0x4697d88,
+    world_chr_man: 0x46c5dc8,
+    world_chr_man_dbg: 0x46c5ee8,
+    format_string: 0x2906cf0,
+    no_logo: 0xbbb0cf,
+    xa: 0x1f70,
+};
+
+pub const BASE_ADDRESSES_1_05_0: BaseAddresses = BaseAddresses {
+    base_a: 0x46a1218,
+    base_d: 0x46a4af8,
+    base_hbd: 0x46c7bd0,
+    debug: 0x46c9fb8,
+    grend: 0x44bf010,
+    map_item_man: 0x46a0da8,
+    menu_man: 0x46ad380,
+    param: 0x46e6b90,
+    spawn_item_func_ptr: 0x7ac1e0,
+    sprj_debug_event: 0x469be88,
+    world_chr_man: 0x46c9ec8,
+    world_chr_man_dbg: 0x46c9fe8,
+    format_string: 0x290a020,
+    no_logo: 0xbbbf2f,
+    xa: 0x1f80,
+};
+
+pub const BASE_ADDRESSES_1_05_1: BaseAddresses = BaseAddresses {
+    base_a: 0x46a0218,
+    base_d: 0x46a3af8,
+    base_hbd: 0x46c6bd0,
+    debug: 0x46c8fb8,
+    grend: 0x44be010,
+    map_item_man: 0x469fda8,
+    menu_man: 0x46ac380,
+    param: 0x46e5b90,
+    spawn_item_func_ptr: 0x7ac010,
+    sprj_debug_event: 0x469ae88,
+    world_chr_man: 0x46c8ec8,
+    world_chr_man_dbg: 0x46c8fe8,
+    format_string: 0x2909240,
+    no_logo: 0xbbbd5f,
+    xa: 0x1f80,
+};
 
 pub const BASE_ADDRESSES_1_08_0: BaseAddresses = BaseAddresses {
     base_a: 0x4704268,

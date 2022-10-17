@@ -25,7 +25,7 @@ features = [
 ]
 
 [dependencies.windows]
-version = "0.34.0"
+version = "0.42.0"
 features = [
    "Win32_Foundation",
    "Win32_Security",
