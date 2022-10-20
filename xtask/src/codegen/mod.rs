@@ -93,7 +93,7 @@ fn checkout_paramdex() -> Result<()> {
     if project_root().join("target/Paramdex").exists() {
         let status = Command::new(&git)
             .current_dir(project_root().join("target/Paramdex"))
-            .args(&["fetch"])
+            .args(["fetch"])
             .status()
             .map_err(|e| format!("git: {}", e))?;
 
@@ -103,7 +103,7 @@ fn checkout_paramdex() -> Result<()> {
 
         let status = Command::new(&git)
             .current_dir(project_root().join("target/Paramdex"))
-            .args(&["pull"])
+            .args(["pull"])
             .status()
             .map_err(|e| format!("git: {}", e))?;
 
@@ -113,7 +113,7 @@ fn checkout_paramdex() -> Result<()> {
     } else {
         let status = Command::new(&git)
             .current_dir(project_root().join("target"))
-            .args(&["clone", "https://github.com/soulsmods/Paramdex.git"])
+            .args(["clone", "https://github.com/soulsmods/Paramdex.git"])
             .status()
             .map_err(|e| format!("git: {}", e))?;
 

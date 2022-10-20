@@ -32,6 +32,7 @@ fn main() -> Result<()> {
     match task.as_deref() {
         Some("dist") => dist()?,
         Some("run") => run()?,
+        Some("run-param-tinkerer") => run_param_tinkerer()?,
         Some("codegen") => codegen::codegen()?,
         Some("help") => print_help(),
         _ => print_help(),
@@ -44,10 +45,22 @@ fn main() -> Result<()> {
 
 fn dist() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-    let status = Command::new(cargo)
+
+    let status = Command::new(&cargo)
         .current_dir(project_root())
         .env("CARGO_XTASK_DIST", "true")
-        .args(&["build", "--locked", "--release", "--package", "darksoulsiii-practice-tool"])
+        .args(["build", "--locked", "--release", "--package", "darksoulsiii-practice-tool"])
+        .status()
+        .map_err(|e| format!("cargo: {}", e))?;
+
+    if !status.success() {
+        return Err("cargo build failed".into());
+    }
+
+    let status = Command::new(&cargo)
+        .current_dir(project_root())
+        .env("CARGO_XTASK_DIST", "true")
+        .args(["build", "--locked", "--release", "--package", "no-logo"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
 
@@ -90,9 +103,14 @@ fn dist() -> Result<()> {
         "jdsd_dsiii_practice_tool.dll",
     )?;
     add_zip(
-        project_root().join("jdsd_dsiii_practice_tool.toml"),
-        "jdsd_dsiii_practice_tool.toml",
+        project_root().join("target/release/dinput8nologo.dll"),
+        "dinput8.dll",
     )?;
+    add_zip(
+        project_root().join("lib/data/RELEASE-README.txt"),
+        "README.txt",
+    )?;
+    add_zip(project_root().join("jdsd_dsiii_practice_tool.toml"), "jdsd_dsiii_practice_tool.toml")?;
 
     Ok(())
 }
@@ -101,7 +119,7 @@ fn run() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
     let status = Command::new(&cargo)
         .current_dir(project_root())
-        .args(&["build", "--lib", "--package", "darksoulsiii-practice-tool"])
+        .args(["build", "--lib", "--package", "darksoulsiii-practice-tool"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
 
@@ -120,6 +138,32 @@ fn run() -> Result<()> {
         .join("target")
         .join("debug")
         .join("libjdsd_dsiii_practice_tool.dll")
+        .canonicalize()?;
+
+    let process = OwnedProcess::find_first_by_name("DarkSoulsIII.exe")
+        .ok_or_else(|| "Could not find process".to_string())?;
+    let syringe = Syringe::for_process(process);
+    syringe.inject(dll_path)?;
+
+    Ok(())
+}
+
+fn run_param_tinkerer() -> Result<()> {
+    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+    let status = Command::new(&cargo)
+        .current_dir(project_root())
+        .args(["build", "--release", "--lib", "--package", "param-tinkerer"])
+        .status()
+        .map_err(|e| format!("cargo: {}", e))?;
+
+    if !status.success() {
+        return Err("cargo build failed".into());
+    }
+
+    let dll_path = project_root()
+        .join("target")
+        .join("release")
+        .join("jdsd_dsiii_param_tinkerer.dll")
         .canonicalize()?;
 
     let process = OwnedProcess::find_first_by_name("DarkSoulsIII.exe")

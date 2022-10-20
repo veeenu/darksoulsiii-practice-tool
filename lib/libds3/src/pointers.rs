@@ -1,8 +1,7 @@
 use std::fmt::Display;
-use std::ptr::null_mut;
+use std::mem::size_of;
 
 use log::debug;
-use windows::core::PCSTR;
 use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 
 use crate::memedit::*;
@@ -64,6 +63,7 @@ pub struct PointerChains {
     pub quitout: PointerChain<u8>,
     pub cursor_show: Bitflag<u8>,
     pub igt: PointerChain<u32>,
+    pub no_logo: PointerChain<[u8; 20]>,
 
     #[allow(unused)]
     pub world_chr_man: usize,
@@ -87,38 +87,65 @@ impl From<BaseAddresses> for PointerChains {
             menu_man,
             spawn_item_func_ptr,
             map_item_man,
+            no_logo,
             ..
         } = b;
 
         let offs_all_no_damage = 9;
         let offs_player_exterminate = 1;
         let offs_no_goods_consume = match *VERSION {
-            // Version::V1_04_0 => 0x1ECA,
-            Version::V1_08_0 => 0x1EDA,
-            Version::V1_09_0 => 0x1EDA, // todo
-            Version::V1_10_0 => 0x1EDA, // todo
-            Version::V1_11_0 => 0x1EDA, // todo
-            Version::V1_12_0 => 0x1EE2,
-            Version::V1_13_0 => 0x1EE2, // todo
-            Version::V1_14_0 => 0x1EE2, // todo
-            Version::V1_15_0 => 0x1EEA,
-            Version::V1_15_1 => 0x1EEA,
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1 => 0x1ECA,
+
+            Version::V1_06_0
+            | Version::V1_07_0
+            | Version::V1_08_0
+            | Version::V1_09_0
+            | Version::V1_10_0
+            | Version::V1_11_0 => 0x1EDA,
+
+            Version::V1_12_0 | Version::V1_13_0 | Version::V1_14_0 => 0x1EE2,
+
+            Version::V1_15_0 | Version::V1_15_1 => 0x1EEA,
         };
         let offs_deathcam = match *VERSION {
-            // Version::V1_04_0 => 0x88,
-            Version::V1_08_0 => 0x88,
-            Version::V1_09_0
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0
+            | Version::V1_08_0
+            | Version::V1_09_0
             | Version::V1_10_0
-            | Version::V1_11_0
-            | Version::V1_12_0
+            | Version::V1_11_0 => 0x88,
+
+            Version::V1_12_0
             | Version::V1_13_0
             | Version::V1_14_0
             | Version::V1_15_0
             | Version::V1_15_1 => 0x90,
         };
         let offs_speed = match *VERSION {
-            // Version::V1_04_0 => 0xa38,
-            Version::V1_08_0 => 0xa38,
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0
+            | Version::V1_08_0 => 0xa38,
+
             Version::V1_09_0
             | Version::V1_10_0
             | Version::V1_11_0
@@ -129,7 +156,16 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1 => 0xa58,
         };
         let offs_igt = match *VERSION {
-            // Version::V1_04_0 => 0x9c,
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0 => 0x9c,
+
             Version::V1_08_0
             | Version::V1_09_0
             | Version::V1_10_0
@@ -172,13 +208,15 @@ impl From<BaseAddresses> for PointerChains {
                 pointer_chain!(world_chr_man, 0x40, 0x28, 0x80),
             ),
             character_stats: pointer_chain!(base_a, 0x10, 0x44),
-            souls: pointer_chain!(sprj_debug_event as _, 0x3d0, 0x74),
+            // souls was previously pointer_chain!(sprj_debug_event as _, 0x3d0, 0x74),
+            souls: pointer_chain!(base_a, 0x10, 0x44 + 12 * size_of::<i32>()),
             map_item_man: map_item_man as _,
             spawn_item_func_ptr: spawn_item_func_ptr as _,
             world_chr_man,
             cursor_show: bitflag!(0b1; menu_man as _, mouse_enable_offs as _),
             igt: pointer_chain!(base_a as _, offs_igt),
             quitout: pointer_chain!(menu_man as _, 0x250),
+            no_logo: pointer_chain!(no_logo as _),
         }
     }
 }
@@ -191,7 +229,7 @@ impl Default for PointerChains {
 
 impl PointerChains {
     pub fn new() -> Self {
-        let base_module_address = unsafe { GetModuleHandleA(PCSTR(null_mut())) }.0 as usize;
+        let base_module_address = unsafe { GetModuleHandleA(None) }.unwrap().0 as usize;
         let base_addresses = BaseAddresses::from(*crate::version::VERSION)
             .with_module_base_addr(base_module_address);
 

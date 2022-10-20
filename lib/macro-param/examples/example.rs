@@ -1,5 +1,5 @@
 // use macro_param::*;
-// 
+//
 // #[derive(ParamStruct)]
 // #[repr(C)]
 // #[allow(non_camel_case_types)]

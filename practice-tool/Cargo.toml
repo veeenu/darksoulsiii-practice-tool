@@ -25,6 +25,7 @@ pkg-version = "1.0.0"
 ureq = { version = "1.4.1", features = ["json"] }
 windows = { version = "0.39.0", features = [
   "Win32_Foundation",
+  "Win32_UI_Input_KeyboardAndMouse",
   "Win32_System_Threading"
 ] }
 open = "1.4.0"

@@ -29,17 +29,17 @@ impl SavePosition {
 
     fn save_position(&mut self) {
         if let (Some(pos), Some(angle)) = (self.ptr_pos.read(), self.ptr_angle.read()) {
-            self.saved_position = [angle, pos[0], pos[1], pos[2]];
+            self.saved_position = [pos[0], pos[1], pos[2], angle];
         }
     }
 
     fn load_position(&mut self) {
         self.ptr_pos.write([
+            self.saved_position[0],
             self.saved_position[1],
             self.saved_position[2],
-            self.saved_position[3],
         ]);
-        self.ptr_angle.write(self.saved_position[0]);
+        self.ptr_angle.write(self.saved_position[3]);
     }
 }
 
@@ -79,24 +79,6 @@ impl Widget for SavePosition {
             "{:7.1} {:7.1} {:7.1} {:7.1}",
             saved_pos[0], saved_pos[1], saved_pos[2], saved_pos[3],
         ));
-
-        // let _token = ui.begin_disabled(!valid);
-        // ui.text(format!(
-        //     "[{:7.1}  {:7.1}  {:7.1}  {:7.1}]",
-        //     read_pos[0], read_pos[1], read_pos[2], read_pos[3]
-        // ));
-        // ui.same_line();
-        // if ui.small_button(format!("Load pos ({})", self.hotkey)) {
-        //     self.load_position();
-        // }
-        // ui.text(format!(
-        //     "[{:7.1}  {:7.1}  {:7.1}  {:7.1}]",
-        //     saved_pos[1], saved_pos[3], saved_pos[2], saved_pos[0],
-        // ));
-        // ui.same_line();
-        // if ui.small_button(format!("Save pos ({} + {})", self.modifier, self.hotkey)) {
-        //     self.save_position();
-        // }
     }
 
     fn interact(&mut self) {
