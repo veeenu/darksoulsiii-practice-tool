@@ -102,6 +102,8 @@ impl From<BaseAddresses> for PointerChains {
             Version::V1_04_3 => 0x1ECA,
             Version::V1_05_0 => 0x1ECA,
             Version::V1_05_1 => 0x1ECA,
+            Version::V1_06_0 => 0x1EDA,
+            Version::V1_07_0 => 0x1EDA,
             // Above this, the offsets are not checked.
             Version::V1_08_0 => 0x1EDA,
             Version::V1_09_0 => 0x1EDA, // todo
@@ -122,12 +124,14 @@ impl From<BaseAddresses> for PointerChains {
             Version::V1_04_3 => 0x88,
             Version::V1_05_0 => 0x88,
             Version::V1_05_1 => 0x88,
+            Version::V1_06_0 => 0x88,
+            Version::V1_07_0 => 0x88,
             // Above this, the offsets are not checked.
             Version::V1_08_0 => 0x88,
-            Version::V1_09_0
-            | Version::V1_10_0
-            | Version::V1_11_0
-            | Version::V1_12_0
+            Version::V1_09_0 => 0x88,
+            Version::V1_10_0 => 0x88,
+            Version::V1_11_0 => 0x88,
+            Version::V1_12_0
             | Version::V1_13_0
             | Version::V1_14_0
             | Version::V1_15_0
@@ -141,6 +145,8 @@ impl From<BaseAddresses> for PointerChains {
             Version::V1_04_3 => 0xa38,
             Version::V1_05_0 => 0xa38,
             Version::V1_05_1 => 0xa38,
+            Version::V1_06_0 => 0xa38,
+            Version::V1_07_0 => 0xa38,
             // Above this, the offsets are not checked.
             Version::V1_08_0 => 0xa38,
             Version::V1_09_0
@@ -160,6 +166,8 @@ impl From<BaseAddresses> for PointerChains {
             Version::V1_04_3 => 0x9c,
             Version::V1_05_0 => 0x9c,
             Version::V1_05_1 => 0x9c,
+            Version::V1_06_0 => 0x9c,
+            Version::V1_07_0 => 0x9c,
             // Above this, the offsets are not checked.
             Version::V1_08_0
             | Version::V1_09_0
