@@ -611,7 +611,7 @@ dependencies = [
  "toml",
  "ureq",
  "widestring 0.5.1",
- "windows 0.42.0",
+ "windows 0.39.0",
 ]
 
 [[package]]

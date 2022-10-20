@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::mem::size_of;
 
 use log::debug;
 use windows::Win32::System::LibraryLoader::GetModuleHandleA;
@@ -202,7 +203,8 @@ impl From<BaseAddresses> for PointerChains {
                 pointer_chain!(world_chr_man, 0x40, 0x28, 0x80),
             ),
             character_stats: pointer_chain!(base_a, 0x10, 0x44),
-            souls: pointer_chain!(sprj_debug_event as _, 0x3d0, 0x74),
+            // souls was previously pointer_chain!(sprj_debug_event as _, 0x3d0, 0x74),
+            souls: pointer_chain!(base_a, 0x10, 0x44 + 12 * size_of::<i32>()),
             map_item_man: map_item_man as _,
             spawn_item_func_ptr: spawn_item_func_ptr as _,
             world_chr_man,
