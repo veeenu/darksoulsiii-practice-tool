@@ -94,43 +94,40 @@ impl From<BaseAddresses> for PointerChains {
         let offs_all_no_damage = 9;
         let offs_player_exterminate = 1;
         let offs_no_goods_consume = match *VERSION {
-            // Version::V1_04_0 => 0x1ECA,
-            Version::V1_03_1 => 0x1ECA,
-            Version::V1_03_2 => 0x1ECA,
-            Version::V1_04_1 => 0x1ECA,
-            Version::V1_04_2 => 0x1ECA,
-            Version::V1_04_3 => 0x1ECA,
-            Version::V1_05_0 => 0x1ECA,
-            Version::V1_05_1 => 0x1ECA,
-            Version::V1_06_0 => 0x1EDA,
-            Version::V1_07_0 => 0x1EDA,
-            // Above this, the offsets are not checked.
-            Version::V1_08_0 => 0x1EDA,
-            Version::V1_09_0 => 0x1EDA, // todo
-            Version::V1_10_0 => 0x1EDA, // todo
-            Version::V1_11_0 => 0x1EDA, // todo
-            Version::V1_12_0 => 0x1EE2,
-            Version::V1_13_0 => 0x1EE2, // todo
-            Version::V1_14_0 => 0x1EE2, // todo
-            Version::V1_15_0 => 0x1EEA,
-            Version::V1_15_1 => 0x1EEA,
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1 => 0x1ECA,
+
+            Version::V1_06_0
+            | Version::V1_07_0
+            | Version::V1_08_0
+            | Version::V1_09_0
+            | Version::V1_10_0
+            | Version::V1_11_0 => 0x1EDA,
+
+            Version::V1_12_0 | Version::V1_13_0 | Version::V1_14_0 => 0x1EE2,
+
+            Version::V1_15_0 | Version::V1_15_1 => 0x1EEA,
         };
         let offs_deathcam = match *VERSION {
-            // Version::V1_04_0 => 0x88,
-            Version::V1_03_1 => 0x88,
-            Version::V1_03_2 => 0x88,
-            Version::V1_04_1 => 0x88,
-            Version::V1_04_2 => 0x88,
-            Version::V1_04_3 => 0x88,
-            Version::V1_05_0 => 0x88,
-            Version::V1_05_1 => 0x88,
-            Version::V1_06_0 => 0x88,
-            Version::V1_07_0 => 0x88,
-            // Above this, the offsets are not checked.
-            Version::V1_08_0 => 0x88,
-            Version::V1_09_0 => 0x88,
-            Version::V1_10_0 => 0x88,
-            Version::V1_11_0 => 0x88,
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0
+            | Version::V1_08_0
+            | Version::V1_09_0
+            | Version::V1_10_0
+            | Version::V1_11_0 => 0x88,
+
             Version::V1_12_0
             | Version::V1_13_0
             | Version::V1_14_0
@@ -138,17 +135,17 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1 => 0x90,
         };
         let offs_speed = match *VERSION {
-            Version::V1_03_1 => 0xa38,
-            Version::V1_03_2 => 0xa38,
-            Version::V1_04_1 => 0xa38,
-            Version::V1_04_2 => 0xa38,
-            Version::V1_04_3 => 0xa38,
-            Version::V1_05_0 => 0xa38,
-            Version::V1_05_1 => 0xa38,
-            Version::V1_06_0 => 0xa38,
-            Version::V1_07_0 => 0xa38,
-            // Above this, the offsets are not checked.
-            Version::V1_08_0 => 0xa38,
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0
+            | Version::V1_08_0 => 0xa38,
+
             Version::V1_09_0
             | Version::V1_10_0
             | Version::V1_11_0
@@ -159,16 +156,16 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1 => 0xa58,
         };
         let offs_igt = match *VERSION {
-            Version::V1_03_1 => 0x9c,
-            Version::V1_03_2 => 0x9c,
-            Version::V1_04_1 => 0x9c,
-            Version::V1_04_2 => 0x9c,
-            Version::V1_04_3 => 0x9c,
-            Version::V1_05_0 => 0x9c,
-            Version::V1_05_1 => 0x9c,
-            Version::V1_06_0 => 0x9c,
-            Version::V1_07_0 => 0x9c,
-            // Above this, the offsets are not checked.
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0 => 0x9c,
+
             Version::V1_08_0
             | Version::V1_09_0
             | Version::V1_10_0
