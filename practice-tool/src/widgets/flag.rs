@@ -7,12 +7,16 @@ use crate::util::KeyState;
 pub(crate) struct Flag {
     label: String,
     bitflag: Bitflag<u8>,
-    hotkey: KeyState,
+    hotkey: Option<KeyState>,
 }
 
 impl Flag {
-    pub(crate) fn new(label: &str, bitflag: Bitflag<u8>, hotkey: KeyState) -> Self {
-        Flag { label: format!("{} ({})", label, hotkey), bitflag, hotkey }
+    pub(crate) fn new(label: &str, bitflag: Bitflag<u8>, hotkey: Option<KeyState>) -> Self {
+        let label = match &hotkey {
+            Some(k) => format!("{} ({})", label, k),
+            None => label.to_string()
+        };
+        Flag { label, bitflag, hotkey }
     }
 }
 
@@ -32,12 +36,8 @@ impl Widget for Flag {
     }
 
     fn interact(&mut self) {
-        if self.hotkey.keyup() {
+        if self.hotkey.as_ref().map(|c| c.keyup()).unwrap_or(false) {
             self.bitflag.toggle();
         }
     }
-
-    // fn interact_ui(&mut self) {
-    //     // self.bitflag.toggle();
-    // }
 }

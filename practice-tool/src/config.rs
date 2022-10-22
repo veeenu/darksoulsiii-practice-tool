@@ -45,7 +45,7 @@ enum CfgCommand {
     },
     Flag {
         flag: FlagSpec,
-        hotkey: KeyState,
+        hotkey: Option<KeyState>,
     },
     Position {
         #[serde(rename = "position")]
