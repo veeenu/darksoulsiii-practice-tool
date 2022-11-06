@@ -31,6 +31,7 @@ fn main() -> Result<()> {
     let task = env::args().nth(1);
     match task.as_deref() {
         Some("dist") => dist()?,
+        Some("inject") => inject(env::args().skip(1).map(String::from))?,
         Some("run") => run()?,
         Some("run-param-tinkerer") => run_param_tinkerer()?,
         Some("codegen") => codegen::codegen()?,
@@ -144,6 +145,18 @@ fn run() -> Result<()> {
         .ok_or_else(|| "Could not find process".to_string())?;
     let syringe = Syringe::for_process(process);
     syringe.inject(dll_path)?;
+
+    Ok(())
+}
+
+fn inject(mut args: impl Iterator<Item = String>) -> Result<()> {
+    let dll = args.next().unwrap();
+    let exe = args.next().unwrap();
+
+    let process = OwnedProcess::find_first_by_name(exe)
+        .ok_or_else(|| "Could not find process".to_string())?;
+    let syringe = Syringe::for_process(process);
+    syringe.inject(dll)?;
 
     Ok(())
 }
