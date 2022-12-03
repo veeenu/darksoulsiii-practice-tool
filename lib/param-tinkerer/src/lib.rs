@@ -2,7 +2,7 @@
 
 use std::fmt::Write;
 
-use hudhook::hooks::dx11::ImguiDX11Hooks;
+use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
 use imgui::*;
 use libds3::prelude::*;
@@ -41,7 +41,7 @@ impl ImguiRenderLoop for ParamTinkerer {
             return;
         }
 
-        Window::new("##tool_window")
+        ui.window("##tool_window")
             .position([16., 16.], Condition::Always)
             .bg_alpha(0.8)
             .flags({
@@ -51,7 +51,7 @@ impl ImguiRenderLoop for ParamTinkerer {
                     | WindowFlags::NO_SCROLLBAR
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
-            .build(ui, || {
+            .build(|| {
                 let style_tokens =
                     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, [0., 0., 0., 0.])];
 
@@ -69,10 +69,10 @@ impl ParamTinkerer {
         const COLUMN2: f32 = 480.;
         const COLUMN3: f32 = 480.;
 
-        ChildWindow::new("##param_child_wnd")
+        ui.child_window("##param_child_wnd")
             .flags(WindowFlags::NO_SCROLLBAR)
             .size([COLUMN1 + COLUMN2 + COLUMN3 + 10., 405.])
-            .build(ui, || {
+            .build(|| {
                 ui.columns(3, "##param_columns", false);
                 ui.set_column_offset(0, 0.);
                 ui.set_column_offset(1, COLUMN1 + 10.);
@@ -81,10 +81,10 @@ impl ParamTinkerer {
                 let param_entries = {
                     ui.set_current_column_width(COLUMN1 + 10.);
 
-                    ui.push_item_width(-1.);
+                    let _ = ui.push_item_width(-1.);
                     ListBox::new("##param_names").size([COLUMN1, 400.]).build(ui, || {
                         for (idx, k) in params.keys().enumerate() {
-                            if Selectable::new(k).selected(idx == self.selected_param).build(ui) {
+                            if ui.selectable_config(k).selected(idx == self.selected_param).build() {
                                 self.selected_param = idx;
                             }
                         }
@@ -101,7 +101,7 @@ impl ParamTinkerer {
                     ui.set_current_column_width(COLUMN2 + 10.);
 
                     let mut buf = String::new();
-                    ui.push_item_width(-1.);
+                    let _ = ui.push_item_width(-1.);
                     ListBox::new("##param_ids").size([COLUMN2, 400.]).build(ui, || {
                         for (idx, id) in param_entries.enumerate() {
                             buf.clear();
@@ -114,9 +114,9 @@ impl ParamTinkerer {
                                 write!(buf, "{id}").ok();
                             }
 
-                            if Selectable::new(&buf)
+                            if ui.selectable_config(&buf)
                                 .selected(idx == self.selected_param_id)
-                                .build(ui)
+                                .build()
                             {
                                 self.selected_param_id = idx;
                             }
@@ -127,7 +127,7 @@ impl ParamTinkerer {
                 });
 
                 if let Some((param_name, param_idx)) = param_item {
-                    struct ImguiParamVisitor<'a>(&'a imgui::Ui<'a>);
+                    struct ImguiParamVisitor<'a>(&'a imgui::Ui);
 
                     impl<'a> ParamVisitor for ImguiParamVisitor<'a> {
                         fn visit_u8(&mut self, name: &str, v: &mut u8) {
@@ -161,7 +161,7 @@ impl ParamTinkerer {
                         }
 
                         fn visit_i32(&mut self, name: &str, v: &mut i32) {
-                            let mut i = *v as i32;
+                            let mut i = *v;
                             self.0.input_int(name, &mut i).build();
                             *v = i as _;
                         }
@@ -186,4 +186,4 @@ impl ParamTinkerer {
     }
 }
 
-hudhook::hudhook!(ParamTinkerer::new().into_hook::<ImguiDX11Hooks>());
+hudhook::hudhook!(ParamTinkerer::new().into_hook::<ImguiDx11Hooks>());

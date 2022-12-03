@@ -334,7 +334,7 @@ dependencies = [
  "log",
  "log-panics",
  "open",
- "parking_lot",
+ "parking_lot 0.11.2",
  "pkg-version",
  "regex",
  "semver 0.11.0",
@@ -513,7 +513,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hudhook"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "cc",
  "gl_loader",
@@ -522,7 +522,7 @@ dependencies = [
  "log",
  "memoffset",
  "once_cell",
- "parking_lot",
+ "parking_lot 0.11.2",
  "simplelog 0.12.0",
  "widestring 1.0.2",
  "windows 0.39.0",
@@ -585,20 +585,21 @@ dependencies = [
 
 [[package]]
 name = "imgui"
-version = "0.8.2"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6a33933d4645d6db1bfa55ff75e13ef301644d4c001cfaec6fe3afcfb05b82c"
+checksum = "1fed69cf982eee638cb1a2f1cf1d4b20626ea1813b7d37df6f7d3a2d5086c8cc"
 dependencies = [
  "bitflags",
+ "cfg-if",
  "imgui-sys",
- "parking_lot",
+ "mint",
+ "parking_lot 0.12.1",
 ]
 
 [[package]]
 name = "imgui-opengl-renderer"
 version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db78c2c7dd32060bafdb4b2595d994135b21d0d666103b9c921ef5d955212b8a"
+source = "git+https://github.com/veeenu/rust-imgui-opengl-renderer#ac18d96145dd0899b432414ec514c9d2233909d1"
 dependencies = [
  "gl_generator",
  "imgui",
@@ -606,12 +607,14 @@ dependencies = [
 
 [[package]]
 name = "imgui-sys"
-version = "0.8.2"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "286f5338bd8281e3203de29cc317d123b178f2e565eca5aee770a2048074fdf7"
+checksum = "2efc4bf8f1638a573e262ce131f870226d172e986fe966a141c2c60602589b71"
 dependencies = [
  "cc",
+ "cfg-if",
  "chlorine",
+ "mint",
 ]
 
 [[package]]
@@ -687,7 +690,7 @@ dependencies = [
  "imgui",
  "log",
  "macro-param",
- "parking_lot",
+ "parking_lot 0.11.2",
  "serde_json",
  "widestring 0.5.1",
  "winapi",
@@ -788,6 +791,12 @@ checksum = "96590ba8f175222643a85693f33d26e9c8a015f599c216509b1a6894af675d34"
 dependencies = [
  "adler",
 ]
+
+[[package]]
+name = "mint"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e53debba6bda7a793e5f99b8dacf19e626084f525f7829104ba9898f367d85ff"
 
 [[package]]
 name = "no-logo"
@@ -970,7 +979,17 @@ checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
 dependencies = [
  "instant",
  "lock_api",
- "parking_lot_core",
+ "parking_lot_core 0.8.5",
+]
+
+[[package]]
+name = "parking_lot"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3742b2c103b9f06bc9fff0a37ff4912935851bee6d36f3c02bcc755bcfec228f"
+dependencies = [
+ "lock_api",
+ "parking_lot_core 0.9.5",
 ]
 
 [[package]]
@@ -985,6 +1004,19 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "winapi",
+]
+
+[[package]]
+name = "parking_lot_core"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ff9f3fef3968a3ec5945535ed654cb38ff72d7495a25619e2247fb15a2ed9ba"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "redox_syscall",
+ "smallvec",
+ "windows-sys",
 ]
 
 [[package]]
@@ -1933,6 +1965,21 @@ name = "windows"
 version = "0.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0286ba339aa753e70765d521bb0242cc48e1194562bfa2a2ad7ac8a6de28f5d5"
+dependencies = [
+ "windows_aarch64_gnullvm",
+ "windows_aarch64_msvc 0.42.0",
+ "windows_i686_gnu 0.42.0",
+ "windows_i686_msvc 0.42.0",
+ "windows_x86_64_gnu 0.42.0",
+ "windows_x86_64_gnullvm",
+ "windows_x86_64_msvc 0.42.0",
+]
+
+[[package]]
+name = "windows-sys"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a3e1820f08b8513f676f7ab6c1f99ff312fb97b553d30ff4dd86f9f15728aa7"
 dependencies = [
  "windows_aarch64_gnullvm",
  "windows_aarch64_msvc 0.42.0",
