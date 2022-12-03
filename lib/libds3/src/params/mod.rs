@@ -85,7 +85,6 @@ impl Params {
         let base: &ParamMaster = (base_ptr as *const ParamMaster) // std::ptr::read(base_ptr as *const *const ParamMaster)
             .as_ref()
             .ok_or_else(|| "Invalid param base address".to_string())?;
-        info!("b");
 
         let m = Params::param_entries_from_master(base)?;
         self.0 = m;

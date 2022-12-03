@@ -27,6 +27,8 @@ pub(crate) struct Config {
 pub(crate) struct Settings {
     pub(crate) log_level: LevelFilterSerde,
     pub(crate) display: KeyState,
+    #[serde(default)]
+    pub(crate) show_console: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -168,6 +170,7 @@ impl Default for Config {
             settings: Settings {
                 log_level: LevelFilterSerde(LevelFilter::Debug),
                 display: KeyState::new(util::get_key_code("0").unwrap()),
+                show_console: false,
             },
             commands: Vec::new(),
         }

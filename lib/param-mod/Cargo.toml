@@ -10,6 +10,8 @@ crate-type = ["cdylib"]
 [dependencies]
 widestring = "1.0.2"
 libds3 = { path = "../libds3" }
+serde = { version = "1.0.147", features = ["derive"] }
+toml = "0.5.9"
 
 [dependencies.windows]
 version = "0.42.0"
