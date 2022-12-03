@@ -348,10 +348,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "detour2"
+name = "detour"
 version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d23c46a579bfa55f6f09fa8b482f994eefae5ed333823ddfcfddc69a7baf405b"
+source = "git+https://github.com/veeenu/detour-rs#ec2363205f64cb8c742f0e2e5c4f3813fe898079"
 dependencies = [
  "cfg-if",
  "generic-array",
@@ -361,7 +360,6 @@ dependencies = [
  "mmap-fixed-fixed",
  "region",
  "slice-pool",
- "winapi",
 ]
 
 [[package]]
@@ -543,7 +541,7 @@ name = "hudhook"
 version = "0.2.0"
 dependencies = [
  "cc",
- "detour2",
+ "detour",
  "gl_loader",
  "imgui",
  "imgui-opengl-renderer",

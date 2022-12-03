@@ -7,7 +7,7 @@ mod widgets;
 use std::time::Instant;
 
 use const_format::formatcp;
-use hudhook::hooks::dx11::ImguiDX11Hooks;
+use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
 use imgui::*;
 use libds3::prelude::*;
@@ -106,6 +106,10 @@ impl PracticeTool {
 
         if let Some(err) = config_err {
             debug!("{:?}", err);
+        }
+
+        if config.settings.log_level.inner() < LevelFilter::Debug || !config.settings.show_console {
+            hudhook::utils::free_console();
         }
 
         let pointers = PointerChains::new();
@@ -413,4 +417,4 @@ impl ImguiRenderLoop for PracticeTool {
     }
 }
 
-hudhook::hudhook!(PracticeTool::new().into_hook::<ImguiDX11Hooks>());
+hudhook::hudhook!(PracticeTool::new().into_hook::<ImguiDx11Hooks>());
