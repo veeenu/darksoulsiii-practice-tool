@@ -1,9 +1,10 @@
 use imgui::*;
 use libds3::prelude::*;
 use log::*;
+use sys::{igSetNextWindowPos, ImVec2};
 
-use super::Widget;
 use crate::util::KeyState;
+use crate::widgets::{Widget, scaling_factor};
 
 #[derive(Debug)]
 pub(crate) struct CharacterStatsEdit {
@@ -29,6 +30,7 @@ impl CharacterStatsEdit {
 
 impl Widget for CharacterStatsEdit {
     fn render(&mut self, ui: &imgui::Ui) {
+        let scale = scaling_factor(ui);
         let button_width = super::BUTTON_WIDTH * super::scaling_factor(ui);
         if ui.button_with_size(&self.label_open, [button_width, super::BUTTON_HEIGHT]) {
             self.stats = self.ptr.read();
@@ -41,6 +43,14 @@ impl Widget for CharacterStatsEdit {
 
         let style_tokens =
             [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
+
+        unsafe {
+            igSetNextWindowPos(
+                ImVec2::new(16.0 + scale * 200., 16.0),
+                Condition::Always as i8 as _,
+                ImVec2::new(0., 0.),
+            )
+        };
 
         if let Some(_token) = ui
             .modal_popup_config("##character_stats_edit")

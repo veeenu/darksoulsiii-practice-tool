@@ -7,9 +7,10 @@ use imgui::*;
 use libds3::memedit::Bitflag;
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer};
+use sys::{igSetNextWindowPos, ImVec2};
 
-use super::Widget;
 use crate::util::KeyState;
+use crate::widgets::{Widget, scaling_factor};
 
 // const ISP_TAG: &str = "##item-spawn";
 // static ITEM_ID_TREE: LazyLock<ItemIDTree> =
@@ -251,6 +252,7 @@ impl ItemSpawner<'_> {
 
 impl Widget for ItemSpawner<'_> {
     fn render(&mut self, ui: &imgui::Ui) {
+        let scale = scaling_factor(ui);
         if ui.button_with_size("Spawn item", [
             super::BUTTON_WIDTH * super::scaling_factor(ui),
             super::BUTTON_HEIGHT,
@@ -260,6 +262,14 @@ impl Widget for ItemSpawner<'_> {
 
         let style_tokens =
             [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
+
+        unsafe {
+            igSetNextWindowPos(
+                ImVec2::new(16.0 + scale * 200., 16.0),
+                Condition::Always as i8 as _,
+                ImVec2::new(0., 0.),
+            )
+        };
 
         if let Some(_token) = ui
             .modal_popup_config(ISP_TAG)

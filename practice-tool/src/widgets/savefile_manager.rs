@@ -5,6 +5,7 @@ use std::process::Command;
 
 use imgui::*;
 use log::error;
+use sys::{igSetNextWindowPos, ImVec2};
 
 use super::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use crate::util::{get_key_code, KeyState};
@@ -144,8 +145,16 @@ impl Widget for SavefileManager {
             self.dir_stack.refresh();
         }
 
-        let style_tokens =
-            [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
+        // let style_tokens =
+        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
+
+        unsafe {
+            igSetNextWindowPos(
+                ImVec2::new(16.0 + scale * 200., 16.0),
+                Condition::Always as i8 as _,
+                ImVec2::new(0., 0.),
+            )
+        };
 
         if let Some(_token) = ui
             .modal_popup_config(SFM_TAG)
@@ -248,7 +257,7 @@ impl Widget for SavefileManager {
             }
         }
 
-        style_tokens.into_iter().rev().for_each(|t| t.pop());
+        // style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
     fn interact(&mut self) {
