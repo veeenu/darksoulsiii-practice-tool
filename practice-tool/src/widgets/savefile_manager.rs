@@ -158,13 +158,10 @@ impl Widget for SavefileManager {
 
         if let Some(_token) = ui
             .modal_popup_config(SFM_TAG)
-            .flags(
-                WindowFlags::NO_TITLE_BAR
-                    | WindowFlags::NO_RESIZE
-                    | WindowFlags::NO_MOVE
-                    | WindowFlags::NO_SCROLLBAR
-                    | WindowFlags::ALWAYS_AUTO_RESIZE,
-            )
+            .resizable(false)
+            .movable(false)
+            .title_bar(false)
+            .scroll_bar(false)
             .begin_popup()
         {
             ui.child_window("##savefile-manager-breadcrumbs")
@@ -174,21 +171,21 @@ impl Widget for SavefileManager {
                     ui.set_scroll_x(ui.scroll_max_x());
                 });
 
-            let center_scroll_y = if self.key_down.keyup() {
+            let center_scroll_y = if self.key_down.keyup(ui) {
                 self.dir_stack.next();
                 true
-            } else if self.key_up.keyup() {
+            } else if self.key_up.keyup(ui) {
                 self.dir_stack.prev();
                 true
             } else {
                 false
             };
 
-            if self.key_enter.keyup() {
+            if self.key_enter.keyup(ui) {
                 self.dir_stack.enter();
             }
 
-            ListBox::new(SFM_TAG).size([button_width, 200. * scale]).build(ui, || {
+            ListBox::new("##savefile-manager-list").size([button_width, 200. * scale]).build(ui, || {
                 if ui.selectable_config(format!(".. Up one dir ({})", self.key_back)).build() {
                     self.dir_stack.exit();
                     self.breadcrumbs = self.dir_stack.breadcrumbs();
@@ -250,7 +247,7 @@ impl Widget for SavefileManager {
             if ui.button_with_size(format!("Close ({})", self.key_close), [
                 button_width,
                 BUTTON_HEIGHT,
-            ]) || self.key_close.keyup()
+            ]) || self.key_close.keyup(ui)
             {
                 ui.close_current_popup();
                 self.dir_stack.refresh();
@@ -260,14 +257,14 @@ impl Widget for SavefileManager {
         // style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
-    fn interact(&mut self) {
+    fn interact(&mut self, ui: &imgui::Ui) {
         if self.input_edited {
             return;
         }
-        if self.key_back.keydown() {
+        if self.key_back.keydown(ui) {
             self.dir_stack.exit();
             self.breadcrumbs = self.dir_stack.breadcrumbs();
-        } else if self.key_load.keydown() {
+        } else if self.key_load.keydown(ui) {
             self.load_savefile();
         }
     }

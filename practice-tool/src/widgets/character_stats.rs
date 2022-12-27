@@ -4,7 +4,7 @@ use log::*;
 use sys::{igSetNextWindowPos, ImVec2};
 
 use crate::util::KeyState;
-use crate::widgets::{Widget, scaling_factor};
+use crate::widgets::{scaling_factor, Widget};
 
 #[derive(Debug)]
 pub(crate) struct CharacterStatsEdit {
@@ -41,8 +41,9 @@ impl Widget for CharacterStatsEdit {
             ui.open_popup("##character_stats_edit");
         }
 
-        let style_tokens =
-            [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
+        // let style_tokens =
+        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg,
+        // super::MODAL_BACKGROUND)];
 
         unsafe {
             igSetNextWindowPos(
@@ -54,12 +55,10 @@ impl Widget for CharacterStatsEdit {
 
         if let Some(_token) = ui
             .modal_popup_config("##character_stats_edit")
-            .flags(
-                WindowFlags::NO_TITLE_BAR
-                    | WindowFlags::NO_RESIZE
-                    | WindowFlags::NO_MOVE
-                    | WindowFlags::NO_SCROLLBAR,
-            )
+            .resizable(false)
+            .movable(false)
+            .title_bar(false)
+            .scroll_bar(false)
             .begin_popup()
         {
             let _tok = ui.push_item_width(150.);
@@ -103,7 +102,7 @@ impl Widget for CharacterStatsEdit {
                 }
             }
 
-            if self.hotkey_close.keyup()
+            if self.hotkey_close.keyup(ui)
                 || ui.button_with_size(&self.label_close, [button_width, super::BUTTON_HEIGHT])
             {
                 ui.close_current_popup();
@@ -111,11 +110,11 @@ impl Widget for CharacterStatsEdit {
             }
         }
 
-        style_tokens.into_iter().rev().for_each(|t| t.pop());
+        // style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
-    fn interact(&mut self) {
-        if self.hotkey_open.keyup() {
+    fn interact(&mut self, ui: &imgui::Ui) {
+        if self.hotkey_open.keyup(ui) {
             self.stats = self.ptr.read();
         }
     }

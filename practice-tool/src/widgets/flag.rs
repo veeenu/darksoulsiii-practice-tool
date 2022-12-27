@@ -35,8 +35,8 @@ impl Widget for Flag {
         }
     }
 
-    fn interact(&mut self) {
-        if self.hotkey.as_ref().map(|c| c.keyup()).unwrap_or(false) {
+    fn interact(&mut self, ui: &imgui::Ui) {
+        if self.hotkey.as_ref().map(|c| c.keyup(ui)).unwrap_or(false) {
             self.bitflag.toggle();
         }
     }

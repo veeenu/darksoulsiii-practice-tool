@@ -260,8 +260,8 @@ impl Widget for ItemSpawner<'_> {
             ui.open_popup(ISP_TAG);
         }
 
-        let style_tokens =
-            [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
+        // let style_tokens =
+        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
 
         unsafe {
             igSetNextWindowPos(
@@ -273,12 +273,10 @@ impl Widget for ItemSpawner<'_> {
 
         if let Some(_token) = ui
             .modal_popup_config(ISP_TAG)
-            .flags(
-                WindowFlags::NO_TITLE_BAR
-                    | WindowFlags::NO_RESIZE
-                    | WindowFlags::NO_MOVE
-                    | WindowFlags::NO_SCROLLBAR,
-            )
+            .resizable(false)
+            .movable(false)
+            .title_bar(false)
+            .scroll_bar(false)
             .begin_popup()
         {
             let button_height = super::BUTTON_HEIGHT * super::scaling_factor(ui);
@@ -315,28 +313,28 @@ impl Widget for ItemSpawner<'_> {
 
             ui.slider_config("Qty", 1, 99).build(&mut self.qty);
             ui.slider_config("Dur", 0, 9999).build(&mut self.durability);
-            if self.hotkey_load.keyup()
+            if self.hotkey_load.keyup(ui)
                 || ui.button_with_size(&self.label_load, [400., button_height])
             {
                 self.spawn();
             }
 
-            if self.hotkey_close.keyup()
+            if self.hotkey_close.keyup(ui)
                 || ui.button_with_size(&self.label_close, [400., button_height])
             {
                 ui.close_current_popup();
             }
         }
 
-        style_tokens.into_iter().rev().for_each(|t| t.pop());
+        // style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
     fn log(&mut self) -> Option<Vec<String>> {
         self.log.take()
     }
 
-    fn interact(&mut self) {
-        if self.hotkey_load.keyup() {
+    fn interact(&mut self, ui: &imgui::Ui) {
+        if self.hotkey_load.keyup(ui) {
             self.spawn();
         }
     }
