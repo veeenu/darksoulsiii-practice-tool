@@ -513,12 +513,12 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hudhook"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "cc",
  "gl_loader",
  "imgui",
- "imgui-opengl-renderer",
+ "imgui-opengl",
  "log",
  "memoffset",
  "once_cell",
@@ -597,9 +597,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "imgui-opengl-renderer"
-version = "0.11.1"
-source = "git+https://github.com/veeenu/rust-imgui-opengl-renderer#ac18d96145dd0899b432414ec514c9d2233909d1"
+name = "imgui-opengl"
+version = "0.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27f460f124e48d60b5db7eeb5a9f41978d6ece68b8191d1c3683a97c61da0ed7"
 dependencies = [
  "gl_generator",
  "imgui",
