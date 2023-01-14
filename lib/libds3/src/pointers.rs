@@ -111,7 +111,7 @@ impl From<BaseAddresses> for PointerChains {
 
             Version::V1_12_0 | Version::V1_13_0 | Version::V1_14_0 => 0x1EE2,
 
-            Version::V1_15_0 | Version::V1_15_1 => 0x1EEA,
+            Version::V1_15_0 | Version::V1_15_1 | Version::V1_15_2 => 0x1EEA,
         };
         let offs_deathcam = match *VERSION {
             Version::V1_03_1
@@ -132,7 +132,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_13_0
             | Version::V1_14_0
             | Version::V1_15_0
-            | Version::V1_15_1 => 0x90,
+            | Version::V1_15_1
+            | Version::V1_15_2 => 0x90,
         };
         let offs_speed = match *VERSION {
             Version::V1_03_1
@@ -153,7 +154,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_13_0
             | Version::V1_14_0
             | Version::V1_15_0
-            | Version::V1_15_1 => 0xa58,
+            | Version::V1_15_1
+            | Version::V1_15_2 => 0xa58,
         };
         let offs_igt = match *VERSION {
             Version::V1_03_1
@@ -174,7 +176,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_13_0
             | Version::V1_14_0
             | Version::V1_15_0
-            | Version::V1_15_1 => 0xa4,
+            | Version::V1_15_1
+            | Version::V1_15_2 => 0xa4,
         };
         let offs_no_update_ai = 0xD;
         let mesh_hi = 0xEC;

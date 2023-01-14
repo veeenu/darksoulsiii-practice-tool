@@ -62,6 +62,7 @@ pub enum Version {
     V1_14_0,
     V1_15_0,
     V1_15_1,
+    V1_15_2,
 }
 
 impl From<(u32, u32, u32)> for Version {
@@ -85,6 +86,7 @@ impl From<(u32, u32, u32)> for Version {
             (1, 14, 0) => Version::V1_14_0,
             (1, 15, 0) => Version::V1_15_0,
             (1, 15, 1) => Version::V1_15_1,
+            (1, 15, 2) => Version::V1_15_2,
             (maj, min, patch) => {
                 log::error!("Unrecognized version {maj}.{min:02}.{patch}");
                 panic!()
@@ -114,6 +116,7 @@ impl From<Version> for (u32, u32, u32) {
             Version::V1_14_0 => (1, 14, 0),
             Version::V1_15_0 => (1, 15, 0),
             Version::V1_15_1 => (1, 15, 1),
+            Version::V1_15_2 => (1, 15, 2),
         }
     }
 }
@@ -139,6 +142,7 @@ impl From<Version> for BaseAddresses {
             Version::V1_14_0 => BASE_ADDRESSES_1_14_0,
             Version::V1_15_0 => BASE_ADDRESSES_1_15_0,
             Version::V1_15_1 => BASE_ADDRESSES_1_15_1,
+            Version::V1_15_2 => BASE_ADDRESSES_1_15_2,
         }
     }
 }
@@ -464,6 +468,24 @@ pub const BASE_ADDRESSES_1_15_1: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x477fed8,
     format_string: 0x2991650,
     no_logo: 0xbf42bf,
+    xa: 0x1f90,
+};
+
+pub const BASE_ADDRESSES_1_15_2: BaseAddresses = BaseAddresses {
+    base_a: 0x47572b8,
+    base_d: 0x475abd0,
+    base_hbd: 0x477dac0,
+    debug: 0x477fe94,
+    grend: 0x456cba8,
+    map_item_man: 0x4769240,
+    menu_man: 0x4763258,
+    param: 0x479b8b0,
+    spawn_item_func_ptr: 0x7c4080,
+    sprj_debug_event: 0x4751eb8,
+    world_chr_man: 0x477fdb8,
+    world_chr_man_dbg: 0x477fec8,
+    format_string: 0x2991610,
+    no_logo: 0xbf43ef,
     xa: 0x1f90,
 };
 
