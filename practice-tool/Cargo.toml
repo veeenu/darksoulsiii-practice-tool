@@ -39,5 +39,5 @@ widestring = "0.5.1"
 parking_lot = "0.11.2"
 hex = "0.4.3"
 const_format = "0.2.26"
-hudhook = { git = "https://github.com/veeenu/hudhook" }
+hudhook = { workspace = true }
 dll-syringe = { git = "https://github.com/OpenByteDev/dll-syringe" }
