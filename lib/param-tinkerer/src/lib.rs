@@ -18,7 +18,6 @@ impl ParamTinkerer {
     fn new() -> Self {
         println!("Initializing");
         hudhook::utils::alloc_console();
-        hudhook::utils::simplelog();
 
         ParamTinkerer {
             shown: false,

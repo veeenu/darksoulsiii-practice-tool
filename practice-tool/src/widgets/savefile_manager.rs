@@ -3,8 +3,8 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use hudhook::tracing::error;
 use imgui::*;
-use log::error;
 use sys::{igSetNextWindowPos, ImVec2};
 
 use super::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};

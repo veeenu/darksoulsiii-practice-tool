@@ -14,8 +14,6 @@ name = "libjdsd_dsiii_practice_tool"
 
 [dependencies]
 libds3 = { path = "../lib/libds3" }
-log = "0.4.14"
-simplelog = "0.8.0"
 log-panics = "2.0.0"
 toml = "0.5.6"
 serde = { version = "1.0.130", features = ["derive"] }
