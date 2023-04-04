@@ -461,16 +461,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gl_loader"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e32d96dd5f881490e537041d5532320812ba096097f07fccb4626578da0b99d3"
-dependencies = [
- "cc",
- "libc",
-]
-
-[[package]]
 name = "goblin"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -514,9 +504,9 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 [[package]]
 name = "hudhook"
 version = "0.4.0"
+source = "git+https://github.com/veeenu/hudhook#9099849d42667a02165260dc5835b37f25e8010d"
 dependencies = [
  "cc",
- "gl_loader",
  "imgui",
  "imgui-opengl",
  "log",

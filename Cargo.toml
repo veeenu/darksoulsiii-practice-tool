@@ -9,9 +9,6 @@ members = [
   "lib/param-mod",
   "xtask",
 ]
-exclude = [
-  "lib/hudhook",
-]
 
 [profile.dev]
 opt-level = 2

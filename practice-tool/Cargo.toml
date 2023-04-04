@@ -13,7 +13,6 @@ crate-type = ["cdylib", "rlib"]
 name = "libjdsd_dsiii_practice_tool"
 
 [dependencies]
-hudhook = { path = "../lib/hudhook" }
 libds3 = { path = "../lib/libds3" }
 log = "0.4.14"
 simplelog = "0.8.0"
@@ -40,4 +39,5 @@ widestring = "0.5.1"
 parking_lot = "0.11.2"
 hex = "0.4.3"
 const_format = "0.2.26"
+hudhook = { git = "https://github.com/veeenu/hudhook" }
 dll-syringe = { git = "https://github.com/OpenByteDev/dll-syringe" }
