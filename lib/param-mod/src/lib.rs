@@ -1,4 +1,4 @@
-#![feature(once_cell)]
+#![feature(lazy_cell)]
 
 use std::collections::HashMap;
 use std::ffi::c_void;
