@@ -1,0 +1,19 @@
+This release has two programs, Param Mod and Param Tinkerer.
+
+# Param Mod
+
+This consists of `dinput8.dll` and `param-mod.toml`.
+Both files have to be in the `Game` folder of Dark Souls III.
+
+`param-mod.toml` has covenant items 100% drop rate and Carthus Curved Sword 100% drop rate from the
+skeleton in Carthus. To figure out what params to change, use the Param Tinkerer.
+
+# Param Tinkerer
+
+This consists of `param-tinkerer.exe` and `param-tinkerer.dll`.
+Running the `.exe` will spawn the tool that allows you to edit the game parameters.
+You can take note of the changes you want and then transfer them to the `.toml` file.
+
+The format is not super clean and completely undocumented (as it constructs parameters
+according to what is found in the game's memory) so crashes will happen, but feel free
+to reach out for help.

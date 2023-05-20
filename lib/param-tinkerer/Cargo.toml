@@ -11,6 +11,7 @@ name = "jdsd_dsiii_param_tinkerer"
 [dependencies]
 libds3 = { path = "../libds3" }
 windows = { version = "0.42.0", features = ["Win32_System_LibraryLoader", "Win32_Foundation"] }
+dll-syringe = { git = "https://github.com/OpenByteDev/dll-syringe" }
 hudhook.workspace = true
 imgui.workspace = true
 imgui-sys.workspace = true
