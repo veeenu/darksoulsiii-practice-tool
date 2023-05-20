@@ -103,14 +103,8 @@ fn dist() -> Result<()> {
         project_root().join("target/release/libjdsd_dsiii_practice_tool.dll"),
         "jdsd_dsiii_practice_tool.dll",
     )?;
-    add_zip(
-        project_root().join("target/release/dinput8nologo.dll"),
-        "dinput8.dll",
-    )?;
-    add_zip(
-        project_root().join("lib/data/RELEASE-README.txt"),
-        "README.txt",
-    )?;
+    add_zip(project_root().join("target/release/dinput8nologo.dll"), "dinput8.dll")?;
+    add_zip(project_root().join("lib/data/RELEASE-README.txt"), "README.txt")?;
     add_zip(project_root().join("jdsd_dsiii_practice_tool.toml"), "jdsd_dsiii_practice_tool.toml")?;
 
     Ok(())

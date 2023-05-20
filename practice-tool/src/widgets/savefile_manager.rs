@@ -146,7 +146,8 @@ impl Widget for SavefileManager {
         }
 
         // let style_tokens =
-        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
+        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg,
+        // super::MODAL_BACKGROUND)];
 
         unsafe {
             igSetNextWindowPos(
@@ -185,30 +186,33 @@ impl Widget for SavefileManager {
                 self.dir_stack.enter();
             }
 
-            ListBox::new("##savefile-manager-list").size([button_width, 200. * scale]).build(ui, || {
-                if ui.selectable_config(format!(".. Up one dir ({})", self.key_back)).build() {
-                    self.dir_stack.exit();
-                    self.breadcrumbs = self.dir_stack.breadcrumbs();
-                    self.dir_stack.refresh();
-                }
-
-                let mut goto: Option<usize> = None;
-                for (idx, is_selected, i) in self.dir_stack.values() {
-                    if ui.selectable_config(i).selected(is_selected).build() {
-                        goto = Some(idx);
+            ListBox::new("##savefile-manager-list").size([button_width, 200. * scale]).build(
+                ui,
+                || {
+                    if ui.selectable_config(format!(".. Up one dir ({})", self.key_back)).build() {
+                        self.dir_stack.exit();
+                        self.breadcrumbs = self.dir_stack.breadcrumbs();
+                        self.dir_stack.refresh();
                     }
 
-                    if center_scroll_y && is_selected {
-                        ui.set_scroll_here_y();
-                    }
-                }
+                    let mut goto: Option<usize> = None;
+                    for (idx, is_selected, i) in self.dir_stack.values() {
+                        if ui.selectable_config(i).selected(is_selected).build() {
+                            goto = Some(idx);
+                        }
 
-                if let Some(idx) = goto {
-                    self.dir_stack.goto(idx);
-                    self.dir_stack.enter();
-                    self.breadcrumbs = self.dir_stack.breadcrumbs();
-                }
-            });
+                        if center_scroll_y && is_selected {
+                            ui.set_scroll_here_y();
+                        }
+                    }
+
+                    if let Some(idx) = goto {
+                        self.dir_stack.goto(idx);
+                        self.dir_stack.enter();
+                        self.breadcrumbs = self.dir_stack.breadcrumbs();
+                    }
+                },
+            );
 
             if ui.button_with_size(format!("Load savefile ({})", self.key_load), [
                 button_width,
@@ -447,7 +451,7 @@ fn get_savefile_path() -> Result<PathBuf, String> {
         [std::env::var("APPDATA").map_err(|e| format!("{}", e))?.as_str(), "DarkSoulsIII"]
             .iter()
             .collect();
-    std::fs::read_dir(&savefile_path)
+    std::fs::read_dir(savefile_path)
         .map_err(|e| format!("{}", e))?
         .filter_map(|e| e.ok())
         .find(|e| re.is_match(&e.file_name().to_string_lossy()) && e.path().is_dir())
@@ -458,12 +462,12 @@ fn get_savefile_path() -> Result<PathBuf, String> {
 
 fn load_savefile(src: &Path, dest: &Path) -> Result<(), std::io::Error> {
     let buf = std::fs::read(src)?;
-    std::fs::write(dest, &buf)?;
+    std::fs::write(dest, buf)?;
     Ok(())
 }
 
 fn import_savefile(src: &Path, dest: &Path) -> Result<(), std::io::Error> {
     let buf = std::fs::read(dest)?;
-    std::fs::write(src, &buf)?;
+    std::fs::write(src, buf)?;
     Ok(())
 }

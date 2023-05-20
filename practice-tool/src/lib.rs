@@ -18,6 +18,9 @@ use tracing_subscriber::prelude::*;
 use widgets::{BUTTON_HEIGHT, BUTTON_WIDTH};
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_RSHIFT};
 
+const VERSION: (usize, usize, usize) =
+    (pkg_version_major!(), pkg_version_minor!(), pkg_version_patch!());
+
 struct FontIDs {
     small: FontId,
     normal: FontId,
@@ -238,9 +241,9 @@ impl PracticeTool {
                         self.pointers.cursor_show.set(true);
                         ui.text(formatcp!(
                             "Dark Souls III Practice Tool v{}.{}.{}",
-                            pkg_version_major!() as usize,
-                            pkg_version_minor!() as usize,
-                            pkg_version_patch!() as usize,
+                            VERSION.0,
+                            VERSION.1,
+                            VERSION.2
                         ));
                         ui.separator();
                         ui.text(format!(

@@ -187,7 +187,8 @@ unsafe fn patch() {
     std::thread::spawn(|| {
         let mut params = PARAMS.write();
 
-        let patch_config: PatchConfig = toml::from_str(&std::fs::read_to_string("param-mod.toml").unwrap()).unwrap();
+        let patch_config: PatchConfig =
+            toml::from_str(&std::fs::read_to_string("param-mod.toml").unwrap()).unwrap();
 
         drop(wait_option(|| {
             if let Err(e) = params.refresh() {
