@@ -18,7 +18,6 @@ impl ParamTinkerer {
     fn new() -> Self {
         println!("Initializing");
         hudhook::utils::alloc_console();
-        hudhook::utils::simplelog();
 
         ParamTinkerer {
             shown: false,
@@ -84,7 +83,8 @@ impl ParamTinkerer {
                     let _ = ui.push_item_width(-1.);
                     ListBox::new("##param_names").size([COLUMN1, 400.]).build(ui, || {
                         for (idx, k) in params.keys().enumerate() {
-                            if ui.selectable_config(k).selected(idx == self.selected_param).build() {
+                            if ui.selectable_config(k).selected(idx == self.selected_param).build()
+                            {
                                 self.selected_param = idx;
                             }
                         }
@@ -114,7 +114,8 @@ impl ParamTinkerer {
                                 write!(buf, "{id}").ok();
                             }
 
-                            if ui.selectable_config(&buf)
+                            if ui
+                                .selectable_config(&buf)
                                 .selected(idx == self.selected_param_id)
                                 .build()
                             {

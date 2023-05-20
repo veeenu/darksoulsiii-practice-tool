@@ -10,7 +10,7 @@ use serde::{Deserialize, Deserializer};
 use sys::{igSetNextWindowPos, ImVec2};
 
 use crate::util::KeyState;
-use crate::widgets::{Widget, scaling_factor};
+use crate::widgets::{scaling_factor, Widget};
 
 // const ISP_TAG: &str = "##item-spawn";
 // static ITEM_ID_TREE: LazyLock<ItemIDTree> =
@@ -261,7 +261,8 @@ impl Widget for ItemSpawner<'_> {
         }
 
         // let style_tokens =
-        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg, super::MODAL_BACKGROUND)];
+        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg,
+        // super::MODAL_BACKGROUND)];
 
         unsafe {
             igSetNextWindowPos(

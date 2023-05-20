@@ -14,7 +14,7 @@ impl Flag {
     pub(crate) fn new(label: &str, bitflag: Bitflag<u8>, hotkey: Option<KeyState>) -> Self {
         let label = match &hotkey {
             Some(k) => format!("{} ({})", label, k),
-            None => label.to_string()
+            None => label.to_string(),
         };
         Flag { label, bitflag, hotkey }
     }

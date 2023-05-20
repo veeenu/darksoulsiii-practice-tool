@@ -4,16 +4,22 @@ mod config;
 mod util;
 mod widgets;
 
+use std::sync::Mutex;
 use std::time::Instant;
 
 use const_format::formatcp;
 use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
+use hudhook::tracing::metadata::LevelFilter;
 use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
+use tracing_subscriber::prelude::*;
 use widgets::{BUTTON_HEIGHT, BUTTON_WIDTH};
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_RSHIFT};
+
+const VERSION: (usize, usize, usize) =
+    (pkg_version_major!(), pkg_version_minor!(), pkg_version_patch!());
 
 struct FontIDs {
     small: FontId,
@@ -41,7 +47,6 @@ struct PracticeTool {
 
 impl PracticeTool {
     fn new() -> Self {
-        use simplelog::*;
         hudhook::utils::alloc_console();
         log_panics::init();
 
@@ -74,27 +79,37 @@ impl PracticeTool {
 
         match log_file {
             Some(Ok(log_file)) => {
-                CombinedLogger::init(vec![
-                    TermLogger::new(
-                        config.settings.log_level.inner(),
-                        Config::default(),
-                        TerminalMode::Mixed,
-                    ),
-                    WriteLogger::new(
-                        config.settings.log_level.inner(),
-                        Config::default(),
-                        log_file,
-                    ),
-                ])
-                .ok();
+                let file_layer = tracing_subscriber::fmt::layer()
+                    .with_thread_ids(true)
+                    .with_file(true)
+                    .with_line_number(true)
+                    .with_thread_names(true)
+                    .with_writer(Mutex::new(log_file))
+                    .with_ansi(false)
+                    .boxed();
+                let stdout_layer = tracing_subscriber::fmt::layer()
+                    .with_thread_ids(true)
+                    .with_file(true)
+                    .with_line_number(true)
+                    .with_thread_names(true)
+                    .with_ansi(true)
+                    .boxed();
+
+                tracing_subscriber::registry()
+                    .with(config.settings.log_level.inner())
+                    .with(file_layer)
+                    .with(stdout_layer)
+                    .init();
             },
             e => {
-                CombinedLogger::init(vec![TermLogger::new(
-                    LevelFilter::Debug, // config.settings.log_level.to_level_filter(),
-                    Config::default(),
-                    TerminalMode::Mixed,
-                )])
-                .ok();
+                tracing_subscriber::fmt()
+                    .with_max_level(config.settings.log_level.inner())
+                    .with_thread_ids(true)
+                    .with_file(true)
+                    .with_line_number(true)
+                    .with_thread_names(true)
+                    .with_ansi(true)
+                    .init();
 
                 match e {
                     None => error!("Could not construct log file path"),
@@ -108,8 +123,10 @@ impl PracticeTool {
             debug!("{:?}", err);
         }
 
-        if config.settings.log_level.inner() < LevelFilter::Debug || !config.settings.show_console {
+        if config.settings.log_level.inner() < LevelFilter::DEBUG || !config.settings.show_console {
             hudhook::utils::free_console();
+        } else {
+            hudhook::utils::enable_console_colors();
         }
 
         let pointers = PointerChains::new();
@@ -118,7 +135,7 @@ impl PracticeTool {
 
         {
             let mut params = PARAMS.write();
-            if let Some(mut darksign) = wait_option(|| unsafe {
+            if let Some(darksign) = wait_option(|| unsafe {
                 if let Err(e) = params.refresh() {
                     error!("{}", e);
                 }
@@ -224,9 +241,9 @@ impl PracticeTool {
                         self.pointers.cursor_show.set(true);
                         ui.text(formatcp!(
                             "Dark Souls III Practice Tool v{}.{}.{}",
-                            pkg_version_major!() as usize,
-                            pkg_version_minor!() as usize,
-                            pkg_version_patch!() as usize,
+                            VERSION.0,
+                            VERSION.1,
+                            VERSION.2
                         ));
                         ui.separator();
                         ui.text(format!(
@@ -353,7 +370,8 @@ impl ImguiRenderLoop for PracticeTool {
     fn render(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
         let font_token = self.set_font(ui);
 
-        if flags.focused && !ui.io().want_capture_keyboard && self.config.settings.display.keyup(ui) {
+        if flags.focused && !ui.io().want_capture_keyboard && self.config.settings.display.keyup(ui)
+        {
             let rshift = unsafe { GetAsyncKeyState(VK_RSHIFT.0 as _) < 0 };
 
             self.ui_state = match (&self.ui_state, rshift) {

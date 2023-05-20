@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use libds3::prelude::*;
-use log::LevelFilter;
 use serde::Deserialize;
+use tracing_subscriber::filter::LevelFilter;
 
 use crate::util;
 use crate::util::KeyState;
@@ -82,10 +82,10 @@ enum CfgCommand {
 
 #[derive(Deserialize, Debug)]
 #[serde(try_from = "String")]
-pub(crate) struct LevelFilterSerde(log::LevelFilter);
+pub(crate) struct LevelFilterSerde(LevelFilter);
 
 impl LevelFilterSerde {
-    pub(crate) fn inner(&self) -> log::LevelFilter {
+    pub(crate) fn inner(&self) -> LevelFilter {
         self.0
     }
 }
@@ -95,7 +95,7 @@ impl TryFrom<String> for LevelFilterSerde {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Ok(LevelFilterSerde(
-            log::LevelFilter::from_str(&value)
+            LevelFilter::from_str(&value)
                 .map_err(|e| format!("Couldn't parse log level filter: {}", e))?,
         ))
     }
@@ -111,53 +111,42 @@ impl Config {
             .iter()
             .map(|cmd| match cmd {
                 CfgCommand::Flag { flag, hotkey } => {
-                    Box::new(Flag::new(&flag.label, (flag.getter)(chains).clone(), hotkey.clone()))
+                    Box::new(Flag::new(&flag.label, (flag.getter)(chains).clone(), *hotkey))
                         as Box<dyn Widget>
                 },
                 CfgCommand::SavefileManager { hotkey_load, hotkey_back, hotkey_close } => {
-                    SavefileManager::new_widget(
-                        hotkey_load.clone(),
-                        hotkey_back.clone(),
-                        hotkey_close.clone(),
-                    )
+                    SavefileManager::new_widget(*hotkey_load, *hotkey_back, *hotkey_close)
                 },
                 CfgCommand::ItemSpawner { hotkey_load, hotkey_close } => {
                     Box::new(ItemSpawner::new(
                         chains.spawn_item_func_ptr as usize,
                         chains.map_item_man as usize,
                         chains.gravity.clone(),
-                        hotkey_load.clone(),
-                        hotkey_close.clone(),
+                        *hotkey_load,
+                        *hotkey_close,
                     ))
                 },
-                CfgCommand::Position { hotkey, modifier } => Box::new(SavePosition::new(
-                    chains.position.clone(),
-                    hotkey.clone(),
-                    modifier.clone(),
-                )),
-                CfgCommand::NudgePosition { nudge, nudge_up, nudge_down } => {
-                    Box::new(NudgePosition::new(
-                        chains.position.clone().1,
-                        *nudge,
-                        nudge_up.clone(),
-                        nudge_down.clone(),
-                    ))
+                CfgCommand::Position { hotkey, modifier } => {
+                    Box::new(SavePosition::new(chains.position.clone(), *hotkey, *modifier))
                 },
+                CfgCommand::NudgePosition { nudge, nudge_up, nudge_down } => Box::new(
+                    NudgePosition::new(chains.position.clone().1, *nudge, *nudge_up, *nudge_down),
+                ),
                 CfgCommand::CharacterStats { hotkey_open, hotkey_close } => {
                     Box::new(CharacterStatsEdit::new(
-                        hotkey_open.clone(),
-                        hotkey_close.clone(),
+                        *hotkey_open,
+                        *hotkey_close,
                         chains.character_stats.clone(),
                     ))
                 },
                 CfgCommand::CycleSpeed { cycle_speed, hotkey } => {
-                    Box::new(CycleSpeed::new(cycle_speed, chains.speed.clone(), hotkey.clone()))
+                    Box::new(CycleSpeed::new(cycle_speed, chains.speed.clone(), *hotkey))
                 },
                 CfgCommand::Souls { amount, hotkey } => {
-                    Box::new(Souls::new(*amount, chains.souls.clone(), hotkey.clone()))
+                    Box::new(Souls::new(*amount, chains.souls.clone(), *hotkey))
                 },
                 CfgCommand::Quitout { hotkey } => {
-                    Box::new(Quitout::new(chains.quitout.clone(), hotkey.clone()))
+                    Box::new(Quitout::new(chains.quitout.clone(), *hotkey))
                 },
             })
             .collect()
@@ -168,7 +157,7 @@ impl Default for Config {
     fn default() -> Self {
         Config {
             settings: Settings {
-                log_level: LevelFilterSerde(LevelFilter::Debug),
+                log_level: LevelFilterSerde(LevelFilter::DEBUG),
                 display: KeyState::new(util::get_key_code("0").unwrap()),
                 show_console: false,
             },

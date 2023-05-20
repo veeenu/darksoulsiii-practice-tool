@@ -84,7 +84,7 @@ fn dist() -> Result<()> {
     let mut buf: Vec<u8> = Vec::new();
 
     let mut add_zip = |src: PathBuf, dst: &str| -> Result<()> {
-        File::open(&src)
+        File::open(src)
             .map_err(|e| format!("{}: Couldn't open file: {}", dst, e))?
             .read_to_end(&mut buf)
             .map_err(|e| format!("{}: Couldn't read file: {}", dst, e))?;
@@ -103,14 +103,8 @@ fn dist() -> Result<()> {
         project_root().join("target/release/libjdsd_dsiii_practice_tool.dll"),
         "jdsd_dsiii_practice_tool.dll",
     )?;
-    add_zip(
-        project_root().join("target/release/dinput8nologo.dll"),
-        "dinput8.dll",
-    )?;
-    add_zip(
-        project_root().join("lib/data/RELEASE-README.txt"),
-        "README.txt",
-    )?;
+    add_zip(project_root().join("target/release/dinput8nologo.dll"), "dinput8.dll")?;
+    add_zip(project_root().join("lib/data/RELEASE-README.txt"), "README.txt")?;
     add_zip(project_root().join("jdsd_dsiii_practice_tool.toml"), "jdsd_dsiii_practice_tool.toml")?;
 
     Ok(())
@@ -118,7 +112,7 @@ fn dist() -> Result<()> {
 
 fn run() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-    let status = Command::new(&cargo)
+    let status = Command::new(cargo)
         .current_dir(project_root())
         .args(["build", "--lib", "--package", "darksoulsiii-practice-tool"])
         .status()
@@ -163,7 +157,7 @@ fn inject(mut args: impl Iterator<Item = String>) -> Result<()> {
 
 fn run_param_tinkerer() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-    let status = Command::new(&cargo)
+    let status = Command::new(cargo)
         .current_dir(project_root())
         .args(["build", "--release", "--lib", "--package", "param-tinkerer"])
         .status()
@@ -222,7 +216,7 @@ fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
     let mut buf: Vec<u8> = Vec::new();
     File::open(icon)?.read_to_end(&mut buf)?;
 
-    let mut group_header: &mut GroupHeader =
+    let group_header: &mut GroupHeader =
         unsafe { (buf.as_ptr() as *mut GroupHeader).as_mut().ok_or("Invalid pointer")? };
 
     let start: usize = group_header.offset as usize;

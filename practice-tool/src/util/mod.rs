@@ -5,7 +5,7 @@ use std::fmt::Display;
 use std::os::windows::prelude::OsStringExt;
 use std::path::PathBuf;
 
-use log::*;
+use hudhook::tracing::error;
 use serde::Deserialize;
 pub(crate) use vk::*;
 use windows::core::PCSTR;
@@ -43,17 +43,17 @@ pub fn get_dll_path() -> Option<PathBuf> {
 
 #[derive(Debug, Deserialize, Clone, Copy)]
 #[serde(try_from = "String")]
-pub(crate) struct KeyState(i32);
+pub(crate) struct KeyState(u32);
 
 impl Display for KeyState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", get_key_repr(self.0).unwrap_or("N/A"))
+        write!(f, "{}", get_key_repr(self.0 as i32).unwrap_or("N/A"))
     }
 }
 
 impl KeyState {
     pub(crate) fn new(vkey: i32) -> Self {
-        KeyState(vkey)
+        KeyState(vkey as u32)
     }
 
     pub(crate) fn keyup(&self, ui: &imgui::Ui) -> bool {

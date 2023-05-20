@@ -1,8 +1,9 @@
 use dll_syringe::process::OwnedProcess;
 use dll_syringe::Syringe;
+use hudhook::tracing::trace;
 use pkg_version::*;
 use semver::Version;
-use simplelog::*;
+use tracing_subscriber::filter::LevelFilter;
 use windows::core::PCSTR;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -54,7 +55,7 @@ fn perform_injection() -> Result<(), String> {
     }
 
     let dll_path = dll_path.canonicalize().map_err(err_to_string)?;
-    log::trace!("Injecting {:?}", dll_path);
+    trace!("Injecting {:?}", dll_path);
 
     let process = OwnedProcess::find_first_by_name("DarkSoulsIII.exe")
         .ok_or_else(|| "Could not find process".to_string())?;
@@ -65,12 +66,14 @@ fn perform_injection() -> Result<(), String> {
 }
 
 fn main() {
-    CombinedLogger::init(vec![TermLogger::new(
-        LevelFilter::Trace,
-        ConfigBuilder::new().add_filter_allow("jdsd_dsiii_practice_tool".to_string()).build(),
-        TerminalMode::Mixed,
-    )])
-    .ok();
+    tracing_subscriber::fmt()
+        .with_max_level(LevelFilter::TRACE)
+        .with_thread_ids(true)
+        .with_file(true)
+        .with_line_number(true)
+        .with_thread_names(true)
+        .init();
+
     let current_version = get_current_version();
 
     match get_latest_version() {

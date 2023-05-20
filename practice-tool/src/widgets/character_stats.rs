@@ -1,6 +1,6 @@
+use hudhook::tracing::debug;
 use imgui::*;
 use libds3::prelude::*;
-use log::*;
 use sys::{igSetNextWindowPos, ImVec2};
 
 use crate::util::KeyState;

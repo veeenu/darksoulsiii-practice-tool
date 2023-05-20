@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-imgui.workspace = true
 log = "0.4.14"
 widestring = "0.5.1"
 macro-param = { path = "../macro-param" }
