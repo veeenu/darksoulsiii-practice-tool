@@ -7,7 +7,7 @@ on:
       - master
 
 jobs:
-  build:
+  lints:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@master
