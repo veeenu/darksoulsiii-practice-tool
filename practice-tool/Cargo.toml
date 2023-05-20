@@ -1,6 +1,6 @@
 [package]
 name = "darksoulsiii-practice-tool"
-version = "1.4.0"
+version = "1.4.1"
 authors = ["Andrea Venuta <venutawebdesign@gmail.com>"]
 edition = "2021"
 
