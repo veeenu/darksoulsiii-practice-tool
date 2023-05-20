@@ -135,7 +135,7 @@ impl PracticeTool {
 
         {
             let mut params = PARAMS.write();
-            if let Some(mut darksign) = wait_option(|| unsafe {
+            if let Some(darksign) = wait_option(|| unsafe {
                 if let Err(e) = params.refresh() {
                     error!("{}", e);
                 }

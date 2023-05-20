@@ -8,7 +8,6 @@ name = "dinput8nologo"
 crate-type = ["cdylib"]
 
 [dependencies]
-widestring = "1.0.2"
 libds3 = { path = "../libds3" }
 
 [dependencies.windows]
