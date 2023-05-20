@@ -39,3 +39,4 @@ dll-syringe = { git = "https://github.com/OpenByteDev/dll-syringe" }
 hudhook.workspace = true
 imgui.workspace = true
 imgui-sys.workspace = true
+tracing-subscriber = "0.3.17"

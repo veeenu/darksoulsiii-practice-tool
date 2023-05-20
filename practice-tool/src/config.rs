@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
-use hudhook::tracing::LevelFilter;
 use libds3::prelude::*;
 use serde::Deserialize;
+use tracing_subscriber::filter::LevelFilter;
 
 use crate::util;
 use crate::util::KeyState;
