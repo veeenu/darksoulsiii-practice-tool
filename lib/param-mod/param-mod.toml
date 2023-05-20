@@ -1,4 +1,3 @@
-
 # Carthus Curved Sword drop rate
 [ItemLotParam.11700000]
 lot_item_base_point01 = 0
@@ -39,81 +38,81 @@ lot_item_base_point02 = 1000
 # thunder_damage_cut_rate = 0.0
 
 # Covenant drops
-# [ItemLotParam.14101006]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.14101105]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.14101207]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.14101306]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.52250003]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.52250103]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.52260003]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.52260103]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.52270003]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.31700005]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.31701005]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.12100005]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.12100104]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.12100204]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.12100303]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.12801009]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.12801108]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.12801208]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.12801308]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.12801407]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.11700003]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.11700102]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.11700203]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.11800002]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.11800102]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
-# [ItemLotParam.11801102]
-# lot_item_base_point01 = 0
-# lot_item_base_point02 = 1000
+[ItemLotParam.14101006]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.14101105]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.14101207]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.14101306]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.52250003]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.52250103]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.52260003]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.52260103]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.52270003]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.31700005]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.31701005]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.12100005]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.12100104]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.12100204]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.12100303]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.12801009]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.12801108]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.12801208]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.12801308]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.12801407]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.11700003]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.11700102]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.11700203]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.11800002]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.11800102]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000
+[ItemLotParam.11801102]
+lot_item_base_point01 = 0
+lot_item_base_point02 = 1000

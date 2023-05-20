@@ -854,6 +854,7 @@ dependencies = [
 name = "param-tinkerer"
 version = "0.1.0"
 dependencies = [
+ "dll-syringe",
  "hudhook",
  "imgui",
  "imgui-sys",
