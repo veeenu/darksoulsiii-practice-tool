@@ -51,15 +51,7 @@ fn dist() -> Result<()> {
     let status = Command::new(&cargo)
         .current_dir(project_root())
         .env("CARGO_XTASK_DIST", "true")
-        .args([
-            "build",
-            "--locked",
-            "--release",
-            "--package",
-            "darksoulsiii-practice-tool",
-            "--package",
-            "no-logo",
-        ])
+        .args(["build", "--locked", "--release"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
 
@@ -122,17 +114,13 @@ fn dist() -> Result<()> {
 fn dist_parammod() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
 
-    let status = Command::new(&cargo)
+    let status = Command::new(cargo)
         .current_dir(project_root())
         .env("CARGO_XTASK_DIST", "true")
         .args([
             "build",
             "--locked",
             "--release",
-            "--package",
-            "param-mod",
-            "--package",
-            "param-tinkerer",
         ])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;

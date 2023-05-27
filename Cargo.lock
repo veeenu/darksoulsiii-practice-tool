@@ -311,7 +311,7 @@ dependencies = [
 
 [[package]]
 name = "darksoulsiii-practice-tool"
-version = "1.4.0"
+version = "1.4.1"
 dependencies = [
  "const_format",
  "dll-syringe",
@@ -490,7 +490,7 @@ dependencies = [
 [[package]]
 name = "hudhook"
 version = "0.4.0"
-source = "git+https://github.com/veeenu/hudhook#28d77d84d26848c3b91dbb453054bde707dcdcd9"
+source = "git+https://github.com/veeenu/hudhook#db85a164b316ba5321b80840c27650137a57f412"
 dependencies = [
  "cc",
  "imgui",
