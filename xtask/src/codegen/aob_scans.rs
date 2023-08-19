@@ -231,7 +231,7 @@ fn find_aobs(bytes: Vec<u8>) -> Vec<(&'static str, usize)> {
 
     aob_offsets_direct.sort_by(|a, b| a.0.cmp(b.0));
 
-    aob_offsets.extend(aob_offsets_direct.into_iter());
+    aob_offsets.extend(aob_offsets_direct);
 
     //
     let mut aob_offsets_readme = AOBS_README
@@ -249,7 +249,7 @@ fn find_aobs(bytes: Vec<u8>) -> Vec<(&'static str, usize)> {
 
     aob_offsets_readme.sort_by(|a, b| a.0.cmp(b.0));
 
-    aob_offsets.extend(aob_offsets_readme.into_iter());
+    aob_offsets.extend(aob_offsets_readme);
 
     aob_offsets
 }

@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = [
   "practice-tool", 
   "lib/libds3",
@@ -20,6 +21,7 @@ codegen-units = 1
 opt-level = 3
 
 [workspace.dependencies]
-hudhook = { git = "https://github.com/veeenu/hudhook" }
+# hudhook = { git = "https://github.com/veeenu/hudhook" }
+hudhook = { path = "../hudhook" }
 imgui = "0.11.0"
 imgui-sys = "0.11.0"

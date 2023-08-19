@@ -9,7 +9,7 @@ use std::time::Instant;
 
 use const_format::formatcp;
 use hudhook::hooks::dx11::ImguiDx11Hooks;
-use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
+use hudhook::hooks::ImguiRenderLoop;
 use hudhook::tracing::metadata::LevelFilter;
 use imgui::*;
 use libds3::prelude::*;
@@ -160,7 +160,7 @@ impl PracticeTool {
         }
     }
 
-    fn render_visible(&mut self, ui: &imgui::Ui, flags: &ImguiRenderLoopFlags) {
+    fn render_visible(&mut self, ui: &imgui::Ui) {
         ui.window("##tool_window")
             .position([16., 16.], Condition::Always)
             .bg_alpha(0.8)
@@ -172,7 +172,7 @@ impl PracticeTool {
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
             .build(|| {
-                if flags.focused {
+                if ui.io().want_capture_mouse {
                     for w in self.widgets.iter_mut() {
                         w.interact(ui);
                     }
@@ -202,7 +202,7 @@ impl PracticeTool {
             });
     }
 
-    fn render_closed(&mut self, ui: &imgui::Ui, flags: &ImguiRenderLoopFlags) {
+    fn render_closed(&mut self, ui: &imgui::Ui) {
         let stack_tokens = [
             ui.push_style_var(StyleVar::WindowRounding(0.)),
             ui.push_style_var(StyleVar::FrameBorderSize(0.)),
@@ -287,7 +287,7 @@ impl PracticeTool {
                     ));
                 }
 
-                if flags.focused && !ui.io().want_capture_keyboard {
+                if !ui.io().want_capture_mouse && !ui.io().want_capture_keyboard {
                     for w in self.widgets.iter_mut() {
                         w.interact(ui);
                     }
@@ -299,15 +299,15 @@ impl PracticeTool {
         }
     }
 
-    fn render_hidden(&mut self, ui: &imgui::Ui, flags: &ImguiRenderLoopFlags) {
-        if flags.focused && !ui.io().want_capture_keyboard {
+    fn render_hidden(&mut self, ui: &imgui::Ui) {
+        if !ui.io().want_capture_mouse && !ui.io().want_capture_keyboard {
             for w in self.widgets.iter_mut() {
                 w.interact(ui);
             }
         }
     }
 
-    fn render_logs(&mut self, ui: &imgui::Ui, _flags: &ImguiRenderLoopFlags) {
+    fn render_logs(&mut self, ui: &imgui::Ui) {
         let io = ui.io();
 
         let [dw, dh] = io.display_size;
@@ -367,10 +367,12 @@ impl PracticeTool {
 }
 
 impl ImguiRenderLoop for PracticeTool {
-    fn render(&mut self, ui: &mut imgui::Ui, flags: &ImguiRenderLoopFlags) {
+    fn render(&mut self, ui: &mut imgui::Ui) {
         let font_token = self.set_font(ui);
 
-        if flags.focused && !ui.io().want_capture_keyboard && self.config.settings.display.keyup(ui)
+        if !ui.io().want_capture_mouse
+            && !ui.io().want_capture_keyboard
+            && self.config.settings.display.keyup(ui)
         {
             let rshift = unsafe { GetAsyncKeyState(VK_RSHIFT.0 as _) < 0 };
 
@@ -391,13 +393,13 @@ impl ImguiRenderLoop for PracticeTool {
         match &self.ui_state {
             UiState::MenuOpen => {
                 self.pointers.cursor_show.set(true);
-                self.render_visible(ui, flags);
+                self.render_visible(ui);
             },
             UiState::Closed => {
-                self.render_closed(ui, flags);
+                self.render_closed(ui);
             },
             UiState::Hidden => {
-                self.render_hidden(ui, flags);
+                self.render_hidden(ui);
             },
         }
 
@@ -409,7 +411,7 @@ impl ImguiRenderLoop for PracticeTool {
             self.log.retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
         }
 
-        self.render_logs(ui, flags);
+        self.render_logs(ui);
         drop(font_token);
     }
 
@@ -432,6 +434,14 @@ impl ImguiRenderLoop for PracticeTool {
                 config: None,
             }]),
         });
+    }
+
+    fn should_block_messages(&self, _: &Io) -> bool {
+        match &self.ui_state {
+            UiState::MenuOpen => true,
+            UiState::Closed => false,
+            UiState::Hidden => false,
+        }
     }
 }
 
