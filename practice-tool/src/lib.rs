@@ -47,7 +47,7 @@ struct PracticeTool {
 
 impl PracticeTool {
     fn new() -> Self {
-        hudhook::utils::alloc_console();
+        hudhook::alloc_console();
         log_panics::init();
 
         fn load_config() -> Result<config::Config, String> {
@@ -124,9 +124,9 @@ impl PracticeTool {
         }
 
         if config.settings.log_level.inner() < LevelFilter::DEBUG || !config.settings.show_console {
-            hudhook::utils::free_console();
+            hudhook::free_console();
         } else {
-            hudhook::utils::enable_console_colors();
+            hudhook::enable_console_colors();
         }
 
         let pointers = PointerChains::new();
@@ -196,7 +196,7 @@ impl PracticeTool {
                 {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
-                    hudhook::lifecycle::eject();
+                    hudhook::eject();
                 }
             });
     }
