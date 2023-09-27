@@ -39,7 +39,7 @@ static STATE: LazyLock<State> = LazyLock::new(|| unsafe {
 
 fn initialize() {
     LazyLock::force(&STATE);
-    unsafe { AllocConsole() };
+    unsafe { AllocConsole().ok() };
 }
 
 fn no_logo() {

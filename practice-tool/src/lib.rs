@@ -47,7 +47,7 @@ struct PracticeTool {
 
 impl PracticeTool {
     fn new() -> Self {
-        hudhook::alloc_console();
+        hudhook::alloc_console().ok();
         log_panics::init();
 
         fn load_config() -> Result<config::Config, String> {
@@ -124,7 +124,7 @@ impl PracticeTool {
         }
 
         if config.settings.log_level.inner() < LevelFilter::DEBUG || !config.settings.show_console {
-            hudhook::free_console();
+            hudhook::free_console().ok();
         } else {
             hudhook::enable_console_colors();
         }

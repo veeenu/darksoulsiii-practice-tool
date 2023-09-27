@@ -17,7 +17,7 @@ struct ParamTinkerer {
 impl ParamTinkerer {
     fn new() -> Self {
         println!("Initializing");
-        hudhook::alloc_console();
+        hudhook::alloc_console().ok();
 
         ParamTinkerer {
             shown: false,
