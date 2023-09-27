@@ -154,7 +154,7 @@ impl Config {
                     Box::new(Quitout::new(chains.quitout.clone(), *hotkey))
                 },
                 CfgCommand::Target { hotkey } => {
-                    Box::new(Target::new(chains.current_target.clone(), *hotkey))
+                    Box::new(Target::new(chains.current_target.clone(), chains.xa, *hotkey))
                 },
             })
             .collect()

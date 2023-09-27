@@ -150,7 +150,6 @@ impl From<Version> for BaseAddresses {
 }
 
 pub const BASE_ADDRESSES_1_03_1: BaseAddresses = BaseAddresses {
-    current_target: 0,
     base_a: 0x469adf8,
     base_d: 0x469e6d8,
     base_hbd: 0x46c17b0,
@@ -163,13 +162,13 @@ pub const BASE_ADDRESSES_1_03_1: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x4695a68,
     world_chr_man: 0x46c3aa8,
     world_chr_man_dbg: 0x46c3bc8,
+    current_target: 0x847cfa,
     format_string: 0x2905920,
     no_logo: 0xbbafdf,
     xa: 0x1f70,
 };
 
 pub const BASE_ADDRESSES_1_03_2: BaseAddresses = BaseAddresses {
-    current_target: 0,
     base_a: 0x469bdf8,
     base_d: 0x469f6d8,
     base_hbd: 0x46c27b0,
@@ -182,13 +181,13 @@ pub const BASE_ADDRESSES_1_03_2: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x4696a68,
     world_chr_man: 0x46c4aa8,
     world_chr_man_dbg: 0x46c4bc8,
+    current_target: 0x847cfa,
     format_string: 0x2905ac0,
     no_logo: 0xbbafdf,
     xa: 0x1f70,
 };
 
 pub const BASE_ADDRESSES_1_04_1: BaseAddresses = BaseAddresses {
-    current_target: 0,
     base_a: 0x469d118,
     base_d: 0x46a09f8,
     base_hbd: 0x46c3ad0,
@@ -201,13 +200,13 @@ pub const BASE_ADDRESSES_1_04_1: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x4697d88,
     world_chr_man: 0x46c5dc8,
     world_chr_man_dbg: 0x46c5ee8,
+    current_target: 0x847a4a,
     format_string: 0x2906ae0,
     no_logo: 0xbbb0cf,
     xa: 0x1f70,
 };
 
 pub const BASE_ADDRESSES_1_04_2: BaseAddresses = BaseAddresses {
-    current_target: 0,
     base_a: 0x469d118,
     base_d: 0x46a09f8,
     base_hbd: 0x46c3ad0,
@@ -220,13 +219,13 @@ pub const BASE_ADDRESSES_1_04_2: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x4697d88,
     world_chr_man: 0x46c5dc8,
     world_chr_man_dbg: 0x46c5ee8,
+    current_target: 0x847a4a,
     format_string: 0x2906cf0,
     no_logo: 0xbbb0cf,
     xa: 0x1f70,
 };
 
 pub const BASE_ADDRESSES_1_04_3: BaseAddresses = BaseAddresses {
-    current_target: 0,
     base_a: 0x469d118,
     base_d: 0x46a09f8,
     base_hbd: 0x46c3ad0,
@@ -239,13 +238,13 @@ pub const BASE_ADDRESSES_1_04_3: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x4697d88,
     world_chr_man: 0x46c5dc8,
     world_chr_man_dbg: 0x46c5ee8,
+    current_target: 0x847a4a,
     format_string: 0x2906cf0,
     no_logo: 0xbbb0cf,
     xa: 0x1f70,
 };
 
 pub const BASE_ADDRESSES_1_05_0: BaseAddresses = BaseAddresses {
-    current_target: 0,
     base_a: 0x46a1218,
     base_d: 0x46a4af8,
     base_hbd: 0x46c7bd0,
@@ -258,13 +257,13 @@ pub const BASE_ADDRESSES_1_05_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x469be88,
     world_chr_man: 0x46c9ec8,
     world_chr_man_dbg: 0x46c9fe8,
+    current_target: 0x84809a,
     format_string: 0x290a020,
     no_logo: 0xbbbf2f,
     xa: 0x1f80,
 };
 
 pub const BASE_ADDRESSES_1_05_1: BaseAddresses = BaseAddresses {
-    current_target: 0,
     base_a: 0x46a0218,
     base_d: 0x46a3af8,
     base_hbd: 0x46c6bd0,
@@ -277,13 +276,13 @@ pub const BASE_ADDRESSES_1_05_1: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x469ae88,
     world_chr_man: 0x46c8ec8,
     world_chr_man_dbg: 0x46c8fe8,
+    current_target: 0x847eca,
     format_string: 0x2909240,
     no_logo: 0xbbbd5f,
     xa: 0x1f80,
 };
 
 pub const BASE_ADDRESSES_1_06_0: BaseAddresses = BaseAddresses {
-    current_target: 0,
     base_a: 0x46a1278,
     base_d: 0x46a4b58,
     base_hbd: 0x46c7c30,
@@ -296,13 +295,13 @@ pub const BASE_ADDRESSES_1_06_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x469bee8,
     world_chr_man: 0x46c9f28,
     world_chr_man_dbg: 0x46ca048,
+    current_target: 0x84849a,
     format_string: 0x290a040,
     no_logo: 0xbbc32f,
     xa: 0x1f80,
 };
 
 pub const BASE_ADDRESSES_1_07_0: BaseAddresses = BaseAddresses {
-    current_target: 0,
     base_a: 0x46a5ab8,
     base_d: 0x46a9398,
     base_hbd: 0x46cc470,
@@ -315,6 +314,7 @@ pub const BASE_ADDRESSES_1_07_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x46a0728,
     world_chr_man: 0x46ce768,
     world_chr_man_dbg: 0x46ce888,
+    current_target: 0x8493aa,
     format_string: 0x290d7a0,
     no_logo: 0xbbea5f,
     xa: 0x1f80,

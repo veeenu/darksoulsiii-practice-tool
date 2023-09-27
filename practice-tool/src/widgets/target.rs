@@ -1,124 +1,256 @@
-use std::fmt::Write;
-use std::ptr::null_mut;
-
+use imgui::ProgressBar;
 use libds3::memedit::PointerChain;
-use windows::Win32::Foundation::GetLastError;
+use libds3::pointer_chain;
 use windows::Win32::System::Memory::{
     VirtualAlloc, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE,
 };
-use windows::Win32::System::Threading::GetCurrentProcess;
 
 use super::Widget;
-use crate::debug;
 use crate::util::KeyState;
+
+#[derive(Debug, Default)]
+struct EnemyInfo {
+    hp: u32,
+    max_hp: u32,
+    mp: u32,
+    max_mp: u32,
+    sp: u32,
+    max_sp: u32,
+    res: EnemyResistances,
+    poise: PoiseMeter,
+}
+
+#[derive(Debug, Default)]
+#[repr(C)]
+struct EnemyResistances {
+    poison: u32,
+    toxic: u32,
+    bleed: u32,
+    curse: u32,
+    frost: u32,
+    poison_max: u32,
+    toxic_max: u32,
+    bleed_max: u32,
+    curse_max: u32,
+    frost_max: u32,
+}
+
+#[derive(Debug, Default)]
+#[repr(C)]
+struct PoiseMeter {
+    poise: f32,
+    poise_max: f32,
+    _unk: f32,
+    poise_time: f32,
+}
+
+#[derive(Debug)]
+struct EntityPointerChains {
+    hp: PointerChain<[u32; 3]>,
+    sp: PointerChain<[u32; 3]>,
+    mp: PointerChain<[u32; 3]>,
+    res: PointerChain<EnemyResistances>,
+    poise: PointerChain<PoiseMeter>,
+}
 
 #[derive(Debug)]
 pub(crate) struct Target {
-    ptr: PointerChain<[u8; 7]>,
+    alloc_addr: PointerChain<[u8; 22]>,
+    detour_addr: PointerChain<[u8; 7]>,
+    detour_orig_data: [u8; 7],
     hotkey: KeyState,
-    patch_data: [u8; 7],
-    code_cave_data: [u8; 22],
-    data: u64,
-    code_cave_addr: *mut u8,
+    xa: u32,
+    is_enabled: bool,
+    entity_addr: u64,
 }
 
 unsafe impl Send for Target {}
 unsafe impl Sync for Target {}
 
 impl Target {
-    pub(crate) fn new(ptr: PointerChain<u64>, hotkey: KeyState) -> Self {
-        let ptr = ptr.cast();
-        let mut ptr_addr = ptr.eval().unwrap() as usize;
-        let mut code_cave_addr = loop {
-            debug!("Allocating near {:x}", ptr_addr);
+    pub(crate) fn new(detour_addr: PointerChain<u64>, xa: u32, hotkey: KeyState) -> Self {
+        let detour_addr = detour_addr.cast();
+        let mut allocate_near = detour_addr.eval().unwrap() as usize;
+
+        let alloc_addr = loop {
             let c = unsafe {
                 VirtualAlloc(
-                    Some(ptr_addr as *mut _),
+                    Some(allocate_near as *mut _),
                     0x20,
                     MEM_COMMIT | MEM_RESERVE,
                     PAGE_EXECUTE_READWRITE,
                 )
             };
-            debug!("Allocated {c:p}");
             if c.is_null() {
-                debug!("{:?}", unsafe { GetLastError() });
-                ptr_addr += 65536;
+                allocate_near += 65536;
             } else {
-                break c as *mut u8;
+                break pointer_chain!(c as usize);
             }
         };
+
         Target {
-            ptr,
+            alloc_addr,
+            detour_addr,
+            detour_orig_data: Default::default(),
             hotkey,
-            patch_data: [0xE9, 0x00, 0x00, 0x00, 0x00, 0x90, 0x90],
-            code_cave_data: [
-                0x48, 0xa3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x8b, 0x80, 0x90,
-                0x1f, 0x00, 0x00, 0xe9, 0x00, 0x00, 0x00, 0x00,
-            ],
-            data: 0,
-            code_cave_addr,
+            xa,
+            is_enabled: false,
+            entity_addr: 0,
         }
     }
 
-    fn get_value(&mut self) {
-        let patch_address = self.ptr.eval().unwrap();
-        let patch_target = (self.code_cave_addr as isize - patch_address as isize - 5) as i32;
-        let ret_target = (patch_address as isize - self.code_cave_addr as isize - 15) as i32;
-        let data_ptr = (&self.data as *const u64) as usize;
-
-        for i in 0..4 {
-            self.patch_data[i + 1] = ((patch_target >> (i * 8)) & 0xff) as u8;
-            self.code_cave_data[i + 18] = ((ret_target >> (i * 8)) & 0xff) as u8;
+    fn get_data(&self) -> Option<EnemyInfo> {
+        if !self.is_enabled || self.entity_addr == 0 {
+            return None;
         }
 
-        for i in 0..8 {
-            self.code_cave_data[i + 2] = ((data_ptr >> (i * 8)) & 0xff) as u8;
-        }
+        let epc = EntityPointerChains {
+            hp: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x18, 0xd8),
+            sp: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x18, 0xf0),
+            mp: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x18, 0xe4),
+            res: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x20, 0x10),
+            poise: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x20, 0x1278),
+        };
 
-        unsafe {
-            std::ptr::copy(
-                self.code_cave_data.as_ptr(),
-                self.code_cave_addr,
-                self.code_cave_data.len(),
-            );
-        }
+        let [hp, _, max_hp] = epc.hp.read().unwrap_or_default();
+        let [sp, _, max_sp] = epc.sp.read().unwrap_or_default();
+        let [mp, _, max_mp] = epc.mp.read().unwrap_or_default();
+        let res = epc.res.read().unwrap_or_default();
+        let poise = epc.poise.read().unwrap_or_default();
 
-        self.ptr.write(self.patch_data);
+        Some(EnemyInfo { hp, max_hp, mp, max_mp, sp, max_sp, res, poise })
     }
+
+    fn enable(&mut self) {
+        // Unwraps are valid because the addresses are static.
+
+        self.detour_orig_data = self.detour_addr.read().unwrap();
+
+        let detour_addr = self.detour_addr.eval().unwrap();
+        let alloc_addr = self.alloc_addr.eval().unwrap();
+
+        let data_ptr = (&self.entity_addr as *const u64) as usize;
+        let going_jmp_to = (alloc_addr as isize - detour_addr as isize - 5) as i32;
+        let returning_jmp_to = (detour_addr as isize - alloc_addr as isize - 15) as i32;
+
+        let mut detour_bytes: [u8; 7] = [0xE9, 0, 0, 0, 0, 0x90, 0x90]; // jmp going; nop; nop
+
+        let mut patch_data: [u8; 22] = [
+            0x48, 0xa3, 0, 0, 0, 0, 0, 0, 0, 0, // mov [data_ptr], rax
+            0x48, 0x8b, 0x80, 0, 0, 0, 0, // mov rax, [rax + XA]
+            0xe9, 0, 0, 0, 0, // jmp returning
+        ];
+
+        detour_bytes[1..5].copy_from_slice(&u32_to_array(going_jmp_to as _));
+        patch_data[2..10].copy_from_slice(&u64_to_array(data_ptr as _));
+        patch_data[13..17].copy_from_slice(&u32_to_array(self.xa));
+        patch_data[18..].copy_from_slice(&u32_to_array(returning_jmp_to as _));
+
+        self.alloc_addr.write(patch_data);
+        self.detour_addr.write(detour_bytes);
+        self.is_enabled = true;
+    }
+
+    fn disable(&mut self) {
+        self.detour_addr.write(self.detour_orig_data);
+        self.is_enabled = false;
+    }
+}
+
+#[inline]
+fn u32_to_array(val: u32) -> [u8; 4] {
+    let mut buf = [0u8; 4];
+
+    for (i, item) in buf.iter_mut().enumerate() {
+        *item = ((val >> (i * 8)) & 0xff) as u8;
+    }
+
+    buf
+}
+
+#[inline]
+fn u64_to_array(val: u64) -> [u8; 8] {
+    let mut buf = [0u8; 8];
+
+    for (i, item) in buf.iter_mut().enumerate() {
+        *item = ((val >> (i * 8)) & 0xff) as u8;
+    }
+
+    buf
 }
 
 impl Widget for Target {
     fn render(&mut self, ui: &imgui::Ui) {
-        let scale = super::scaling_factor(ui);
+        let mut state = self.is_enabled;
 
-        if ui.button_with_size("Target", [super::BUTTON_WIDTH * scale, super::BUTTON_HEIGHT]) {
-            self.get_value();
+        if ui.checkbox(format!("Target info {:x}", self.entity_addr), &mut state) {
+            if state {
+                self.enable();
+            } else {
+                self.disable();
+            }
+        }
+    }
+
+    fn render_closed(&mut self, ui: &imgui::Ui) {
+        let Some(EnemyInfo { hp, max_hp, mp, max_mp, sp, max_sp, res, poise }) = self.get_data()
+        else {
+            return;
+        };
+
+        let PoiseMeter { poise, poise_max, _unk, poise_time } = poise;
+
+        let EnemyResistances {
+            poison,
+            toxic,
+            bleed,
+            curse,
+            frost,
+            poison_max,
+            toxic_max,
+            bleed_max,
+            curse_max,
+            frost_max,
+        } = res;
+
+        fn div(a: u32, b: u32) -> f32 {
+            if b == 0 {
+                0.0
+            } else {
+                a as f32 / b as f32
+            }
         }
 
-        let mut s = String::new();
-        for b in &self.patch_data[..] {
-            write!(s, "{b:02x} ");
-        }
-        ui.text(s);
+        let pbar_size: [f32; 2] = [200., 4.];
 
-        let mut s = String::new();
-        for b in &self.code_cave_data[0..10] {
-            write!(s, "{b:02x} ");
-        }
-        ui.text(s);
+        let pbar = |label, cur, max| {
+            ui.text(format!("{label:8} {cur:>6}/{max:>6}"));
+            let pct = div(cur, max);
+            ProgressBar::new(pct).size(pbar_size).overlay_text("").build(ui);
+        };
 
-        let mut s = String::new();
-        for b in &self.code_cave_data[10..18] {
-            write!(s, "{b:02x} ");
-        }
-        ui.text(s);
+        pbar("HP", hp, max_hp);
+        pbar("SP", sp, max_sp);
+        pbar("MP", mp, max_mp);
 
-        let mut s = String::new();
-        for b in &self.code_cave_data[18..] {
-            write!(s, "{b:02x} ");
-        }
-        ui.text(s);
+        ui.text(format!("Poise     {:>6}/{:>6} {:.2}s", poise, poise_max, poise_time));
+        let pct = if poise_max.abs() < 0.0001 { 0.0 } else { poise / poise_max };
+        ProgressBar::new(pct).size(pbar_size).overlay_text("").build(ui);
 
-        ui.text(format!("D: {:016x}", self.data));
+        pbar("Poison", poison, poison_max);
+        pbar("Toxic", toxic, toxic_max);
+        pbar("Bleed", bleed, bleed_max);
+        pbar("Curse", curse, curse_max);
+        pbar("Frost", frost, frost_max);
+    }
+
+    fn interact(&mut self, ui: &imgui::Ui) {
+        if self.hotkey.keyup(ui) {
+            if self.is_enabled {
+                self.disable();
+            } else {
+                self.enable();
+            }
+        }
     }
 }

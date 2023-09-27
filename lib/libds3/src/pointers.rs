@@ -70,6 +70,7 @@ pub struct PointerChains {
     pub world_chr_man: usize,
     pub map_item_man: u64,
     pub spawn_item_func_ptr: u64,
+    pub xa: u32,
 }
 
 impl From<BaseAddresses> for PointerChains {
@@ -223,6 +224,7 @@ impl From<BaseAddresses> for PointerChains {
             quitout: pointer_chain!(menu_man as _, 0x250),
             current_target: pointer_chain!(current_target),
             no_logo: pointer_chain!(no_logo as _),
+            xa: xa as u32,
         }
     }
 }

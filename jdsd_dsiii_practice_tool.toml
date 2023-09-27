@@ -2,6 +2,7 @@ commands = [
   { savefile_manager = "o", hotkey_back = "q", hotkey_close = "escape" },
   { item_spawner = "u", hotkey_back = "q", hotkey_close = "escape" },
   { character_stats = "end", hotkey_close = "escape" },
+  { target = "M" },
   { flag = "all_no_damage", hotkey = "1" },
   { flag = "inf_stamina", hotkey = "2" },
   { flag = "inf_focus", hotkey = "3" },
@@ -28,8 +29,7 @@ commands = [
   { position = "K", modifier = "rshift" },
   { cycle_speed = [1, 3], hotkey = "8" },
   { souls = 10000, hotkey = "9" },
-  { quitout = "P" },
-  { target = "M" }
+  { quitout = "P" }
 ]
 
 [settings]
