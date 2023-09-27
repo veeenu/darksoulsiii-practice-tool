@@ -39,7 +39,7 @@ static STATE: LazyLock<State> = LazyLock::new(|| unsafe {
 
 fn initialize() {
     LazyLock::force(&STATE);
-    unsafe { AllocConsole() };
+    unsafe { AllocConsole().ok() };
 }
 
 fn no_logo() {
@@ -58,7 +58,7 @@ fn no_logo() {
 struct PatchConfig(HashMap<String, ParamIdConfig>);
 
 impl PatchConfig {
-    fn apply(self, params: &mut Params) {
+    fn apply(self, params: &Params) {
         for (param_name, param_id_cfg) in self.0 {
             println!("Applying to {param_name}");
             param_id_cfg.apply(&param_name, params);
@@ -73,7 +73,7 @@ struct ParamIdConfig(
 );
 
 impl ParamIdConfig {
-    fn apply(mut self, param_name: &str, params: &mut Params) {
+    fn apply(mut self, param_name: &str, params: &Params) {
         let idx_map = match unsafe { params.iter_param_ids(param_name) } {
             Some(it) => {
                 it.enumerate().filter(|(_, id)| self.0.contains_key(id as _)).collect::<Vec<_>>()
@@ -197,7 +197,7 @@ unsafe fn patch() {
             params.get_equip_param_weapon()
         }));
 
-        patch_config.apply(&mut params);
+        patch_config.apply(&params);
 
         println!("Done");
     });

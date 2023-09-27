@@ -3,7 +3,7 @@
 use std::fmt::Write;
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;
-use hudhook::hooks::{ImguiRenderLoop, ImguiRenderLoopFlags};
+use hudhook::hooks::ImguiRenderLoop;
 use imgui::*;
 use libds3::prelude::*;
 
@@ -17,7 +17,7 @@ struct ParamTinkerer {
 impl ParamTinkerer {
     fn new() -> Self {
         println!("Initializing");
-        hudhook::utils::alloc_console();
+        hudhook::alloc_console().ok();
 
         ParamTinkerer {
             shown: false,
@@ -29,7 +29,7 @@ impl ParamTinkerer {
 }
 
 impl ImguiRenderLoop for ParamTinkerer {
-    fn render(&mut self, ui: &mut imgui::Ui, _: &ImguiRenderLoopFlags) {
+    fn render(&mut self, ui: &mut imgui::Ui) {
         if ui.is_key_index_released(0x50) {
             // P key
             self.shown = !self.shown;
