@@ -117,11 +117,7 @@ fn dist_parammod() -> Result<()> {
     let status = Command::new(cargo)
         .current_dir(project_root())
         .env("CARGO_XTASK_DIST", "true")
-        .args([
-            "build",
-            "--locked",
-            "--release",
-        ])
+        .args(["build", "--locked", "--release"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
 

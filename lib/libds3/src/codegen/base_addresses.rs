@@ -17,6 +17,7 @@ pub struct BaseAddresses {
     pub param: usize,
     pub format_string: usize,
     pub no_logo: usize,
+    pub current_target: usize,
     pub xa: usize,
 }
 
@@ -37,6 +38,7 @@ impl BaseAddresses {
             param: self.param + base,
             format_string: self.format_string + base,
             no_logo: self.no_logo + base,
+            current_target: self.current_target + base,
             xa: self.xa,
         }
     }
@@ -148,6 +150,7 @@ impl From<Version> for BaseAddresses {
 }
 
 pub const BASE_ADDRESSES_1_03_1: BaseAddresses = BaseAddresses {
+    current_target: 0,
     base_a: 0x469adf8,
     base_d: 0x469e6d8,
     base_hbd: 0x46c17b0,
@@ -166,6 +169,7 @@ pub const BASE_ADDRESSES_1_03_1: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_03_2: BaseAddresses = BaseAddresses {
+    current_target: 0,
     base_a: 0x469bdf8,
     base_d: 0x469f6d8,
     base_hbd: 0x46c27b0,
@@ -184,6 +188,7 @@ pub const BASE_ADDRESSES_1_03_2: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_04_1: BaseAddresses = BaseAddresses {
+    current_target: 0,
     base_a: 0x469d118,
     base_d: 0x46a09f8,
     base_hbd: 0x46c3ad0,
@@ -202,6 +207,7 @@ pub const BASE_ADDRESSES_1_04_1: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_04_2: BaseAddresses = BaseAddresses {
+    current_target: 0,
     base_a: 0x469d118,
     base_d: 0x46a09f8,
     base_hbd: 0x46c3ad0,
@@ -220,6 +226,7 @@ pub const BASE_ADDRESSES_1_04_2: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_04_3: BaseAddresses = BaseAddresses {
+    current_target: 0,
     base_a: 0x469d118,
     base_d: 0x46a09f8,
     base_hbd: 0x46c3ad0,
@@ -238,6 +245,7 @@ pub const BASE_ADDRESSES_1_04_3: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_05_0: BaseAddresses = BaseAddresses {
+    current_target: 0,
     base_a: 0x46a1218,
     base_d: 0x46a4af8,
     base_hbd: 0x46c7bd0,
@@ -256,6 +264,7 @@ pub const BASE_ADDRESSES_1_05_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_05_1: BaseAddresses = BaseAddresses {
+    current_target: 0,
     base_a: 0x46a0218,
     base_d: 0x46a3af8,
     base_hbd: 0x46c6bd0,
@@ -274,6 +283,7 @@ pub const BASE_ADDRESSES_1_05_1: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_06_0: BaseAddresses = BaseAddresses {
+    current_target: 0,
     base_a: 0x46a1278,
     base_d: 0x46a4b58,
     base_hbd: 0x46c7c30,
@@ -292,6 +302,7 @@ pub const BASE_ADDRESSES_1_06_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_07_0: BaseAddresses = BaseAddresses {
+    current_target: 0,
     base_a: 0x46a5ab8,
     base_d: 0x46a9398,
     base_hbd: 0x46cc470,
@@ -322,6 +333,7 @@ pub const BASE_ADDRESSES_1_08_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x46fee88,
     world_chr_man: 0x472cf58,
     world_chr_man_dbg: 0x472d078,
+    current_target: 0x852b7a,
     format_string: 0x2952940,
     no_logo: 0xbd6acf,
     xa: 0x1f80,
@@ -340,6 +352,7 @@ pub const BASE_ADDRESSES_1_09_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x46fefc8,
     world_chr_man: 0x472d098,
     world_chr_man_dbg: 0x472d1b8,
+    current_target: 0x852b7a,
     format_string: 0x2952670,
     no_logo: 0xbd708f,
     xa: 0x1f80,
@@ -358,6 +371,7 @@ pub const BASE_ADDRESSES_1_10_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x46fefc8,
     world_chr_man: 0x472d098,
     world_chr_man_dbg: 0x472d1b8,
+    current_target: 0x852b7a,
     format_string: 0x2952670,
     no_logo: 0xbd70ff,
     xa: 0x1f80,
@@ -376,6 +390,7 @@ pub const BASE_ADDRESSES_1_11_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x4732298,
     world_chr_man: 0x4760398,
     world_chr_man_dbg: 0x47604b8,
+    current_target: 0x85857a,
     format_string: 0x297ae40,
     no_logo: 0xbe6f8f,
     xa: 0x1f88,
@@ -394,6 +409,7 @@ pub const BASE_ADDRESSES_1_12_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x4735418,
     world_chr_man: 0x4763518,
     world_chr_man_dbg: 0x4763638,
+    current_target: 0x858d6a,
     format_string: 0x297d2e0,
     no_logo: 0xbe7d9f,
     xa: 0x1f88,
@@ -412,6 +428,7 @@ pub const BASE_ADDRESSES_1_13_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x4738c18,
     world_chr_man: 0x4766d18,
     world_chr_man_dbg: 0x4766e38,
+    current_target: 0x85a61a,
     format_string: 0x297f9f0,
     no_logo: 0xbe993f,
     xa: 0x1f90,
@@ -430,6 +447,7 @@ pub const BASE_ADDRESSES_1_14_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x473ad78,
     world_chr_man: 0x4768e78,
     world_chr_man_dbg: 0x4768f98,
+    current_target: 0x85a70a,
     format_string: 0x2980a00,
     no_logo: 0xbe9c0f,
     xa: 0x1f90,
@@ -448,6 +466,7 @@ pub const BASE_ADDRESSES_1_15_0: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x473ad78,
     world_chr_man: 0x4768e78,
     world_chr_man_dbg: 0x4768f98,
+    current_target: 0x85a74a,
     format_string: 0x2980a30,
     no_logo: 0xbe9d0f,
     xa: 0x1f90,
@@ -466,6 +485,7 @@ pub const BASE_ADDRESSES_1_15_1: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x4751eb8,
     world_chr_man: 0x477fdb8,
     world_chr_man_dbg: 0x477fed8,
+    current_target: 0x862cba,
     format_string: 0x2991650,
     no_logo: 0xbf42bf,
     xa: 0x1f90,
@@ -484,6 +504,7 @@ pub const BASE_ADDRESSES_1_15_2: BaseAddresses = BaseAddresses {
     sprj_debug_event: 0x4751eb8,
     world_chr_man: 0x477fdb8,
     world_chr_man_dbg: 0x477fec8,
+    current_target: 0x86306a,
     format_string: 0x2991610,
     no_logo: 0xbf43ef,
     xa: 0x1f90,

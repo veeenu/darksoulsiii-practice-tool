@@ -64,6 +64,7 @@ pub struct PointerChains {
     pub cursor_show: Bitflag<u8>,
     pub igt: PointerChain<u32>,
     pub no_logo: PointerChain<[u8; 20]>,
+    pub current_target: PointerChain<u64>,
 
     #[allow(unused)]
     pub world_chr_man: usize,
@@ -88,6 +89,7 @@ impl From<BaseAddresses> for PointerChains {
             spawn_item_func_ptr,
             map_item_man,
             no_logo,
+            current_target,
             ..
         } = b;
 
@@ -219,6 +221,7 @@ impl From<BaseAddresses> for PointerChains {
             cursor_show: bitflag!(0b1; menu_man as _, mouse_enable_offs as _),
             igt: pointer_chain!(base_a as _, offs_igt),
             quitout: pointer_chain!(menu_man as _, 0x250),
+            current_target: pointer_chain!(current_target),
             no_logo: pointer_chain!(no_logo as _),
         }
     }

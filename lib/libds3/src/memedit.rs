@@ -120,6 +120,10 @@ impl<T> PointerChain<T> {
             None
         }
     }
+
+    pub fn cast<S>(&self) -> PointerChain<S> {
+        PointerChain { proc: self.proc, base: self.base as *mut S, offsets: self.offsets.clone() }
+    }
 }
 
 #[derive(Clone, Debug)]

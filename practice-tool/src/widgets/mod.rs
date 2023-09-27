@@ -14,6 +14,7 @@ pub(crate) mod position;
 pub(crate) mod quitout;
 pub(crate) mod savefile_manager;
 pub(crate) mod souls;
+pub(crate) mod target;
 
 pub(crate) trait Widget: Send + Sync + std::fmt::Debug {
     fn render(&mut self, _ui: &imgui::Ui);
