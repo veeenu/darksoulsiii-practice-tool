@@ -1,9 +1,8 @@
 use std::ops::{BitAnd, BitOr, BitXor, Not};
-use std::ptr::null_mut;
 
-use winapi::ctypes::c_void;
-use winapi::um::memoryapi::{ReadProcessMemory, WriteProcessMemory};
-use winapi::um::processthreadsapi::GetCurrentProcess;
+use windows::Win32::Foundation::HANDLE;
+use windows::Win32::System::Diagnostics::Debug::{ReadProcessMemory, WriteProcessMemory};
+use windows::Win32::System::Threading::GetCurrentProcess;
 
 /// Wraps CheatEngine's concept of pointer with nested offsets. Evaluates,
 /// if the evaluation does not fail, to a mutable pointer of type `T`.
@@ -26,7 +25,7 @@ use winapi::um::processthreadsapi::GetCurrentProcess;
 /// fully known.
 #[derive(Clone, Debug)]
 pub struct PointerChain<T> {
-    proc: *const c_void,
+    proc: HANDLE,
     base: *mut T,
     offsets: Vec<usize>,
 }
@@ -47,19 +46,16 @@ impl<T> PointerChain<T> {
 
     fn safe_read(&self, addr: usize, offs: usize) -> Option<usize> {
         let mut value = 0usize;
-        let result = unsafe {
+        unsafe {
             ReadProcessMemory(
-                self.proc as _,
+                self.proc,
                 addr as _,
                 &mut value as *mut usize as _,
                 std::mem::size_of::<usize>(),
-                null_mut(),
+                None,
             )
-        };
-
-        match result {
-            0 => None,
-            _ => Some(value + offs),
+            .ok()
+            .map(|_| value + offs)
         }
     }
 
@@ -71,53 +67,40 @@ impl<T> PointerChain<T> {
             .iter()
             .try_fold(self.base as usize, |addr, &offs| self.safe_read(addr, offs))
             .map(|addr| addr as *mut T)
-        // .and_then(|addr| Some(addr as *mut T))
     }
 
     /// Evaluates the pointer chain and attempts to read the datum.
     /// Returns `None` if either the evaluation or the read failed.
     pub fn read(&self) -> Option<T> {
-        if let Some(ptr) = self.eval() {
-            let mut value: T = unsafe { std::mem::zeroed() };
-            let result = unsafe {
-                ReadProcessMemory(
-                    self.proc as _,
-                    ptr as _,
-                    &mut value as *mut _ as _,
-                    std::mem::size_of::<T>(),
-                    null_mut(),
-                )
-            };
-
-            match result {
-                0 => None,
-                _ => Some(value),
-            }
-        } else {
-            None
+        let ptr = self.eval()?;
+        let mut value: T = unsafe { std::mem::zeroed() };
+        unsafe {
+            ReadProcessMemory(
+                self.proc,
+                ptr as _,
+                &mut value as *mut _ as _,
+                std::mem::size_of::<T>(),
+                None,
+            )
+            .ok()
+            .map(|_| value)
         }
     }
 
     /// Evaluates the pointer chain and attempts to write the datum.
     /// Returns `None` if either the evaluation or the write failed.
     pub fn write(&self, mut value: T) -> Option<()> {
-        if let Some(ptr) = self.eval() {
-            let result = unsafe {
-                WriteProcessMemory(
-                    self.proc as _,
-                    ptr as _,
-                    &mut value as *mut _ as _,
-                    std::mem::size_of::<T>(),
-                    null_mut(),
-                )
-            };
-
-            match result {
-                0 => None,
-                _ => Some(()),
-            }
-        } else {
-            None
+        let ptr = self.eval()?;
+        unsafe {
+            WriteProcessMemory(
+                self.proc,
+                ptr as _,
+                &mut value as *mut _ as _,
+                std::mem::size_of::<T>(),
+                None,
+            )
+            .ok()
+            .map(|_| ())
         }
     }
 

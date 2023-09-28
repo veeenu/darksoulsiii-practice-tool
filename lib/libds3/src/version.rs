@@ -31,6 +31,7 @@ fn get_version() -> Version {
             version_info_size,
             version_info_buf.as_mut_ptr() as _,
         )
+        .unwrap()
     };
 
     let mut version_info: *mut VS_FIXEDFILEINFO = null_mut();

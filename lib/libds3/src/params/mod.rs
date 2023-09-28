@@ -2,12 +2,15 @@ mod param_data;
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::c_void;
 use std::sync::LazyLock;
+use std::time::Duration;
+use std::{mem, thread};
 
 use log::{error, info};
 pub use param_data::*;
 use parking_lot::RwLock;
 use widestring::U16CStr;
 use windows::Win32::System::LibraryLoader::GetModuleHandleA;
+use windows::Win32::System::Memory::{VirtualQuery, MEMORY_BASIC_INFORMATION, PAGE_READWRITE};
 
 use crate::prelude::base_addresses::*;
 use crate::version::VERSION;
@@ -81,7 +84,22 @@ impl Params {
         let addresses: BaseAddresses = (*VERSION).into();
         let module_base_addr = GetModuleHandleA(None).map_err(|e| e.to_string())?.0 as usize;
         let base_ptr = addresses.param + module_base_addr;
-        let base_ptr = *(base_ptr as *const *const c_void) as usize;
+        let base_ptr = loop {
+            let base_ptr = *(base_ptr as *const *const c_void) as usize;
+            let mut memory_basic_info = MEMORY_BASIC_INFORMATION::default();
+
+            VirtualQuery(
+                Some(base_ptr as _),
+                &mut memory_basic_info,
+                mem::size_of::<MEMORY_BASIC_INFORMATION>(),
+            );
+
+            if memory_basic_info.Protect.contains(PAGE_READWRITE) {
+                break base_ptr;
+            }
+            thread::sleep(Duration::from_millis(500));
+        };
+
         let base: &ParamMaster = (base_ptr as *const ParamMaster) // std::ptr::read(base_ptr as *const *const ParamMaster)
             .as_ref()
             .ok_or_else(|| "Invalid param base address".to_string())?;
