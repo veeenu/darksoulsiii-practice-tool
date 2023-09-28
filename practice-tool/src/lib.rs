@@ -5,13 +5,17 @@ mod config;
 mod util;
 mod widgets;
 
+use std::ffi::c_void;
 use std::sync::Mutex;
+use std::thread;
 use std::time::Instant;
 
 use const_format::formatcp;
 use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::hooks::ImguiRenderLoop;
 use hudhook::tracing::metadata::LevelFilter;
+use hudhook::tracing::{debug, error, info, trace};
+use hudhook::{eject, Hudhook, DLL_PROCESS_ATTACH, HINSTANCE};
 use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
@@ -444,4 +448,23 @@ impl ImguiRenderLoop for PracticeTool {
     }
 }
 
-hudhook::hudhook!(PracticeTool::new().into_hook::<ImguiDx11Hooks>());
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "stdcall" fn DllMain(hmodule: HINSTANCE, reason: u32, _: *mut c_void) {
+    if reason == DLL_PROCESS_ATTACH {
+        trace!("DllMain()");
+        thread::spawn(move || {
+            let practice_tool = PracticeTool::new();
+
+            if let Err(e) = Hudhook::builder()
+                .with(practice_tool.into_hook::<ImguiDx11Hooks>())
+                .with_hmodule(hmodule)
+                .build()
+                .apply()
+            {
+                error!("Couldn't apply hooks: {e:?}");
+                eject();
+            }
+        });
+    }
+}
