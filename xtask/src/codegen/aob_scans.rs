@@ -64,6 +64,7 @@ static AOBS_DIRECT: LazyLock<Vec<(&str, Vec<&str>)>> = LazyLock::new(|| {
     vec![
         ("FormatString", vec!["3C 00 54 00 45 00 58 00 54 00 46 00 4F 00 52 00 4D 00 41 00 54 00"]),
         ("NoLogo", vec!["E8 ?? ?? ?? FF 90 4D 8B C7 49 8B D4 48 8B C8 E8 ?? ?? ?? FF"]),
+        ("CurrentTarget", vec!["48 8B 80 ?? ?? ?? ?? 48 8B 08 48 8B ?? 58"]),
     ]
 });
 
@@ -454,10 +455,10 @@ fn codegen_version_enum(ver: &[VersionData]) -> String {
 
 fn patches_paths() -> impl Iterator<Item = PathBuf> {
     let base_path = PathBuf::from(
-        env::var("DSIIIPT_PATCHES_PATH").unwrap_or_else(|_| panic!("{}", dedent(r#"
+        env::var("DSIIIPT_PATCHES_PATH").unwrap_or_else(|_| panic!("{}", dedent(r"
             DSIIIPT_PATCHES_PATH environment variable undefined.
             Check the documentation: https://github.com/veeenu/darksoulsiii-practice-tool/README.md#building
-        "#))),
+        "))),
     );
     base_path
         .read_dir()

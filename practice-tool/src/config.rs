@@ -15,6 +15,7 @@ use crate::widgets::position::SavePosition;
 use crate::widgets::quitout::Quitout;
 use crate::widgets::savefile_manager::SavefileManager;
 use crate::widgets::souls::Souls;
+use crate::widgets::target::Target;
 use crate::widgets::Widget;
 
 #[derive(Debug, Deserialize)]
@@ -71,6 +72,10 @@ enum CfgCommand {
     },
     Quitout {
         #[serde(rename = "quitout")]
+        hotkey: KeyState,
+    },
+    Target {
+        #[serde(rename = "target")]
         hotkey: KeyState,
     },
     NudgePosition {
@@ -147,6 +152,9 @@ impl Config {
                 },
                 CfgCommand::Quitout { hotkey } => {
                     Box::new(Quitout::new(chains.quitout.clone(), *hotkey))
+                },
+                CfgCommand::Target { hotkey } => {
+                    Box::new(Target::new(chains.current_target.clone(), chains.xa, *hotkey))
                 },
             })
             .collect()

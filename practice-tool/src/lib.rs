@@ -1,4 +1,5 @@
 #![feature(lazy_cell)]
+#![feature(const_fn_floating_point_arithmetic)]
 
 mod config;
 mod util;
@@ -208,7 +209,7 @@ impl PracticeTool {
             ui.push_style_var(StyleVar::WindowBorderSize(0.)),
         ];
         ui.window("##msg_window")
-            .position([16., 16.], Condition::Always)
+            .position([16., ui.io().display_size[1] * 0.135], Condition::Always)
             .bg_alpha(0.0)
             .flags({
                 WindowFlags::NO_TITLE_BAR
@@ -284,6 +285,10 @@ impl PracticeTool {
                         "IGT {:02}:{:02}:{:02}.{:02}",
                         hours, minutes, seconds, millis
                     ));
+                }
+
+                for w in self.widgets.iter_mut() {
+                    w.render_closed(ui);
                 }
 
                 if !ui.io().want_capture_keyboard {

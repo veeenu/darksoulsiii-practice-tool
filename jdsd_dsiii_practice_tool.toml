@@ -2,6 +2,7 @@ commands = [
   { savefile_manager = "o", hotkey_back = "q", hotkey_close = "escape" },
   { item_spawner = "u", hotkey_back = "q", hotkey_close = "escape" },
   { character_stats = "end", hotkey_close = "escape" },
+  { target = "U" },
   { flag = "all_no_damage", hotkey = "1" },
   { flag = "inf_stamina", hotkey = "2" },
   { flag = "inf_focus", hotkey = "3" },
@@ -32,6 +33,6 @@ commands = [
 ]
 
 [settings]
-log_level = "INFO"
+log_level = "DEBUG"
 display = "0"
 show_console = false
