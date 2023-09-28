@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
-use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use hudhook::tracing::error;
 use imgui::*;
@@ -11,6 +10,7 @@ use super::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use crate::util::{get_key_code, KeyState};
 
 const SFM_TAG: &str = "##savefile-manager";
+const SFML_TAG: &str = "##savefile-manager-list";
 
 #[derive(Debug)]
 pub(crate) struct ErroredSavefileManagerInner {
@@ -32,8 +32,6 @@ impl Widget for ErroredSavefileManagerInner {
 #[derive(Debug)]
 pub(crate) struct SavefileManager {
     label: String,
-    key_back: KeyState,
-    key_close: KeyState,
     key_load: KeyState,
     key_down: KeyState,
     key_up: KeyState,
@@ -48,22 +46,14 @@ pub(crate) struct SavefileManager {
 }
 
 impl SavefileManager {
-    pub(crate) fn new_widget(
-        key_load: KeyState,
-        key_back: KeyState,
-        key_close: KeyState,
-    ) -> Box<dyn Widget> {
-        match SavefileManager::new_inner(key_load, key_back, key_close) {
+    pub(crate) fn new_widget(key_load: KeyState) -> Box<dyn Widget> {
+        match SavefileManager::new_inner(key_load) {
             Ok(i) => Box::new(i) as _,
             Err(i) => Box::new(i) as _,
         }
     }
 
-    fn new_inner(
-        key_load: KeyState,
-        key_back: KeyState,
-        key_close: KeyState,
-    ) -> Result<Self, ErroredSavefileManagerInner> {
+    fn new_inner(key_load: KeyState) -> Result<Self, ErroredSavefileManagerInner> {
         let label = format!("Savefiles (load with {})", key_load);
         let mut savefile_path = get_savefile_path().map_err(|e| {
             ErroredSavefileManagerInner::new(format!("Could not find savefile path: {}", e))
@@ -77,8 +67,6 @@ impl SavefileManager {
 
         Ok(SavefileManager {
             label,
-            key_back,
-            key_close,
             key_load,
             key_down: KeyState::new(get_key_code("down").unwrap()),
             key_up: KeyState::new(get_key_code("up").unwrap()),
@@ -145,10 +133,6 @@ impl Widget for SavefileManager {
             self.dir_stack.refresh();
         }
 
-        // let style_tokens =
-        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg,
-        // super::MODAL_BACKGROUND)];
-
         unsafe {
             igSetNextWindowPos(
                 ImVec2::new(16.0 + scale * 200., 16.0),
@@ -186,33 +170,30 @@ impl Widget for SavefileManager {
                 self.dir_stack.enter();
             }
 
-            ListBox::new("##savefile-manager-list").size([button_width, 200. * scale]).build(
-                ui,
-                || {
-                    if ui.selectable_config(format!(".. Up one dir ({})", self.key_back)).build() {
-                        self.dir_stack.exit();
-                        self.breadcrumbs = self.dir_stack.breadcrumbs();
-                        self.dir_stack.refresh();
+            ListBox::new(SFML_TAG).size([button_width, 200. * scale]).build(ui, || {
+                if ui.selectable_config(".. Up one dir").build() {
+                    self.dir_stack.exit();
+                    self.breadcrumbs = self.dir_stack.breadcrumbs();
+                    self.dir_stack.refresh();
+                }
+
+                let mut goto: Option<usize> = None;
+                for (idx, is_selected, i) in self.dir_stack.values() {
+                    if ui.selectable_config(i).selected(is_selected).build() {
+                        goto = Some(idx);
                     }
 
-                    let mut goto: Option<usize> = None;
-                    for (idx, is_selected, i) in self.dir_stack.values() {
-                        if ui.selectable_config(i).selected(is_selected).build() {
-                            goto = Some(idx);
-                        }
-
-                        if center_scroll_y && is_selected {
-                            ui.set_scroll_here_y();
-                        }
+                    if center_scroll_y && is_selected {
+                        ui.set_scroll_here_y();
                     }
+                }
 
-                    if let Some(idx) = goto {
-                        self.dir_stack.goto(idx);
-                        self.dir_stack.enter();
-                        self.breadcrumbs = self.dir_stack.breadcrumbs();
-                    }
-                },
-            );
+                if let Some(idx) = goto {
+                    self.dir_stack.goto(idx);
+                    self.dir_stack.enter();
+                    self.breadcrumbs = self.dir_stack.breadcrumbs();
+                }
+            });
 
             if ui.button_with_size(format!("Load savefile ({})", self.key_load), [
                 button_width,
@@ -239,36 +220,33 @@ impl Widget for SavefileManager {
 
             if ui.button_with_size("Show folder", [button_width, BUTTON_HEIGHT]) {
                 let path = self.dir_stack.path().to_owned();
-                let path = if path.is_file() { path.parent().unwrap() } else { &path };
+                let path = if path.is_dir() { &path } else { path.parent().unwrap() };
 
-                if let Err(e) =
-                    Command::new("explorer.exe").arg(OsStr::new(path.to_str().unwrap())).spawn()
+                if let Err(e) = Command::new("explorer.exe")
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .arg(path.as_os_str())
+                    .spawn()
                 {
                     self.log = Some(format!("Couldn't show folder: {}", e));
                 };
             }
 
-            if ui.button_with_size(format!("Close ({})", self.key_close), [
-                button_width,
-                BUTTON_HEIGHT,
-            ]) || self.key_close.keyup(ui)
+            if ui.button_with_size("Close", [button_width, BUTTON_HEIGHT])
+                || ui.is_key_released(Key::Escape)
             {
                 ui.close_current_popup();
                 self.dir_stack.refresh();
             }
         }
-
-        // style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
     fn interact(&mut self, ui: &imgui::Ui) {
         if self.input_edited {
             return;
         }
-        if self.key_back.keydown(ui) {
-            self.dir_stack.exit();
-            self.breadcrumbs = self.dir_stack.breadcrumbs();
-        } else if self.key_load.keydown(ui) {
+        if self.key_load.keydown(ui) {
             self.load_savefile();
         }
     }

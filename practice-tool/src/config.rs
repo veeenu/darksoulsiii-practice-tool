@@ -38,8 +38,6 @@ enum CfgCommand {
     SavefileManager {
         #[serde(rename = "savefile_manager")]
         hotkey_load: KeyState,
-        hotkey_back: KeyState,
-        hotkey_close: KeyState,
     },
     ItemSpawner {
         #[serde(rename = "item_spawner")]
@@ -119,8 +117,8 @@ impl Config {
                     Box::new(Flag::new(&flag.label, (flag.getter)(chains).clone(), *hotkey))
                         as Box<dyn Widget>
                 },
-                CfgCommand::SavefileManager { hotkey_load, hotkey_back, hotkey_close } => {
-                    SavefileManager::new_widget(*hotkey_load, *hotkey_back, *hotkey_close)
+                CfgCommand::SavefileManager { hotkey_load } => {
+                    SavefileManager::new_widget(*hotkey_load)
                 },
                 CfgCommand::ItemSpawner { hotkey_load, hotkey_close } => {
                     Box::new(ItemSpawner::new(

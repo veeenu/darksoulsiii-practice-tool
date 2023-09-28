@@ -447,6 +447,7 @@ dependencies = [
 [[package]]
 name = "hudhook"
 version = "0.5.0"
+source = "git+https://github.com/veeenu/hudhook#3b86352420b37bcc1dc3208334d467837d6230d6"
 dependencies = [
  "cc",
  "imgui",
