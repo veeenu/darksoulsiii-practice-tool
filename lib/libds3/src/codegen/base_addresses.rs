@@ -18,6 +18,8 @@ pub struct BaseAddresses {
     pub format_string: usize,
     pub no_logo: usize,
     pub current_target: usize,
+    pub menu_travel: usize,
+    pub menu_attune: usize,
     pub xa: usize,
 }
 
@@ -39,6 +41,8 @@ impl BaseAddresses {
             format_string: self.format_string + base,
             no_logo: self.no_logo + base,
             current_target: self.current_target + base,
+            menu_travel: self.menu_travel + base,
+            menu_attune: self.menu_attune + base,
             xa: self.xa,
         }
     }
@@ -92,7 +96,7 @@ impl From<(u32, u32, u32)> for Version {
             (maj, min, patch) => {
                 log::error!("Unrecognized version {maj}.{min:02}.{patch}");
                 panic!()
-            },
+            }
         }
     }
 }
@@ -164,6 +168,8 @@ pub const BASE_ADDRESSES_1_03_1: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x46c3bc8,
     current_target: 0x847cfa,
     format_string: 0x2905920,
+    menu_attune: 0xbb3af9,
+    menu_travel: 0xbb44d0,
     no_logo: 0xbbafdf,
     xa: 0x1f70,
 };
@@ -183,6 +189,8 @@ pub const BASE_ADDRESSES_1_03_2: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x46c4bc8,
     current_target: 0x847cfa,
     format_string: 0x2905ac0,
+    menu_attune: 0xbb3af9,
+    menu_travel: 0xbb44d0,
     no_logo: 0xbbafdf,
     xa: 0x1f70,
 };
@@ -202,6 +210,8 @@ pub const BASE_ADDRESSES_1_04_1: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x46c5ee8,
     current_target: 0x847a4a,
     format_string: 0x2906ae0,
+    menu_attune: 0xbb3be9,
+    menu_travel: 0xbb45c0,
     no_logo: 0xbbb0cf,
     xa: 0x1f70,
 };
@@ -221,6 +231,8 @@ pub const BASE_ADDRESSES_1_04_2: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x46c5ee8,
     current_target: 0x847a4a,
     format_string: 0x2906cf0,
+    menu_attune: 0xbb3be9,
+    menu_travel: 0xbb45c0,
     no_logo: 0xbbb0cf,
     xa: 0x1f70,
 };
@@ -240,6 +252,8 @@ pub const BASE_ADDRESSES_1_04_3: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x46c5ee8,
     current_target: 0x847a4a,
     format_string: 0x2906cf0,
+    menu_attune: 0xbb3be9,
+    menu_travel: 0xbb45c0,
     no_logo: 0xbbb0cf,
     xa: 0x1f70,
 };
@@ -259,6 +273,8 @@ pub const BASE_ADDRESSES_1_05_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x46c9fe8,
     current_target: 0x84809a,
     format_string: 0x290a020,
+    menu_attune: 0xbb4a49,
+    menu_travel: 0xbb5420,
     no_logo: 0xbbbf2f,
     xa: 0x1f80,
 };
@@ -278,6 +294,8 @@ pub const BASE_ADDRESSES_1_05_1: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x46c8fe8,
     current_target: 0x847eca,
     format_string: 0x2909240,
+    menu_attune: 0xbb4879,
+    menu_travel: 0xbb5250,
     no_logo: 0xbbbd5f,
     xa: 0x1f80,
 };
@@ -297,6 +315,8 @@ pub const BASE_ADDRESSES_1_06_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x46ca048,
     current_target: 0x84849a,
     format_string: 0x290a040,
+    menu_attune: 0xbb4e49,
+    menu_travel: 0xbb5820,
     no_logo: 0xbbc32f,
     xa: 0x1f80,
 };
@@ -316,6 +336,8 @@ pub const BASE_ADDRESSES_1_07_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x46ce888,
     current_target: 0x8493aa,
     format_string: 0x290d7a0,
+    menu_attune: 0xbb7579,
+    menu_travel: 0xbb7f50,
     no_logo: 0xbbea5f,
     xa: 0x1f80,
 };
@@ -335,6 +357,8 @@ pub const BASE_ADDRESSES_1_08_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x472d078,
     current_target: 0x852b7a,
     format_string: 0x2952940,
+    menu_attune: 0xbcebf9,
+    menu_travel: 0xbcf6d0,
     no_logo: 0xbd6acf,
     xa: 0x1f80,
 };
@@ -354,6 +378,8 @@ pub const BASE_ADDRESSES_1_09_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x472d1b8,
     current_target: 0x852b7a,
     format_string: 0x2952670,
+    menu_attune: 0xbcf1b9,
+    menu_travel: 0xbcfc90,
     no_logo: 0xbd708f,
     xa: 0x1f80,
 };
@@ -373,6 +399,8 @@ pub const BASE_ADDRESSES_1_10_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x472d1b8,
     current_target: 0x852b7a,
     format_string: 0x2952670,
+    menu_attune: 0xbcf229,
+    menu_travel: 0xbcfd00,
     no_logo: 0xbd70ff,
     xa: 0x1f80,
 };
@@ -392,6 +420,8 @@ pub const BASE_ADDRESSES_1_11_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x47604b8,
     current_target: 0x85857a,
     format_string: 0x297ae40,
+    menu_attune: 0xbdf0b9,
+    menu_travel: 0xbdfb90,
     no_logo: 0xbe6f8f,
     xa: 0x1f88,
 };
@@ -411,6 +441,8 @@ pub const BASE_ADDRESSES_1_12_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x4763638,
     current_target: 0x858d6a,
     format_string: 0x297d2e0,
+    menu_attune: 0xbdfec9,
+    menu_travel: 0xbe09a0,
     no_logo: 0xbe7d9f,
     xa: 0x1f88,
 };
@@ -430,6 +462,8 @@ pub const BASE_ADDRESSES_1_13_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x4766e38,
     current_target: 0x85a61a,
     format_string: 0x297f9f0,
+    menu_attune: 0xbe1a69,
+    menu_travel: 0xbe2540,
     no_logo: 0xbe993f,
     xa: 0x1f90,
 };
@@ -449,6 +483,8 @@ pub const BASE_ADDRESSES_1_14_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x4768f98,
     current_target: 0x85a70a,
     format_string: 0x2980a00,
+    menu_attune: 0xbe1d39,
+    menu_travel: 0xbe2810,
     no_logo: 0xbe9c0f,
     xa: 0x1f90,
 };
@@ -468,6 +504,8 @@ pub const BASE_ADDRESSES_1_15_0: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x4768f98,
     current_target: 0x85a74a,
     format_string: 0x2980a30,
+    menu_attune: 0xbe1e39,
+    menu_travel: 0xbe2910,
     no_logo: 0xbe9d0f,
     xa: 0x1f90,
 };
@@ -487,6 +525,8 @@ pub const BASE_ADDRESSES_1_15_1: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x477fed8,
     current_target: 0x862cba,
     format_string: 0x2991650,
+    menu_attune: 0xbec3e9,
+    menu_travel: 0xbecec0,
     no_logo: 0xbf42bf,
     xa: 0x1f90,
 };
@@ -506,6 +546,9 @@ pub const BASE_ADDRESSES_1_15_2: BaseAddresses = BaseAddresses {
     world_chr_man_dbg: 0x477fec8,
     current_target: 0x86306a,
     format_string: 0x2991610,
+    menu_attune: 0xbec519,
+    menu_travel: 0xbecff0,
     no_logo: 0xbf43ef,
     xa: 0x1f90,
 };
+

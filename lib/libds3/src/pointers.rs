@@ -70,6 +70,8 @@ pub struct PointerChains {
     pub current_target: PointerChain<u64>,
     pub map_item_man: u64,
     pub spawn_item_func_ptr: u64,
+    pub travel_ptr: usize,
+    pub attune_ptr: usize,
     pub xa: u32,
 
     #[allow(unused)]
@@ -94,6 +96,8 @@ impl From<BaseAddresses> for PointerChains {
             map_item_man,
             no_logo,
             current_target,
+            menu_travel,
+            menu_attune,
             ..
         } = b;
 
@@ -221,6 +225,8 @@ impl From<BaseAddresses> for PointerChains {
             souls: pointer_chain!(base_a, 0x10, 0x44 + 12 * size_of::<i32>()),
             map_item_man: map_item_man as _,
             spawn_item_func_ptr: spawn_item_func_ptr as _,
+            travel_ptr: menu_travel,
+            attune_ptr: menu_attune - 0x39,
             world_chr_man,
             cursor_show: bitflag!(0b1; menu_man as _, mouse_enable_offs as _),
             igt: pointer_chain!(base_a as _, offs_igt),

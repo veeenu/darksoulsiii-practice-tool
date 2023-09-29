@@ -11,6 +11,7 @@ use crate::widgets::cycle_speed::CycleSpeed;
 use crate::widgets::flag::Flag;
 use crate::widgets::item_spawn::ItemSpawner;
 use crate::widgets::nudge_pos::NudgePosition;
+use crate::widgets::open_menu::{OpenMenu, OpenMenuKind};
 use crate::widgets::position::SavePosition;
 use crate::widgets::quitout::Quitout;
 use crate::widgets::savefile_manager::SavefileManager;
@@ -67,6 +68,11 @@ enum CfgCommand {
         #[serde(rename = "souls")]
         amount: u32,
         hotkey: KeyState,
+    },
+    OpenMenu {
+        #[serde(rename = "open_menu")]
+        kind: OpenMenuKind,
+        hotkey: Option<KeyState>,
     },
     Quitout {
         #[serde(rename = "quitout")]
@@ -150,6 +156,9 @@ impl Config {
                 },
                 CfgCommand::Quitout { hotkey } => {
                     Box::new(Quitout::new(chains.quitout.clone(), *hotkey))
+                },
+                CfgCommand::OpenMenu { hotkey, kind } => {
+                    Box::new(OpenMenu::new(*kind, chains.travel_ptr, chains.attune_ptr, *hotkey))
                 },
                 CfgCommand::Target { hotkey } => {
                     Box::new(Target::new(chains.current_target.clone(), chains.xa, *hotkey))
