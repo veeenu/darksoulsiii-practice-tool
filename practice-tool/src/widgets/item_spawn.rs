@@ -7,15 +7,10 @@ use imgui::*;
 use libds3::memedit::Bitflag;
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer};
-use sys::{igSetNextWindowPos, ImVec2};
+use sys::{igGetCursorPosX, igGetCursorPosY, igGetWindowPos, igSetNextWindowPos, ImVec2};
 
 use crate::util::KeyState;
 use crate::widgets::{scaling_factor, Widget};
-
-// const ISP_TAG: &str = "##item-spawn";
-// static ITEM_ID_TREE: LazyLock<ItemIDTree> =
-//     LazyLock::new(||
-// serde_json::from_str(include_str!("item_ids.json")).unwrap());
 
 static INFUSION_TYPES: [(u32, &str); 16] = [
     (0, "Normal"),
@@ -247,6 +242,13 @@ impl ItemSpawner<'_> {
 impl Widget for ItemSpawner<'_> {
     fn render(&mut self, ui: &imgui::Ui) {
         let scale = scaling_factor(ui);
+
+        let (x, y) = unsafe {
+            let mut wnd_pos = ImVec2::default();
+            igGetWindowPos(&mut wnd_pos);
+            (igGetCursorPosX() + wnd_pos.x, igGetCursorPosY() + wnd_pos.y)
+        };
+
         if ui.button_with_size("Spawn item", [
             super::BUTTON_WIDTH * super::scaling_factor(ui),
             super::BUTTON_HEIGHT,
@@ -256,7 +258,7 @@ impl Widget for ItemSpawner<'_> {
 
         unsafe {
             igSetNextWindowPos(
-                ImVec2::new(16.0 + scale * 200., 16.0),
+                ImVec2::new(x + 200. * scale, y),
                 Condition::Always as i8 as _,
                 ImVec2::new(0., 0.),
             )

@@ -1,7 +1,7 @@
 use hudhook::tracing::debug;
 use imgui::*;
 use libds3::prelude::*;
-use sys::{igSetNextWindowPos, ImVec2};
+use sys::{igGetCursorPosX, igGetCursorPosY, igGetWindowPos, igSetNextWindowPos, ImVec2};
 
 use crate::util::KeyState;
 use crate::widgets::{scaling_factor, Widget};
@@ -25,6 +25,13 @@ impl Widget for CharacterStatsEdit {
     fn render(&mut self, ui: &imgui::Ui) {
         let scale = scaling_factor(ui);
         let button_width = super::BUTTON_WIDTH * super::scaling_factor(ui);
+
+        let (x, y) = unsafe {
+            let mut wnd_pos = ImVec2::default();
+            igGetWindowPos(&mut wnd_pos);
+            (igGetCursorPosX() + wnd_pos.x, igGetCursorPosY() + wnd_pos.y)
+        };
+
         if ui.button_with_size(&self.label_open, [button_width, super::BUTTON_HEIGHT]) {
             self.stats = self.ptr.read();
             debug!("{:?}", self.stats);
@@ -34,13 +41,9 @@ impl Widget for CharacterStatsEdit {
             ui.open_popup("##character_stats_edit");
         }
 
-        // let style_tokens =
-        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg,
-        // super::MODAL_BACKGROUND)];
-
         unsafe {
             igSetNextWindowPos(
-                ImVec2::new(16.0 + scale * 200., 16.0),
+                ImVec2::new(x + 200. * scale, y),
                 Condition::Always as i8 as _,
                 ImVec2::new(0., 0.),
             )
@@ -102,8 +105,6 @@ impl Widget for CharacterStatsEdit {
                 self.stats.take();
             }
         }
-
-        // style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
     fn interact(&mut self, ui: &imgui::Ui) {
