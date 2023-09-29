@@ -1,4 +1,4 @@
-#![feature(lazy_cell)]
+#![feature(lazy_cell)
 #![feature(const_fn_floating_point_arithmetic)]
 
 mod config;
@@ -213,7 +213,7 @@ impl PracticeTool {
             ui.push_style_var(StyleVar::WindowBorderSize(0.)),
         ];
         ui.window("##msg_window")
-            .position([16., ui.io().display_size[1] * 0.135], Condition::Always)
+            .position([16., ui.io().display_size[1] * 0.14], Condition::Always)
             .bg_alpha(0.0)
             .flags({
                 WindowFlags::NO_TITLE_BAR
@@ -223,7 +223,7 @@ impl PracticeTool {
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
             .build(|| {
-                ui.text("johndisandonato's Dark Souls III Practice Tool is active");
+                ui.text("johndisandonato's Dark Souls III Practice Tool");
 
                 ui.same_line();
 

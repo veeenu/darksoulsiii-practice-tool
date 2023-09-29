@@ -35,6 +35,9 @@ impl Display for CharacterStats {
     }
 }
 
+// Pointer chains
+//
+
 pub struct PointerChains {
     pub all_no_damage: Bitflag<u8>,
     pub no_death: Bitflag<u8>,
@@ -65,12 +68,12 @@ pub struct PointerChains {
     pub igt: PointerChain<u32>,
     pub no_logo: PointerChain<[u8; 20]>,
     pub current_target: PointerChain<u64>,
-
-    #[allow(unused)]
-    pub world_chr_man: usize,
     pub map_item_man: u64,
     pub spawn_item_func_ptr: u64,
     pub xa: u32,
+
+    #[allow(unused)]
+    pub world_chr_man: usize,
 }
 
 impl From<BaseAddresses> for PointerChains {

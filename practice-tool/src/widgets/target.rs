@@ -107,11 +107,14 @@ impl Target {
         }
 
         let epc = EntityPointerChains {
+            // SprjChrDataModule
             hp: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x18, 0xd8),
             sp: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x18, 0xf0),
             mp: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x18, 0xe4),
+            // SprjChrResistModule
             res: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x20, 0x10),
-            poise: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x20, 0x1278),
+            // SprjChrSuperArmorModule
+            poise: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x40, 0x28),
         };
 
         let [hp, _, max_hp] = epc.hp.read().unwrap_or_default();
@@ -239,17 +242,18 @@ impl Widget for Target {
         }
 
         let pbar = |label, cur, max, c| {
-            ui.text(format!("{label:8} {cur:>6}/{max:>6}"));
+            ui.text(format!("{label:8} {cur:>5} / {max:>5}"));
             let pct = div(cur, max);
             let _tok = ui.push_style_color(StyleColor::PlotHistogram, conv_color(c));
             ProgressBar::new(pct).size(pbar_size).overlay_text("").build(ui);
         };
 
+        ui.text(format!("{:x}", self.entity_addr));
         pbar("HP", hp, max_hp, 0x9b4949ff);
         pbar("SP", sp, max_sp, 0x6b6bdfff);
         pbar("MP", mp, max_mp, 0x474793ff);
 
-        ui.text(format!("Poise     {:>6}/{:>6} {:.2}s", poise, poise_max, poise_time));
+        ui.text(format!("Poise    {:>5.0}/{:>5.0} {:.2}s", poise, poise_max, poise_time));
         let pct = if poise_max.abs() < 0.0001 { 0.0 } else { poise / poise_max };
         let tok = ui.push_style_color(StyleColor::PlotHistogram, conv_color(0xffc070ff));
         ProgressBar::new(pct).size(pbar_size).overlay_text("").build(ui);
