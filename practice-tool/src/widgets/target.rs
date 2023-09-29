@@ -117,11 +117,11 @@ impl Target {
             poise: pointer_chain!(self.entity_addr as usize + self.xa as usize, 0x40, 0x28),
         };
 
-        let [hp, _, max_hp] = epc.hp.read().unwrap_or_default();
-        let [sp, _, max_sp] = epc.sp.read().unwrap_or_default();
-        let [mp, _, max_mp] = epc.mp.read().unwrap_or_default();
-        let res = epc.res.read().unwrap_or_default();
-        let poise = epc.poise.read().unwrap_or_default();
+        let [hp, _, max_hp] = epc.hp.read()?;
+        let [sp, _, max_sp] = epc.sp.read()?;
+        let [mp, _, max_mp] = epc.mp.read()?;
+        let res = epc.res.read()?;
+        let poise = epc.poise.read()?;
 
         Some(EnemyInfo { hp, max_hp, mp, max_mp, sp, max_sp, res, poise })
     }
@@ -200,6 +200,7 @@ impl Widget for Target {
     fn render_closed(&mut self, ui: &imgui::Ui) {
         let Some(EnemyInfo { hp, max_hp, mp, max_mp, sp, max_sp, res, poise }) = self.get_data()
         else {
+            ui.text("No enemy locked on");
             return;
         };
 
