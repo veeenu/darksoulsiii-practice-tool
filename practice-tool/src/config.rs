@@ -43,7 +43,6 @@ enum CfgCommand {
     ItemSpawner {
         #[serde(rename = "item_spawner")]
         hotkey_load: KeyState,
-        hotkey_close: KeyState,
     },
     Flag {
         flag: FlagSpec,
@@ -62,7 +61,6 @@ enum CfgCommand {
     CharacterStats {
         #[serde(rename = "character_stats")]
         hotkey_open: KeyState,
-        hotkey_close: KeyState,
     },
     Souls {
         #[serde(rename = "souls")]
@@ -126,27 +124,20 @@ impl Config {
                 CfgCommand::SavefileManager { hotkey_load } => {
                     SavefileManager::new_widget(*hotkey_load)
                 },
-                CfgCommand::ItemSpawner { hotkey_load, hotkey_close } => {
-                    Box::new(ItemSpawner::new(
-                        chains.spawn_item_func_ptr as usize,
-                        chains.map_item_man as usize,
-                        chains.gravity.clone(),
-                        *hotkey_load,
-                        *hotkey_close,
-                    ))
-                },
+                CfgCommand::ItemSpawner { hotkey_load } => Box::new(ItemSpawner::new(
+                    chains.spawn_item_func_ptr as usize,
+                    chains.map_item_man as usize,
+                    chains.gravity.clone(),
+                    *hotkey_load,
+                )),
                 CfgCommand::Position { hotkey, modifier } => {
                     Box::new(SavePosition::new(chains.position.clone(), *hotkey, *modifier))
                 },
                 CfgCommand::NudgePosition { nudge, nudge_up, nudge_down } => Box::new(
                     NudgePosition::new(chains.position.clone().1, *nudge, *nudge_up, *nudge_down),
                 ),
-                CfgCommand::CharacterStats { hotkey_open, hotkey_close } => {
-                    Box::new(CharacterStatsEdit::new(
-                        *hotkey_open,
-                        *hotkey_close,
-                        chains.character_stats.clone(),
-                    ))
+                CfgCommand::CharacterStats { hotkey_open } => {
+                    Box::new(CharacterStatsEdit::new(*hotkey_open, chains.character_stats.clone()))
                 },
                 CfgCommand::CycleSpeed { cycle_speed, hotkey } => {
                     Box::new(CycleSpeed::new(cycle_speed, chains.speed.clone(), *hotkey))

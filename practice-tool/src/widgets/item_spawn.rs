@@ -163,11 +163,9 @@ pub(crate) struct ItemSpawner<'a> {
     func_ptr: usize,
     map_item_man: usize,
     hotkey_load: KeyState,
-    hotkey_close: KeyState,
     sentinel: Bitflag<u8>,
 
     label_load: String,
-    label_close: String,
 
     qty: u32,
     item_id: u32,
@@ -186,17 +184,13 @@ impl ItemSpawner<'_> {
         map_item_man: usize,
         sentinel: Bitflag<u8>,
         hotkey_load: KeyState,
-        hotkey_close: KeyState,
     ) -> Self {
         let label_load = format!("Spawn item ({})", hotkey_load);
-        let label_close = format!("Close ({})", hotkey_close);
         ItemSpawner {
             func_ptr,
             map_item_man,
             hotkey_load,
-            hotkey_close,
             label_load,
-            label_close,
             sentinel,
             qty: 1,
             durability: 100,
@@ -260,10 +254,6 @@ impl Widget for ItemSpawner<'_> {
             ui.open_popup(ISP_TAG);
         }
 
-        // let style_tokens =
-        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg,
-        // super::MODAL_BACKGROUND)];
-
         unsafe {
             igSetNextWindowPos(
                 ImVec2::new(16.0 + scale * 200., 16.0),
@@ -320,14 +310,12 @@ impl Widget for ItemSpawner<'_> {
                 self.spawn();
             }
 
-            if self.hotkey_close.keyup(ui)
-                || ui.button_with_size(&self.label_close, [400., button_height])
+            if ui.is_key_released(Key::Escape)
+                || ui.button_with_size("Close", [400., button_height])
             {
                 ui.close_current_popup();
             }
         }
-
-        // style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
     fn log(&mut self) -> Option<Vec<String>> {
