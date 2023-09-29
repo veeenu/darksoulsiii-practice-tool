@@ -7,15 +7,10 @@ use imgui::*;
 use libds3::memedit::Bitflag;
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer};
-use sys::{igSetNextWindowPos, ImVec2};
+use sys::{igGetCursorPosX, igGetCursorPosY, igGetWindowPos, igSetNextWindowPos, ImVec2};
 
 use crate::util::KeyState;
 use crate::widgets::{scaling_factor, Widget};
-
-// const ISP_TAG: &str = "##item-spawn";
-// static ITEM_ID_TREE: LazyLock<ItemIDTree> =
-//     LazyLock::new(||
-// serde_json::from_str(include_str!("item_ids.json")).unwrap());
 
 static INFUSION_TYPES: [(u32, &str); 16] = [
     (0, "Normal"),
@@ -163,11 +158,9 @@ pub(crate) struct ItemSpawner<'a> {
     func_ptr: usize,
     map_item_man: usize,
     hotkey_load: KeyState,
-    hotkey_close: KeyState,
     sentinel: Bitflag<u8>,
 
     label_load: String,
-    label_close: String,
 
     qty: u32,
     item_id: u32,
@@ -186,17 +179,13 @@ impl ItemSpawner<'_> {
         map_item_man: usize,
         sentinel: Bitflag<u8>,
         hotkey_load: KeyState,
-        hotkey_close: KeyState,
     ) -> Self {
         let label_load = format!("Spawn item ({})", hotkey_load);
-        let label_close = format!("Close ({})", hotkey_close);
         ItemSpawner {
             func_ptr,
             map_item_man,
             hotkey_load,
-            hotkey_close,
             label_load,
-            label_close,
             sentinel,
             qty: 1,
             durability: 100,
@@ -253,20 +242,23 @@ impl ItemSpawner<'_> {
 impl Widget for ItemSpawner<'_> {
     fn render(&mut self, ui: &imgui::Ui) {
         let scale = scaling_factor(ui);
-        if ui.button_with_size("Spawn item", [
+
+        let (x, y) = unsafe {
+            let mut wnd_pos = ImVec2::default();
+            igGetWindowPos(&mut wnd_pos);
+            (igGetCursorPosX() + wnd_pos.x, igGetCursorPosY() + wnd_pos.y)
+        };
+
+        if ui.button_with_size(&self.label_load, [
             super::BUTTON_WIDTH * super::scaling_factor(ui),
             super::BUTTON_HEIGHT,
         ]) {
             ui.open_popup(ISP_TAG);
         }
 
-        // let style_tokens =
-        //     [ui.push_style_color(imgui::StyleColor::ModalWindowDimBg,
-        // super::MODAL_BACKGROUND)];
-
         unsafe {
             igSetNextWindowPos(
-                ImVec2::new(16.0 + scale * 200., 16.0),
+                ImVec2::new(x + 200. * scale, y),
                 Condition::Always as i8 as _,
                 ImVec2::new(0., 0.),
             )
@@ -320,14 +312,22 @@ impl Widget for ItemSpawner<'_> {
                 self.spawn();
             }
 
-            if self.hotkey_close.keyup(ui)
-                || ui.button_with_size(&self.label_close, [400., button_height])
+            if ui.button_with_size("Clear", [400., button_height]) {
+                self.filter_string.clear();
+                self.qty = 1;
+                self.durability = 100;
+                self.item_id = 0x40000000 + 2919;
+                self.upgrade = 0;
+                self.infusion_type = 0;
+                self.item_id_tree = ITEM_ID_TREE.iter().map(ItemIDNodeRef::from).collect();
+            }
+
+            if ui.is_key_released(Key::Escape)
+                || ui.button_with_size("Close", [400., button_height])
             {
                 ui.close_current_popup();
             }
         }
-
-        // style_tokens.into_iter().rev().for_each(|t| t.pop());
     }
 
     fn log(&mut self) -> Option<Vec<String>> {

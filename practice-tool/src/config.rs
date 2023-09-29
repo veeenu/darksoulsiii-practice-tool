@@ -9,6 +9,7 @@ use crate::util::KeyState;
 use crate::widgets::character_stats::CharacterStatsEdit;
 use crate::widgets::cycle_speed::CycleSpeed;
 use crate::widgets::flag::Flag;
+use crate::widgets::group::Group;
 use crate::widgets::item_spawn::ItemSpawner;
 use crate::widgets::nudge_pos::NudgePosition;
 use crate::widgets::open_menu::{OpenMenu, OpenMenuKind};
@@ -43,7 +44,6 @@ enum CfgCommand {
     ItemSpawner {
         #[serde(rename = "item_spawner")]
         hotkey_load: KeyState,
-        hotkey_close: KeyState,
     },
     Flag {
         flag: FlagSpec,
@@ -62,7 +62,6 @@ enum CfgCommand {
     CharacterStats {
         #[serde(rename = "character_stats")]
         hotkey_open: KeyState,
-        hotkey_close: KeyState,
     },
     Souls {
         #[serde(rename = "souls")]
@@ -86,6 +85,11 @@ enum CfgCommand {
         nudge: f32,
         nudge_up: KeyState,
         nudge_down: KeyState,
+    },
+    Group {
+        #[serde(rename = "group")]
+        label: String,
+        commands: Vec<CfgCommand>,
     },
 }
 
@@ -115,8 +119,11 @@ impl Config {
         toml::from_str::<Config>(cfg).map_err(|e| format!("TOML configuration parse error: {}", e))
     }
 
-    pub(crate) fn make_commands(&self, chains: &PointerChains) -> Vec<Box<dyn Widget>> {
-        self.commands
+    fn make_commands_inner(
+        commands: &[CfgCommand],
+        chains: &PointerChains,
+    ) -> Vec<Box<dyn Widget>> {
+        commands
             .iter()
             .map(|cmd| match cmd {
                 CfgCommand::Flag { flag, hotkey } => {
@@ -126,30 +133,23 @@ impl Config {
                 CfgCommand::SavefileManager { hotkey_load } => {
                     SavefileManager::new_widget(*hotkey_load)
                 },
-                CfgCommand::ItemSpawner { hotkey_load, hotkey_close } => {
-                    Box::new(ItemSpawner::new(
-                        chains.spawn_item_func_ptr as usize,
-                        chains.map_item_man as usize,
-                        chains.gravity.clone(),
-                        *hotkey_load,
-                        *hotkey_close,
-                    ))
-                },
+                CfgCommand::ItemSpawner { hotkey_load } => Box::new(ItemSpawner::new(
+                    chains.spawn_item_func_ptr as usize,
+                    chains.map_item_man as usize,
+                    chains.gravity.clone(),
+                    *hotkey_load,
+                )),
                 CfgCommand::Position { hotkey, modifier } => {
                     Box::new(SavePosition::new(chains.position.clone(), *hotkey, *modifier))
                 },
                 CfgCommand::NudgePosition { nudge, nudge_up, nudge_down } => Box::new(
                     NudgePosition::new(chains.position.clone().1, *nudge, *nudge_up, *nudge_down),
                 ),
-                CfgCommand::CharacterStats { hotkey_open, hotkey_close } => {
-                    Box::new(CharacterStatsEdit::new(
-                        *hotkey_open,
-                        *hotkey_close,
-                        chains.character_stats.clone(),
-                    ))
+                CfgCommand::CharacterStats { hotkey_open } => {
+                    Box::new(CharacterStatsEdit::new(*hotkey_open, chains.character_stats.clone()))
                 },
                 CfgCommand::CycleSpeed { cycle_speed, hotkey } => {
-                    Box::new(CycleSpeed::new(cycle_speed, chains.speed.clone(), *hotkey))
+                    Box::new(CycleSpeed::new(cycle_speed.as_slice(), chains.speed.clone(), *hotkey))
                 },
                 CfgCommand::Souls { amount, hotkey } => {
                     Box::new(Souls::new(*amount, chains.souls.clone(), *hotkey))
@@ -163,8 +163,16 @@ impl Config {
                 CfgCommand::Target { hotkey } => {
                     Box::new(Target::new(chains.current_target.clone(), chains.xa, *hotkey))
                 },
+                CfgCommand::Group { label, commands } => Box::new(Group::new(
+                    label,
+                    Self::make_commands_inner(commands.as_slice(), chains),
+                )),
             })
             .collect()
+    }
+
+    pub(crate) fn make_commands(&self, chains: &PointerChains) -> Vec<Box<dyn Widget>> {
+        Self::make_commands_inner(&self.commands, chains)
     }
 }
 

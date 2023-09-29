@@ -90,7 +90,7 @@ impl Target {
         };
 
         Target {
-            label: format!("Target ({})", hotkey),
+            label: format!("Target entity info ({})", hotkey),
             alloc_addr,
             detour_addr,
             detour_orig_data: Default::default(),
