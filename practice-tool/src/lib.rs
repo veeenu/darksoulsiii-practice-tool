@@ -1,4 +1,4 @@
-#![feature(lazy_cell)
+#![feature(lazy_cell)]
 #![feature(const_fn_floating_point_arithmetic)]
 
 mod config;

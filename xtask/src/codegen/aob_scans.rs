@@ -65,6 +65,13 @@ static AOBS_DIRECT: LazyLock<Vec<(&str, Vec<&str>)>> = LazyLock::new(|| {
         ("FormatString", vec!["3C 00 54 00 45 00 58 00 54 00 46 00 4F 00 52 00 4D 00 41 00 54 00"]),
         ("NoLogo", vec!["E8 ?? ?? ?? FF 90 4D 8B C7 49 8B D4 48 8B C8 E8 ?? ?? ?? FF"]),
         ("CurrentTarget", vec!["48 8B 80 ?? ?? ?? ?? 48 8B 08 48 8B ?? 58"]),
+        ("MenuTravel", vec![
+            "40 55 53 56 57 41 56 48 8D 6C 24 C9 48 81 EC 00 01 00 00 48 C7 45 97 FE FF FF FF",
+        ]),
+        ("MenuAttune", vec![
+            "48 8D 45 0F 48 89 45 EF 48 8D 45 0F 48 89 45 F7 48 8D ?? ?? ?? ?? ?? 48 89 45 0F 48 \
+             8D ?? ?? ?? ?? ?? 48 89 45 0F 48 8D ?? ?? ?? ?? ?? 48 89 45 17",
+        ]),
     ]
 });
 
