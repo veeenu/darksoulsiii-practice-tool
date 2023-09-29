@@ -249,7 +249,7 @@ impl Widget for ItemSpawner<'_> {
             (igGetCursorPosX() + wnd_pos.x, igGetCursorPosY() + wnd_pos.y)
         };
 
-        if ui.button_with_size("Spawn item", [
+        if ui.button_with_size(&self.label_load, [
             super::BUTTON_WIDTH * super::scaling_factor(ui),
             super::BUTTON_HEIGHT,
         ]) {
@@ -310,6 +310,16 @@ impl Widget for ItemSpawner<'_> {
                 || ui.button_with_size(&self.label_load, [400., button_height])
             {
                 self.spawn();
+            }
+
+            if ui.button_with_size("Clear", [400., button_height]) {
+                self.filter_string.clear();
+                self.qty = 1;
+                self.durability = 100;
+                self.item_id = 0x40000000 + 2919;
+                self.upgrade = 0;
+                self.infusion_type = 0;
+                self.item_id_tree = ITEM_ID_TREE.iter().map(ItemIDNodeRef::from).collect();
             }
 
             if ui.is_key_released(Key::Escape)
