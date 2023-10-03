@@ -140,6 +140,7 @@ impl Config {
                     chains.map_item_man as usize,
                     chains.gravity.clone(),
                     *hotkey_load,
+                    settings.display,
                 )),
                 CfgCommand::Position { hotkey, modifier } => {
                     Box::new(SavePosition::new(chains.position.clone(), *hotkey, *modifier))
@@ -147,9 +148,11 @@ impl Config {
                 CfgCommand::NudgePosition { nudge, nudge_up, nudge_down } => Box::new(
                     NudgePosition::new(chains.position.clone().1, *nudge, *nudge_up, *nudge_down),
                 ),
-                CfgCommand::CharacterStats { hotkey_open } => {
-                    Box::new(CharacterStatsEdit::new(*hotkey_open, chains.character_stats.clone()))
-                },
+                CfgCommand::CharacterStats { hotkey_open } => Box::new(CharacterStatsEdit::new(
+                    *hotkey_open,
+                    settings.display,
+                    chains.character_stats.clone(),
+                )),
                 CfgCommand::CycleSpeed { cycle_speed, hotkey } => {
                     Box::new(CycleSpeed::new(cycle_speed.as_slice(), chains.speed.clone(), *hotkey))
                 },
@@ -167,6 +170,7 @@ impl Config {
                 },
                 CfgCommand::Group { label, commands } => Box::new(Group::new(
                     label.as_str(),
+                    settings.display,
                     Self::make_commands_inner(commands.as_slice(), settings, chains),
                 )),
             })
