@@ -335,6 +335,10 @@ impl Widget for ItemSpawner<'_> {
     }
 
     fn interact(&mut self, ui: &imgui::Ui) {
+        if ui.is_any_item_active() {
+            return;
+        }
+
         if self.hotkey_load.keyup(ui) {
             self.spawn();
         }

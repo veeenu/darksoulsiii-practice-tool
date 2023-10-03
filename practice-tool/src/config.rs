@@ -40,6 +40,7 @@ enum CfgCommand {
     SavefileManager {
         #[serde(rename = "savefile_manager")]
         hotkey_load: KeyState,
+        hotkey_open: Option<KeyState>,
     },
     ItemSpawner {
         #[serde(rename = "item_spawner")]
@@ -121,6 +122,7 @@ impl Config {
 
     fn make_commands_inner(
         commands: &[CfgCommand],
+        settings: &Settings,
         chains: &PointerChains,
     ) -> Vec<Box<dyn Widget>> {
         commands
@@ -130,8 +132,8 @@ impl Config {
                     Box::new(Flag::new(&flag.label, (flag.getter)(chains).clone(), *hotkey))
                         as Box<dyn Widget>
                 },
-                CfgCommand::SavefileManager { hotkey_load } => {
-                    SavefileManager::new_widget(*hotkey_load)
+                CfgCommand::SavefileManager { hotkey_load, hotkey_open } => {
+                    SavefileManager::new_widget(*hotkey_load, *hotkey_open, settings.display)
                 },
                 CfgCommand::ItemSpawner { hotkey_load } => Box::new(ItemSpawner::new(
                     chains.spawn_item_func_ptr as usize,
@@ -164,15 +166,15 @@ impl Config {
                     Box::new(Target::new(chains.current_target.clone(), chains.xa, *hotkey))
                 },
                 CfgCommand::Group { label, commands } => Box::new(Group::new(
-                    label,
-                    Self::make_commands_inner(commands.as_slice(), chains),
+                    label.as_str(),
+                    Self::make_commands_inner(commands.as_slice(), settings, chains),
                 )),
             })
             .collect()
     }
 
     pub(crate) fn make_commands(&self, chains: &PointerChains) -> Vec<Box<dyn Widget>> {
-        Self::make_commands_inner(&self.commands, chains)
+        Self::make_commands_inner(&self.commands, &self.settings, chains)
     }
 }
 
@@ -181,7 +183,7 @@ impl Default for Config {
         Config {
             settings: Settings {
                 log_level: LevelFilterSerde(LevelFilter::DEBUG),
-                display: KeyState::new(util::get_key_code("0").unwrap()),
+                display: KeyState::new(util::get_key_code("0").unwrap(), None),
                 show_console: false,
             },
             commands: Vec::new(),

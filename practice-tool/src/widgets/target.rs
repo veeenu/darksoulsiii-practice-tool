@@ -193,11 +193,16 @@ impl Widget for Target {
                 self.enable();
             } else {
                 self.disable();
+                self.entity_addr = 0;
             }
         }
     }
 
     fn render_closed(&mut self, ui: &imgui::Ui) {
+        if !self.is_enabled {
+            return;
+        }
+
         let Some(EnemyInfo { hp, max_hp, mp, max_mp, sp, max_sp, res, poise }) = self.get_data()
         else {
             ui.text("No enemy locked on");
@@ -249,7 +254,6 @@ impl Widget for Target {
             ProgressBar::new(pct).size(pbar_size).overlay_text("").build(ui);
         };
 
-        ui.text(format!("{:x}", self.entity_addr));
         pbar("HP", hp, max_hp, 0x9b4949ff);
         pbar("SP", sp, max_sp, 0x6b6bdfff);
         pbar("MP", mp, max_mp, 0x474793ff);
@@ -268,6 +272,10 @@ impl Widget for Target {
     }
 
     fn interact(&mut self, ui: &imgui::Ui) {
+        if ui.is_any_item_active() {
+            return;
+        }
+
         if self.hotkey.keyup(ui) {
             if self.is_enabled {
                 self.disable();
