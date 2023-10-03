@@ -60,6 +60,10 @@ impl Widget for NudgePosition {
     }
 
     fn interact(&mut self, ui: &imgui::Ui) {
+        if ui.is_any_item_active() {
+            return;
+        }
+
         if self.nudge_up.is_key_down(ui) {
             self.do_nudge_up();
         } else if self.nudge_down.is_key_down(ui) {
