@@ -1,6 +1,5 @@
-use imgui::sys::{igSetNextWindowPos, ImVec2};
+use imgui::sys::{igGetCursorPosX, igGetCursorPosY, igGetWindowPos, igSetNextWindowPos, ImVec2};
 use imgui::{Condition, Key};
-use imgui_sys::{igGetCursorPosX, igGetCursorPosY, igGetWindowPos};
 
 use super::{Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 
