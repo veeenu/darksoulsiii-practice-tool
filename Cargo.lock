@@ -615,7 +615,7 @@ checksum = "9cdc71e17332e86d2e1d38c1f99edcb6288ee11b815fb1a4b049eaa2114d369b"
 
 [[package]]
 name = "libds3"
-version = "0.1.0"
+version = "1.5.0"
 dependencies = [
  "log",
  "macro-param",
@@ -652,7 +652,7 @@ dependencies = [
 
 [[package]]
 name = "macro-param"
-version = "0.1.0"
+version = "1.5.0"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -683,7 +683,7 @@ dependencies = [
 
 [[package]]
 name = "memscan"
-version = "0.1.0"
+version = "1.5.0"
 dependencies = [
  "memchr",
  "windows 0.42.0",
@@ -706,7 +706,7 @@ checksum = "e53debba6bda7a793e5f99b8dacf19e626084f525f7829104ba9898f367d85ff"
 
 [[package]]
 name = "no-logo"
-version = "0.1.0"
+version = "1.5.0"
 dependencies = [
  "libds3",
  "windows 0.42.0",
@@ -775,7 +775,7 @@ checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
 name = "param-mod"
-version = "0.1.0"
+version = "1.5.0"
 dependencies = [
  "libds3",
  "serde",
@@ -785,7 +785,7 @@ dependencies = [
 
 [[package]]
 name = "param-tinkerer"
-version = "0.1.0"
+version = "1.5.0"
 dependencies = [
  "dll-syringe",
  "hudhook",
@@ -1948,7 +1948,7 @@ checksum = "0fcb9cbac069e033553e8bb871be2fbdffcab578eb25bd0f7c508cedc6dcd75a"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "1.5.0"
 dependencies = [
  "dll-syringe",
  "dotenv",

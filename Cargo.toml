@@ -11,6 +11,10 @@ members = [
   "xtask",
 ]
 
+[workspace.package]
+version = "1.5.1"
+authors = ["Andrea Venuta <venutawebdesign@gmail.com>"]
+
 [profile.dev]
 opt-level = 2
 debug = 2
