@@ -54,6 +54,9 @@ pub struct PointerChains {
     pub rend_map: Bitflag<u8>,
     pub rend_mesh_hi: Bitflag<u8>,
     pub rend_mesh_lo: Bitflag<u8>,
+    pub rend_mesh_hit: Bitflag<u8>,
+    pub rend_hurtbox: Bitflag<u8>,
+    pub debug_draw: Bitflag<u8>,
     pub all_draw_hit: Bitflag<u8>,
     pub ik_foot_ray: Bitflag<u8>,
     pub debug_sphere_1: Bitflag<u8>,
@@ -189,9 +192,34 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1
             | Version::V1_15_2 => 0xa4,
         };
+        let offs_debug_draw = match *VERSION {
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0 => 0x55,
+
+            Version::V1_08_0
+            | Version::V1_09_0
+            | Version::V1_10_0
+            | Version::V1_11_0
+            | Version::V1_12_0
+            | Version::V1_13_0
+            | Version::V1_14_0
+            | Version::V1_15_0
+            | Version::V1_15_1
+            | Version::V1_15_2 => 0x65,
+        };
+
         let offs_no_update_ai = 0xD;
         let mesh_hi = 0xEC;
         let mesh_lo = 0xED;
+        let hurtbox = 0xEF;
+        let mesh_hit = 0xF1;
         let mouse_enable_offs = 0x54;
 
         PointerChains {
@@ -210,6 +238,9 @@ impl From<BaseAddresses> for PointerChains {
             rend_map: bitflag!(0b1; grend),
             rend_mesh_hi: bitflag!(0b1; base_hbd + mesh_hi as usize),
             rend_mesh_lo: bitflag!(0b1; base_hbd + mesh_lo as usize),
+            rend_mesh_hit: bitflag!(0b1; base_hbd + mesh_hit as usize),
+            rend_hurtbox: bitflag!(0b1; base_hbd + hurtbox as usize),
+            debug_draw: bitflag!(0b1; world_chr_man_dbg, offs_debug_draw),
             all_draw_hit: bitflag!(0b1; world_chr_man_dbg, 0x66),
             ik_foot_ray: bitflag!(0b1; world_chr_man_dbg, 0x6B),
             debug_sphere_1: bitflag!(0b1; base_hbd, 0x30),

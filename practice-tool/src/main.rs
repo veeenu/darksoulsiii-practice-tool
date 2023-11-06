@@ -35,7 +35,8 @@ fn get_latest_version() -> Result<(Version, String, String), String> {
     let release =
         ureq::get("https://api.github.com/repos/veeenu/darksoulsiii-practice-tool/releases/latest")
             .call()
-            .into_json_deserialize::<GithubRelease>()
+            .map_err(|e| format!("Couldn't check version: {:?}", e))?
+            .into_json::<GithubRelease>()
             .map_err(|e| format!("Couldn't check version: {:?}", e))?;
 
     let version = Version::parse(&release.tag_name).map_err(err_to_string)?;

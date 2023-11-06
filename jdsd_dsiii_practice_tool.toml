@@ -18,10 +18,12 @@ commands = [
     { flag = "rend_map", hotkey = "F6" },
     { flag = "rend_mesh_hi", hotkey = "F7" },
     { flag = "rend_mesh_lo", hotkey = "F8" },
-    { flag = "all_draw_hit", hotkey = "F9" },
+    # { flag = "all_draw_hit" }, # conflicts with debug_draw
     { flag = "ik_foot_ray", hotkey = "F9" },
     { flag = "debug_sphere_1", hotkey = "F9" },
     { flag = "debug_sphere_2", hotkey = "F9" },
+    { flag = "hurtbox", hotkey = "F9" },
+    { flag = "debug_draw", hotkey = "F9" },
     { flag = "evt_draw", hotkey = "F10" },
   ]},
   { flag = "all_no_damage", hotkey = "1" },
