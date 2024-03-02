@@ -1,11 +1,11 @@
 mod param_data;
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::c_void;
-use std::sync::LazyLock;
 use std::time::Duration;
 use std::{mem, thread};
 
 use log::{error, info};
+use once_cell::sync::Lazy;
 pub use param_data::*;
 use parking_lot::RwLock;
 use widestring::U16CStr;
@@ -16,7 +16,7 @@ use crate::prelude::base_addresses::*;
 use crate::version::VERSION;
 use crate::{wait_option, ParamVisitor};
 
-pub static PARAMS: LazyLock<RwLock<Params>> = LazyLock::new(|| unsafe {
+pub static PARAMS: Lazy<RwLock<Params>> = Lazy::new(|| unsafe {
     wait_option(|| match Params::new() {
         Ok(p) => Some(RwLock::new(p)),
         Err(e) => {
@@ -26,8 +26,8 @@ pub static PARAMS: LazyLock<RwLock<Params>> = LazyLock::new(|| unsafe {
     })
 });
 
-pub static PARAM_NAMES: LazyLock<HashMap<String, HashMap<usize, String>>> =
-    LazyLock::new(|| serde_json::from_str(include_str!("param_names.json")).unwrap());
+pub static PARAM_NAMES: Lazy<HashMap<String, HashMap<usize, String>>> =
+    Lazy::new(|| serde_json::from_str(include_str!("param_names.json")).unwrap());
 
 #[repr(C)]
 struct ParamMaster {

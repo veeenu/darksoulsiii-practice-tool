@@ -1,7 +1,7 @@
 use std::ptr::null_mut;
-use std::sync::LazyLock;
 
 use log::*;
+use once_cell::sync::Lazy;
 use widestring::U16CString;
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::MAX_PATH;
@@ -12,7 +12,7 @@ use windows::Win32::System::LibraryLoader::{GetModuleFileNameW, GetModuleHandleW
 
 pub use crate::prelude::base_addresses::Version;
 
-pub static VERSION: LazyLock<Version> = LazyLock::new(get_version);
+pub static VERSION: Lazy<Version> = Lazy::new(get_version);
 
 fn get_version() -> Version {
     let file_path = {

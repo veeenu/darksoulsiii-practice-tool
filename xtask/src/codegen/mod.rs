@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::env;
 use std::ffi::OsStr;
 use std::fs::File;
@@ -33,6 +33,7 @@ fn run_python_script() -> Result<()> {
         .map_err(|e| format!("python: {}", e))?;
 
     if !cmd.status.success() {
+        eprintln!("{}", std::str::from_utf8(&cmd.stderr).unwrap());
         return Err("python codegen failed".into());
     }
 
@@ -43,7 +44,7 @@ fn run_python_script() -> Result<()> {
 }
 
 fn codegen_param_names() -> Result<()> {
-    let mut data: HashMap<String, HashMap<usize, String>> = HashMap::new();
+    let mut data: BTreeMap<String, BTreeMap<usize, String>> = BTreeMap::new();
 
     let files_with_content = project_root()
         .join("target/Paramdex/DS3/Names")
@@ -64,7 +65,7 @@ fn codegen_param_names() -> Result<()> {
     for path in files_with_content {
         let stem = path.file_stem().unwrap().to_string_lossy().to_string();
 
-        let data_contents: HashMap<_, _> = BufReader::new(File::open(path)?)
+        let data_contents: BTreeMap<_, _> = BufReader::new(File::open(path)?)
             .lines()
             .filter_map(|line| {
                 let line = line.ok()?;

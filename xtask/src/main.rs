@@ -1,37 +1,26 @@
-#![feature(lazy_cell)]
-
 mod codegen;
 
-use std::env;
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::{env, iter};
 
-use dll_syringe::process::OwnedProcess;
-use dll_syringe::Syringe;
-use widestring::U16CString;
-use winapi::ctypes::c_void;
-use winapi::shared::minwindef::FALSE;
-use winapi::shared::ntdef::{LANG_ENGLISH, MAKELANGID, SUBLANG_DEFAULT};
-use winapi::um::winbase::{BeginUpdateResourceW, EndUpdateResourceW, UpdateResourceW};
-use winapi::um::winuser::{MAKEINTRESOURCEW, RT_GROUP_ICON, RT_ICON};
-use zip::write::FileOptions;
-use zip::{CompressionMethod, ZipWriter};
+mod dist;
 
 type DynError = Box<dyn std::error::Error>;
 type Result<T> = std::result::Result<T, DynError>;
 
 // Main
-//
 
 fn main() -> Result<()> {
     dotenv::dotenv().ok();
 
     let task = env::args().nth(1);
     match task.as_deref() {
-        Some("dist") => dist()?,
-        Some("dist-parammod") => dist_parammod()?,
+        Some("dist") => dist::dist()?,
+        Some("dist-parammod") => dist::dist_parammod()?,
         Some("inject") => inject(env::args().skip(1).map(String::from))?,
         Some("run") => run()?,
         Some("run-param-tinkerer") => run_param_tinkerer()?,
@@ -43,125 +32,10 @@ fn main() -> Result<()> {
 }
 
 // Tasks
-//
-
-fn dist() -> Result<()> {
-    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-
-    let status = Command::new(&cargo)
-        .current_dir(project_root())
-        .env("CARGO_XTASK_DIST", "true")
-        .args(["build", "--locked", "--release"])
-        .status()
-        .map_err(|e| format!("cargo: {}", e))?;
-
-    if !status.success() {
-        return Err("cargo build failed".into());
-    }
-
-    let status = Command::new(&cargo)
-        .current_dir(project_root())
-        .env("CARGO_XTASK_DIST", "true")
-        .args(["build", "--locked", "--release", "--package", "no-logo"])
-        .status()
-        .map_err(|e| format!("cargo: {}", e))?;
-
-    if !status.success() {
-        return Err("cargo build failed".into());
-    }
-
-    update_icon(
-        project_root().join("target/release/jdsd_dsiii_practice_tool.exe"),
-        project_root().join("practice-tool/src/sidherald.ico"),
-    )
-    .map_err(|e| format!("Update icon: {}", e))?;
-
-    std::fs::remove_dir_all(dist_dir()).ok();
-    std::fs::create_dir_all(dist_dir())?;
-
-    let mut zip = ZipWriter::new(File::create(dist_dir().join("jdsd_dsiii_practice_tool.zip"))?);
-    let file_options = FileOptions::default().compression_method(CompressionMethod::Deflated);
-
-    let mut buf: Vec<u8> = Vec::new();
-
-    let mut add_zip = |src: PathBuf, dst: &str| -> Result<()> {
-        File::open(src)
-            .map_err(|e| format!("{}: Couldn't open file: {}", dst, e))?
-            .read_to_end(&mut buf)
-            .map_err(|e| format!("{}: Couldn't read file: {}", dst, e))?;
-        zip.start_file(dst, file_options)
-            .map_err(|e| format!("{}: Couldn't start zip file: {}", dst, e))?;
-        zip.write_all(&buf).map_err(|e| format!("{}: Couldn't write zip: {}", dst, e))?;
-        buf.clear();
-        Ok(())
-    };
-
-    add_zip(
-        project_root().join("target/release/jdsd_dsiii_practice_tool.exe"),
-        "jdsd_dsiii_practice_tool.exe",
-    )?;
-    add_zip(
-        project_root().join("target/release/libjdsd_dsiii_practice_tool.dll"),
-        "jdsd_dsiii_practice_tool.dll",
-    )?;
-    add_zip(project_root().join("target/release/dinput8nologo.dll"), "dinput8.dll")?;
-    add_zip(project_root().join("lib/data/RELEASE-README.txt"), "README.txt")?;
-    add_zip(project_root().join("jdsd_dsiii_practice_tool.toml"), "jdsd_dsiii_practice_tool.toml")?;
-
-    Ok(())
-}
-
-fn dist_parammod() -> Result<()> {
-    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-
-    let status = Command::new(cargo)
-        .current_dir(project_root())
-        .env("CARGO_XTASK_DIST", "true")
-        .args(["build", "--locked", "--release"])
-        .status()
-        .map_err(|e| format!("cargo: {}", e))?;
-
-    if !status.success() {
-        return Err("cargo build failed".into());
-    }
-
-    std::fs::remove_dir_all(dist_dir()).ok();
-    std::fs::create_dir_all(dist_dir())?;
-
-    let mut zip = ZipWriter::new(File::create(dist_dir().join("jdsd_dsiii_param_tinkerer.zip"))?);
-    let file_options = FileOptions::default().compression_method(CompressionMethod::Deflated);
-
-    let mut buf: Vec<u8> = Vec::new();
-
-    let mut add_zip = |src: PathBuf, dst: &str| -> Result<()> {
-        File::open(src)
-            .map_err(|e| format!("{}: Couldn't open file: {}", dst, e))?
-            .read_to_end(&mut buf)
-            .map_err(|e| format!("{}: Couldn't read file: {}", dst, e))?;
-        zip.start_file(dst, file_options)
-            .map_err(|e| format!("{}: Couldn't start zip file: {}", dst, e))?;
-        zip.write_all(&buf).map_err(|e| format!("{}: Couldn't write zip: {}", dst, e))?;
-        buf.clear();
-        Ok(())
-    };
-
-    add_zip(project_root().join("target/release/param-tinkerer.exe"), "param-tinkerer.exe")?;
-    add_zip(
-        project_root().join("target/release/jdsd_dsiii_param_tinkerer.dll"),
-        "param-tinkerer.dll",
-    )?;
-    add_zip(project_root().join("target/release/dinput8parammod.dll"), "dinput8.dll")?;
-    add_zip(project_root().join("lib/data/PARAM-TINKERER.txt"), "README.txt")?;
-    add_zip(project_root().join("lib/param-mod/param-mod.toml"), "param-mod.toml")?;
-
-    Ok(())
-}
 
 fn run() -> Result<()> {
-    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-    let status = Command::new(cargo)
-        .current_dir(project_root())
-        .args(["build", "--lib", "--package", "darksoulsiii-practice-tool"])
+    let status = cargo_command("build")
+        .args(["--lib", "--package", "darksoulsiii-practice-tool"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
 
@@ -182,31 +56,14 @@ fn run() -> Result<()> {
         .join("libjdsd_dsiii_practice_tool.dll")
         .canonicalize()?;
 
-    let process = OwnedProcess::find_first_by_name("DarkSoulsIII.exe")
-        .ok_or_else(|| "Could not find process".to_string())?;
-    let syringe = Syringe::for_process(process);
-    syringe.inject(dll_path)?;
-
-    Ok(())
-}
-
-fn inject(mut args: impl Iterator<Item = String>) -> Result<()> {
-    let dll = args.next().unwrap();
-    let exe = args.next().unwrap();
-
-    let process = OwnedProcess::find_first_by_name(exe)
-        .ok_or_else(|| "Could not find process".to_string())?;
-    let syringe = Syringe::for_process(process);
-    syringe.inject(dll)?;
+    inject(iter::once(dll_path))?;
 
     Ok(())
 }
 
 fn run_param_tinkerer() -> Result<()> {
-    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-    let status = Command::new(cargo)
-        .current_dir(project_root())
-        .args(["build", "--release", "--lib", "--package", "param-tinkerer"])
+    let status = cargo_command("build")
+        .args(["--release", "--lib", "--package", "param-tinkerer"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
 
@@ -220,10 +77,7 @@ fn run_param_tinkerer() -> Result<()> {
         .join("jdsd_dsiii_param_tinkerer.dll")
         .canonicalize()?;
 
-    let process = OwnedProcess::find_first_by_name("DarkSoulsIII.exe")
-        .ok_or_else(|| "Could not find process".to_string())?;
-    let syringe = Syringe::for_process(process);
-    syringe.inject(dll_path)?;
+    inject(iter::once(dll_path))?;
 
     Ok(())
 }
@@ -242,69 +96,38 @@ help .......... print this help
 }
 
 // Utilities
-//
-
-fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
-    #[repr(C, packed)]
-    struct GroupHeader {
-        reserved: u16,
-        r#type: u16,
-        count: u16,
-        width: u8,
-        height: u8,
-        ccount: u8,
-        reserved1: u8,
-        planes: u16,
-        bcount: u16,
-        bytes: u32,
-        offset: u32,
-    }
-
-    let mut buf: Vec<u8> = Vec::new();
-    File::open(icon)?.read_to_end(&mut buf)?;
-
-    let group_header: &mut GroupHeader =
-        unsafe { (buf.as_ptr() as *mut GroupHeader).as_mut().ok_or("Invalid pointer")? };
-
-    let start: usize = group_header.offset as usize;
-    let count: usize = group_header.bytes as usize;
-    let end: usize = start + count;
-    let icon_data = &buf[start..end];
-
-    group_header.offset = 1;
-
-    unsafe {
-        let handle =
-            BeginUpdateResourceW(U16CString::from_str(path.to_str().unwrap())?.as_ptr(), FALSE);
-
-        UpdateResourceW(
-            handle,
-            RT_ICON,
-            MAKEINTRESOURCEW(1),
-            MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-            icon_data.as_ptr() as *mut c_void,
-            count as u32,
-        );
-
-        UpdateResourceW(
-            handle,
-            RT_GROUP_ICON,
-            U16CString::from_str("IDI_ICON")?.as_ptr(),
-            MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-            buf.as_ptr() as *mut c_void,
-            std::mem::size_of::<GroupHeader>() as u32,
-        );
-
-        EndUpdateResourceW(handle, FALSE);
-    }
-
-    Ok(())
-}
 
 fn project_root() -> PathBuf {
     Path::new(&env!("CARGO_MANIFEST_DIR")).ancestors().nth(1).unwrap().to_path_buf()
 }
 
-fn dist_dir() -> PathBuf {
-    project_root().join("target/dist")
+fn target_path(target: &str) -> PathBuf {
+    let mut target_path = project_root().join("target");
+    if cfg!(not(windows)) {
+        target_path = target_path.join("x86_64-pc-windows-msvc");
+    }
+
+    target_path.join(target)
+}
+
+fn cargo_command(cmd: &'static str) -> Command {
+    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+
+    let mut command = Command::new(cargo);
+    command.current_dir(project_root());
+    if cfg!(windows) {
+        command.arg(cmd);
+    } else {
+        command.args(["xwin", cmd, "--target", "x86_64-pc-windows-msvc"]);
+    }
+    command
+}
+
+fn inject<S: AsRef<OsStr>>(args: impl Iterator<Item = S>) -> Result<()> {
+    cargo_command("run")
+        .args(["--release", "--bin", "inject", "--"])
+        .args(args)
+        .status()
+        .map_err(|e| format!("cargo: {}", e))?;
+    Ok(())
 }

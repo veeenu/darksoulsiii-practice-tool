@@ -1,9 +1,7 @@
-#![feature(lazy_cell)]
-
 use std::fmt::Write;
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;
-use hudhook::hooks::ImguiRenderLoop;
+use hudhook::ImguiRenderLoop;
 use imgui::*;
 use libds3::prelude::*;
 
@@ -187,4 +185,4 @@ impl ParamTinkerer {
     }
 }
 
-hudhook::hudhook!(ParamTinkerer::new().into_hook::<ImguiDx11Hooks>());
+hudhook::hudhook!(ImguiDx11Hooks, ParamTinkerer::new());
