@@ -53,7 +53,7 @@ def build_param_layouts(paramdex_path, xtask_path):
     # Param names from the game's memory
     param_names = dict(
         (to_slug(i), i)
-        for i in (xtask_path / 'src' / 'param_names.txt').read_text().splitlines()
+        for i in (xtask_path / 'src' / 'codegen' / 'param_names.txt').read_text().splitlines()
     )
 
     # Manual corrections

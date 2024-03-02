@@ -33,3 +33,6 @@ imgui.workspace = true
 imgui-sys.workspace = true
 once_cell.workspace = true
 windows.workspace = true
+
+[build-dependencies]
+embed-resource = "2.4.1"

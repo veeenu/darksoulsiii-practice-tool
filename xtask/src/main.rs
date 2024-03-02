@@ -1,10 +1,11 @@
 mod codegen;
 
-use std::env;
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::{env, iter};
 
 mod dist;
 
@@ -35,10 +36,8 @@ fn main() -> Result<()> {
 //
 
 fn run() -> Result<()> {
-    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-    let status = Command::new(cargo)
-        .current_dir(project_root())
-        .args(["build", "--lib", "--package", "darksoulsiii-practice-tool"])
+    let status = cargo_command("build")
+        .args(["--lib", "--package", "darksoulsiii-practice-tool"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
 
@@ -59,25 +58,14 @@ fn run() -> Result<()> {
         .join("libjdsd_dsiii_practice_tool.dll")
         .canonicalize()?;
 
-    do_inject("DarkSoulsIII.exe", dll_path)?;
-
-    Ok(())
-}
-
-fn inject(mut args: impl Iterator<Item = String>) -> Result<()> {
-    let dll = args.next().unwrap();
-    let exe = args.next().unwrap();
-
-    do_inject(exe, dll)?;
+    inject(iter::once(dll_path))?;
 
     Ok(())
 }
 
 fn run_param_tinkerer() -> Result<()> {
-    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-    let status = Command::new(cargo)
-        .current_dir(project_root())
-        .args(["build", "--release", "--lib", "--package", "param-tinkerer"])
+    let status = cargo_command("build")
+        .args(["--release", "--lib", "--package", "param-tinkerer"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
 
@@ -91,7 +79,7 @@ fn run_param_tinkerer() -> Result<()> {
         .join("jdsd_dsiii_param_tinkerer.dll")
         .canonicalize()?;
 
-    do_inject("DarkSoulsIII.exe", dll_path)?;
+    inject(iter::once(dll_path))?;
 
     Ok(())
 }
@@ -116,15 +104,24 @@ fn project_root() -> PathBuf {
     Path::new(&env!("CARGO_MANIFEST_DIR")).ancestors().nth(1).unwrap().to_path_buf()
 }
 
-#[cfg(windows)]
-fn do_inject<S: AsRef<str>, P: AsRef<Path>>(exe: S, dll_path: P) -> Result<()> {
-    hudhook::inject::Process::by_name(exe.as_ref())
-        .map_err(|e| format!("Could not find process: {e:?}"))?
-        .inject(dll_path.as_ref().to_path_buf())?;
-    Ok(())
+fn cargo_command(cmd: &'static str) -> Command {
+    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+
+    let mut command = Command::new(cargo);
+    command.current_dir(project_root());
+    if cfg!(windows) {
+        command.arg(cmd);
+    } else {
+        command.args(["xwin", cmd, "--target", "x86_64-pc-windows-msvc"]);
+    }
+    command
 }
 
-#[cfg(not(windows))]
-fn do_inject<S: AsRef<str>, P: AsRef<Path>>(_exe: S, _dll_path: P) -> Result<()> {
-    unimplemented!();
+fn inject<S: AsRef<OsStr>>(args: impl Iterator<Item = S>) -> Result<()> {
+    cargo_command("run")
+        .args(["--release", "--bin", "inject", "--"])
+        .args(args)
+        .status()
+        .map_err(|e| format!("cargo: {}", e))?;
+    Ok(())
 }
