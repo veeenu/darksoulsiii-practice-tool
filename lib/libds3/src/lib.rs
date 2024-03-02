@@ -1,5 +1,3 @@
-#![feature(lazy_cell)]
-
 pub mod codegen;
 pub mod memedit;
 pub mod params;

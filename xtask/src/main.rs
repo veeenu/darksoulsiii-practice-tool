@@ -8,8 +8,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use dll_syringe::process::OwnedProcess;
-use dll_syringe::Syringe;
+use hudhook::inject::Process;
 use widestring::U16CString;
 use winapi::ctypes::c_void;
 use winapi::shared::minwindef::FALSE;
@@ -22,6 +21,7 @@ use zip::{CompressionMethod, ZipWriter};
 type DynError = Box<dyn std::error::Error>;
 type Result<T> = std::result::Result<T, DynError>;
 
+//
 // Main
 //
 
@@ -42,6 +42,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+//
 // Tasks
 //
 
@@ -182,10 +183,7 @@ fn run() -> Result<()> {
         .join("libjdsd_dsiii_practice_tool.dll")
         .canonicalize()?;
 
-    let process = OwnedProcess::find_first_by_name("DarkSoulsIII.exe")
-        .ok_or_else(|| "Could not find process".to_string())?;
-    let syringe = Syringe::for_process(process);
-    syringe.inject(dll_path)?;
+    do_inject("DarkSoulsIII.exe", dll_path)?;
 
     Ok(())
 }
@@ -194,10 +192,7 @@ fn inject(mut args: impl Iterator<Item = String>) -> Result<()> {
     let dll = args.next().unwrap();
     let exe = args.next().unwrap();
 
-    let process = OwnedProcess::find_first_by_name(exe)
-        .ok_or_else(|| "Could not find process".to_string())?;
-    let syringe = Syringe::for_process(process);
-    syringe.inject(dll)?;
+    do_inject(exe, dll_path)?;
 
     Ok(())
 }
@@ -220,10 +215,7 @@ fn run_param_tinkerer() -> Result<()> {
         .join("jdsd_dsiii_param_tinkerer.dll")
         .canonicalize()?;
 
-    let process = OwnedProcess::find_first_by_name("DarkSoulsIII.exe")
-        .ok_or_else(|| "Could not find process".to_string())?;
-    let syringe = Syringe::for_process(process);
-    syringe.inject(dll_path)?;
+    do_inject("DarkSoulsIII.exe", dll_path)?;
 
     Ok(())
 }
@@ -241,6 +233,7 @@ help .......... print this help
     );
 }
 
+//
 // Utilities
 //
 
@@ -307,4 +300,10 @@ fn project_root() -> PathBuf {
 
 fn dist_dir() -> PathBuf {
     project_root().join("target/dist")
+}
+
+fn do_inject<S: AsRef<str>, P: AsRef<Path>>(exe: S, dll_path: P) -> Result<()> {
+    Process::by_name(exe.as_ref())
+        .ok_or_else(|| "Could not find process".to_string())?
+        .inject(dll_path.as_ref())
 }

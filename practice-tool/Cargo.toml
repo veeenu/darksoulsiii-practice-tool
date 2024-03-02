@@ -32,7 +32,6 @@ widestring = "0.5.1"
 parking_lot = "0.11.2"
 hex = "0.4.3"
 const_format = "0.2.26"
-dll-syringe = { git = "https://github.com/OpenByteDev/dll-syringe" }
 hudhook.workspace = true
 imgui.workspace = true
 imgui-sys.workspace = true
