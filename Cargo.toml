@@ -43,5 +43,5 @@ features = [
   "Win32_System_Threading",
 ]
 
-[patch.'crates-io']
-hudhook = { path = "../hudhook" }
+# [patch.'crates-io']
+# hudhook = { path = "../hudhook" }
