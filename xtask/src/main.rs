@@ -13,7 +13,6 @@ type DynError = Box<dyn std::error::Error>;
 type Result<T> = std::result::Result<T, DynError>;
 
 // Main
-//
 
 fn main() -> Result<()> {
     dotenv::dotenv().ok();
@@ -33,7 +32,6 @@ fn main() -> Result<()> {
 }
 
 // Tasks
-//
 
 fn run() -> Result<()> {
     let status = cargo_command("build")
@@ -98,7 +96,6 @@ help .......... print this help
 }
 
 // Utilities
-//
 
 fn project_root() -> PathBuf {
     Path::new(&env!("CARGO_MANIFEST_DIR")).ancestors().nth(1).unwrap().to_path_buf()
