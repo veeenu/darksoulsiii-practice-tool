@@ -11,7 +11,6 @@ mod dist;
 type DynError = Box<dyn std::error::Error>;
 type Result<T> = std::result::Result<T, DynError>;
 
-//
 // Main
 //
 
@@ -32,7 +31,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-//
 // Tasks
 //
 
@@ -111,7 +109,6 @@ help .......... print this help
     );
 }
 
-//
 // Utilities
 //
 

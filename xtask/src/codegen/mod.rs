@@ -33,6 +33,7 @@ fn run_python_script() -> Result<()> {
         .map_err(|e| format!("python: {}", e))?;
 
     if !cmd.status.success() {
+        eprintln!("{}", std::str::from_utf8(&cmd.stderr).unwrap());
         return Err("python codegen failed".into());
     }
 

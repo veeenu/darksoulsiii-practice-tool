@@ -1,12 +1,11 @@
-use std::{
-    env,
-    fs::File,
-    io::{Read, Write},
-    path::PathBuf,
-    process::Command,
-};
+use std::env;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::PathBuf;
+use std::process::Command;
 
-use zip::{write::FileOptions, CompressionMethod, ZipWriter};
+use zip::write::FileOptions;
+use zip::{CompressionMethod, ZipWriter};
 
 use crate::{project_root, Result};
 
@@ -123,7 +122,7 @@ pub(crate) fn dist_parammod() -> Result<()> {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
+fn update_icon(_path: PathBuf, _icon: PathBuf) -> Result<()> {
     unimplemented!("Use a Windows target for this");
 }
 
@@ -131,6 +130,7 @@ fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
 fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
     use std::ffi::c_void;
     use std::os::windows::ffi::OsStrExt;
+
     use windows::core::{w, PCWSTR};
     use windows::Win32::System::LibraryLoader::{
         BeginUpdateResourceW, EndUpdateResourceW, UpdateResourceW,
