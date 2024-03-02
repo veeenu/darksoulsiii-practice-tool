@@ -429,7 +429,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "serde_json",
  "widestring",
- "windows 0.51.1",
+ "windows 0.54.0",
 ]
 
 [[package]]
@@ -496,7 +496,7 @@ name = "memscan"
 version = "1.5.1"
 dependencies = [
  "memchr",
- "windows 0.51.1",
+ "windows 0.54.0",
 ]
 
 [[package]]
@@ -519,7 +519,7 @@ name = "no-logo"
 version = "1.5.1"
 dependencies = [
  "libds3",
- "windows 0.51.1",
+ "windows 0.54.0",
 ]
 
 [[package]]
@@ -567,7 +567,7 @@ dependencies = [
  "libds3",
  "serde",
  "toml",
- "windows 0.51.1",
+ "windows 0.54.0",
 ]
 
 [[package]]

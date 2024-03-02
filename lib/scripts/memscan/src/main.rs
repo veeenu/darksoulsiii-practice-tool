@@ -1,9 +1,8 @@
-#![feature(array_chunks)]
 use std::ffi::c_void;
 use std::mem::size_of;
 
 use memchr::memmem;
-use windows::Win32::Foundation::{CloseHandle, CHAR};
+use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::System::Diagnostics::Debug::ReadProcessMemory;
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Module32First, Module32Next, Process32First, Process32Next,
@@ -11,7 +10,7 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
 };
 use windows::Win32::System::Threading::{OpenProcess, PROCESS_ALL_ACCESS};
 
-fn szcmp(source: &[CHAR], s: &str) -> bool {
+fn szcmp(source: &[i8], s: &str) -> bool {
     source.iter().zip(s.chars()).all(|(a, b)| a.0 == b as u8)
 }
 
@@ -40,7 +39,7 @@ fn read_base_module_data(pid: u32) -> Option<(usize, Vec<u8>)> {
             unsafe { CloseHandle(process) };
             return Some((module_entry.modBaseAddr as usize, buf));
         }
-        if !unsafe { Module32Next(module_snapshot, &mut module_entry).as_bool() } {
+        if unsafe { Module32Next(module_snapshot, &mut module_entry).is_err() } {
             break;
         }
     }
@@ -62,7 +61,7 @@ fn get_base_module_bytes(proc_name: &str) -> Option<(usize, Vec<u8>)> {
             );
             return read_base_module_data(process_entry.th32ProcessID);
         }
-        if !unsafe { Process32Next(process_snapshot, &mut process_entry).as_bool() } {
+        if unsafe { Process32Next(process_snapshot, &mut process_entry).is_err() } {
             break None;
         }
     }
@@ -80,28 +79,36 @@ struct Module {
 impl Module {
     fn find_u32(&self, needle: u32) -> impl Iterator<Item = usize> + '_ {
         const N: usize = size_of::<u32>();
-        self.bytes.array_chunks::<N>().copied().map(u32::from_le_bytes).enumerate().filter_map(
-            move |(pos, haystack_val)| {
-                if haystack_val == needle {
-                    Some(pos * N)
-                } else {
-                    None
-                }
-            },
-        )
+        self.bytes
+            .chunks(N)
+            .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
+            .enumerate()
+            .filter_map(
+                move |(pos, haystack_val)| {
+                    if haystack_val == needle {
+                        Some(pos * N)
+                    } else {
+                        None
+                    }
+                },
+            )
     }
 
     fn find_u64(&self, needle: u64) -> impl Iterator<Item = usize> + '_ {
         const N: usize = size_of::<u64>();
-        self.bytes.array_chunks::<N>().copied().map(u64::from_le_bytes).enumerate().filter_map(
-            move |(pos, haystack_val)| {
-                if haystack_val == needle {
-                    Some(pos * N)
-                } else {
-                    None
-                }
-            },
-        )
+        self.bytes
+            .chunks(N)
+            .map(|chunk| u64::from_le_bytes(chunk.try_into().unwrap()))
+            .enumerate()
+            .filter_map(
+                move |(pos, haystack_val)| {
+                    if haystack_val == needle {
+                        Some(pos * N)
+                    } else {
+                        None
+                    }
+                },
+            )
     }
 
     fn get_u64(&self, addr: usize) -> Option<u64> {
