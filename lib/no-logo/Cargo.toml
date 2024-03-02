@@ -11,3 +11,4 @@ crate-type = ["cdylib"]
 [dependencies]
 libds3 = { path = "../libds3" }
 windows.workspace = true
+once_cell.workspace = true

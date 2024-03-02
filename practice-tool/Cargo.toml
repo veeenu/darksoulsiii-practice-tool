@@ -20,11 +20,6 @@ serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.57"
 pkg-version = "1.0.0"
 ureq = { version = "2.8.0", features = ["json"] }
-windows = { version = "0.51.0", features = [
-  "Win32_Foundation",
-  "Win32_UI_Input_KeyboardAndMouse",
-  "Win32_System_Threading"
-] }
 open = "1.4.0"
 semver = "0.11.0"
 regex = "1"
@@ -32,7 +27,9 @@ widestring = "0.5.1"
 parking_lot = "0.11.2"
 hex = "0.4.3"
 const_format = "0.2.26"
+tracing-subscriber = "0.3.17"
 hudhook.workspace = true
 imgui.workspace = true
 imgui-sys.workspace = true
-tracing-subscriber = "0.3.17"
+once_cell.workspace = true
+windows.workspace = true

@@ -1,9 +1,7 @@
-#![feature(lazy_cell)]
-
 use std::ffi::c_void;
-use std::sync::LazyLock;
 
 use libds3::prelude::*;
+use once_cell::sync::Lazy;
 use windows::core::{GUID, HRESULT, PCSTR};
 use windows::Win32::Foundation::{BOOL, HINSTANCE};
 use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryA};
@@ -24,7 +22,7 @@ struct State {
 unsafe impl Send for State {}
 unsafe impl Sync for State {}
 
-static STATE: LazyLock<State> = LazyLock::new(|| unsafe {
+static STATE: Lazy<State> = Lazy::new(|| unsafe {
     let dinput8 = LoadLibraryA(PCSTR(b"C:\\Windows\\System32\\dinput8.dll\0".as_ptr())).unwrap();
     let directinput8create =
         std::mem::transmute(GetProcAddress(dinput8, PCSTR(b"DirectInput8Create\0".as_ptr())));
@@ -34,7 +32,7 @@ static STATE: LazyLock<State> = LazyLock::new(|| unsafe {
 });
 
 fn initialize() {
-    LazyLock::force(&STATE);
+    Lazy::force(&STATE);
 }
 
 fn patch() {

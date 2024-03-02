@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::sync::LazyLock;
 
+use once_cell::sync::Lazy;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 
 pub(crate) fn get_key_code(k: &str) -> Option<i32> {
@@ -11,7 +11,7 @@ pub(crate) fn get_key_repr(k: i32) -> Option<&'static str> {
     VK_SYMBOL_MAP_INV.get(&k).map(String::as_str)
 }
 
-pub static VK_SYMBOL_MAP: LazyLock<HashMap<String, i32>> = LazyLock::new(|| {
+pub static VK_SYMBOL_MAP: Lazy<HashMap<String, i32>> = Lazy::new(|| {
     [
         ("lbutton", VK_LBUTTON),
         ("rbutton", VK_RBUTTON),
@@ -191,5 +191,5 @@ pub static VK_SYMBOL_MAP: LazyLock<HashMap<String, i32>> = LazyLock::new(|| {
     .collect()
 });
 
-pub static VK_SYMBOL_MAP_INV: LazyLock<HashMap<i32, String>> =
-    LazyLock::new(|| VK_SYMBOL_MAP.iter().map(|(k, &v)| (v, k.clone())).collect());
+pub static VK_SYMBOL_MAP_INV: Lazy<HashMap<i32, String>> =
+    Lazy::new(|| VK_SYMBOL_MAP.iter().map(|(k, &v)| (v, k.clone())).collect());

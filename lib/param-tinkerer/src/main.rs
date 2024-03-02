@@ -1,5 +1,4 @@
-use dll_syringe::process::OwnedProcess;
-use dll_syringe::Syringe;
+use hudhook::inject::Process;
 
 fn err_to_string<T: std::fmt::Display>(e: T) -> String {
     format!("Error: {}", e)
@@ -12,10 +11,10 @@ fn main() -> Result<(), String> {
 
     let dll_path = dll_path.canonicalize().map_err(err_to_string)?;
 
-    let process = OwnedProcess::find_first_by_name("DarkSoulsIII.exe")
-        .ok_or_else(|| "Could not find process".to_string())?;
-    let syringe = Syringe::for_process(process);
-    syringe.inject(dll_path).map_err(|e| format!("{e}"))?;
+    Process::by_name("DarkSoulsIII.exe")
+        .map_err(|e| format!("Could not find process: {e:?}"))?
+        .inject(dll_path)
+        .map_err(|e| format!("Could not inject DLL: {e:?}"))?;
 
     Ok(())
 }

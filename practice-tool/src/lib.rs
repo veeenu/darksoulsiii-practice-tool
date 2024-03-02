@@ -9,15 +9,17 @@ use std::time::Instant;
 
 use const_format::formatcp;
 use hudhook::hooks::dx11::ImguiDx11Hooks;
-use hudhook::hooks::ImguiRenderLoop;
 use hudhook::tracing::metadata::LevelFilter;
 use hudhook::tracing::{debug, error, info, trace};
-use hudhook::{eject, Hudhook, DLL_PROCESS_ATTACH, HINSTANCE};
+use hudhook::{eject, Hudhook};
+use hudhook::{ImguiRenderLoop, TextureLoader};
 use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
 use tracing_subscriber::prelude::*;
 use widgets::{BUTTON_HEIGHT, BUTTON_WIDTH};
+use windows::Win32::Foundation::HINSTANCE;
+use windows::Win32::System::SystemServices::DLL_PROCESS_ATTACH;
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_RSHIFT};
 
 const VERSION: (usize, usize, usize) =
@@ -182,19 +184,19 @@ impl PracticeTool {
                     w.render(ui);
                 }
 
-                if ui.button_with_size("Close", [
-                    BUTTON_WIDTH * widgets::scaling_factor(ui),
-                    BUTTON_HEIGHT,
-                ]) {
+                if ui.button_with_size(
+                    "Close",
+                    [BUTTON_WIDTH * widgets::scaling_factor(ui), BUTTON_HEIGHT],
+                ) {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
                 }
 
                 if option_env!("CARGO_XTASK_DIST").is_none()
-                    && ui.button_with_size("Eject", [
-                        BUTTON_WIDTH * widgets::scaling_factor(ui),
-                        BUTTON_HEIGHT,
-                    ])
+                    && ui.button_with_size(
+                        "Eject",
+                        [BUTTON_WIDTH * widgets::scaling_factor(ui), BUTTON_HEIGHT],
+                    )
                 {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
@@ -413,7 +415,7 @@ impl ImguiRenderLoop for PracticeTool {
         drop(font_token);
     }
 
-    fn initialize(&mut self, ctx: &mut imgui::Context) {
+    fn initialize(&mut self, ctx: &mut imgui::Context, _loader: TextureLoader) {
         let fonts = ctx.fonts();
         self.fonts = Some(FontIDs {
             small: fonts.add_font(&[FontSource::TtfData {
@@ -452,7 +454,7 @@ pub unsafe extern "stdcall" fn DllMain(hmodule: HINSTANCE, reason: u32, _: *mut 
             let practice_tool = PracticeTool::new();
 
             if let Err(e) = Hudhook::builder()
-                .with(practice_tool.into_hook::<ImguiDx11Hooks>())
+                .with::<ImguiDx11Hooks>(practice_tool)
                 .with_hmodule(hmodule)
                 .build()
                 .apply()

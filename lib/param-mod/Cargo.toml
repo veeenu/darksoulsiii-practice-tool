@@ -13,3 +13,4 @@ libds3 = { path = "../libds3" }
 serde = { version = "1.0.147", features = ["derive"] }
 toml = "0.5.9"
 windows.workspace = true
+once_cell.workspace = true

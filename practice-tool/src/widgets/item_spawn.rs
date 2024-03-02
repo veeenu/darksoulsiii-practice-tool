@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 use std::ffi::c_void;
 use std::fmt::Display;
-use std::sync::LazyLock;
 
 use imgui::*;
 use libds3::memedit::Bitflag;
+use once_cell::sync::Lazy;
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer};
 use sys::{igGetCursorPosX, igGetCursorPosY, igGetWindowPos, igSetNextWindowPos, ImVec2};
@@ -150,8 +150,8 @@ fn string_match(needle: &str, haystack: &str) -> bool {
 }
 
 const ISP_TAG: &str = "##item-spawn";
-static ITEM_ID_TREE: LazyLock<Vec<ItemIDNode>> =
-    LazyLock::new(|| serde_json::from_str(include_str!("item_ids.json")).unwrap());
+static ITEM_ID_TREE: Lazy<Vec<ItemIDNode>> =
+    Lazy::new(|| serde_json::from_str(include_str!("item_ids.json")).unwrap());
 
 #[derive(Debug)]
 pub(crate) struct ItemSpawner<'a> {
@@ -255,10 +255,10 @@ impl Widget for ItemSpawner<'_> {
             (igGetCursorPosX() + wnd_pos.x, igGetCursorPosY() + wnd_pos.y)
         };
 
-        if ui.button_with_size(&self.label_load, [
-            super::BUTTON_WIDTH * super::scaling_factor(ui),
-            super::BUTTON_HEIGHT,
-        ]) {
+        if ui.button_with_size(
+            &self.label_load,
+            [super::BUTTON_WIDTH * super::scaling_factor(ui), super::BUTTON_HEIGHT],
+        ) {
             ui.open_popup(ISP_TAG);
         }
 
