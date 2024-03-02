@@ -15,15 +15,5 @@ textwrap = "0.15.0"
 dotenv = "0.15.0"
 once_cell.workspace = true
 hudhook.workspace = true
-windows.workspace = true
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies.winapi]
-version = "0.3.9"
-features = [
-  "winuser",
-  "winbase",
-  "ntdef",
-]
+pelite = "0.10.0"
 

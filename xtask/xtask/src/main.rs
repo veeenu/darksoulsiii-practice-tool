@@ -301,9 +301,13 @@ fn dist_dir() -> PathBuf {
 }
 
 fn do_inject<S: AsRef<str>, P: AsRef<Path>>(exe: S, dll_path: P) -> Result<()> {
+    #[cfg(windows)]
     Process::by_name(exe.as_ref())
         .map_err(|e| format!("Could not find process: {e:?}"))?
         .inject(dll_path.as_ref().to_path_buf())?;
+
+    #[cfg(not(windows))]
+    unimplemented!();
 
     Ok(())
 }

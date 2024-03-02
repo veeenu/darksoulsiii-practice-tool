@@ -8,7 +8,8 @@ members = [
   "lib/scripts/memscan",
   "lib/no-logo",
   "lib/param-mod",
-  "xtask",
+  "xtask/xtask",
+  "xtask/codegen",
 ]
 
 [workspace.package]
