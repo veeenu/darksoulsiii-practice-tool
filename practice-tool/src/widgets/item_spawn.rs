@@ -255,10 +255,10 @@ impl Widget for ItemSpawner<'_> {
             (igGetCursorPosX() + wnd_pos.x, igGetCursorPosY() + wnd_pos.y)
         };
 
-        if ui.button_with_size(
-            &self.label_load,
-            [super::BUTTON_WIDTH * super::scaling_factor(ui), super::BUTTON_HEIGHT],
-        ) {
+        if ui.button_with_size(&self.label_load, [
+            super::BUTTON_WIDTH * super::scaling_factor(ui),
+            super::BUTTON_HEIGHT,
+        ]) {
             ui.open_popup(ISP_TAG);
         }
 

@@ -11,8 +11,7 @@ use const_format::formatcp;
 use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::tracing::metadata::LevelFilter;
 use hudhook::tracing::{debug, error, info, trace};
-use hudhook::{eject, Hudhook};
-use hudhook::{ImguiRenderLoop, TextureLoader};
+use hudhook::{eject, Hudhook, ImguiRenderLoop, TextureLoader};
 use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
@@ -184,19 +183,19 @@ impl PracticeTool {
                     w.render(ui);
                 }
 
-                if ui.button_with_size(
-                    "Close",
-                    [BUTTON_WIDTH * widgets::scaling_factor(ui), BUTTON_HEIGHT],
-                ) {
+                if ui.button_with_size("Close", [
+                    BUTTON_WIDTH * widgets::scaling_factor(ui),
+                    BUTTON_HEIGHT,
+                ]) {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
                 }
 
                 if option_env!("CARGO_XTASK_DIST").is_none()
-                    && ui.button_with_size(
-                        "Eject",
-                        [BUTTON_WIDTH * widgets::scaling_factor(ui), BUTTON_HEIGHT],
-                    )
+                    && ui.button_with_size("Eject", [
+                        BUTTON_WIDTH * widgets::scaling_factor(ui),
+                        BUTTON_HEIGHT,
+                    ])
                 {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
