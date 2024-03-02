@@ -43,8 +43,8 @@ const AOBS: &[(&str, &str, usize, usize)] = &[
     ("Param", "48 8B 0D ?? ?? ?? ?? 48 85 C9 74 0B 4C 8B C0 48 8B D7", 3, 7),
 ];
 
-static AOBS_README: Lazy<Vec<(&str, usize, Vec<&str>)>> =
-    Lazy::new(|| vec![("XA", 3, vec!["48 8B 83 ?? ?? ?? ?? 48 8B 10 48 85 D2 ?? ?? 8B"])]);
+static AOBS_README: Lazy<Vec<(&str, Vec<&str>, usize)>> =
+    Lazy::new(|| vec![("XA", vec!["48 8B 83 ?? ?? ?? ?? 48 8B 10 48 85 D2 ?? ?? 8B"], 3)]);
 
 static AOBS_DIRECT: Lazy<Vec<(&str, Vec<&str>)>> = Lazy::new(|| {
     vec![
@@ -62,7 +62,7 @@ static AOBS_DIRECT: Lazy<Vec<(&str, Vec<&str>)>> = Lazy::new(|| {
             vec![
             "48 8D 45 0F 48 89 45 EF 48 8D 45 0F 48 89 45 F7 48 8D ?? ?? ?? ?? ?? 48 89 45 0F 48 \
              8D ?? ?? ?? ?? ?? 48 89 45 0F 48 8D ?? ?? ?? ?? ?? 48 89 45 17",
-        ],
+            ],
         ),
     ]
 });
@@ -79,10 +79,6 @@ impl Version {
 struct VersionData {
     version: Version,
     aobs: Vec<(&'static str, usize)>,
-}
-
-fn szcmp(source: &[i8], s: &str) -> bool {
-    source.iter().zip(s.chars()).all(|(&a, b)| a == b as i8)
 }
 
 fn into_needle(pattern: &str) -> Vec<Option<u8>> {
@@ -104,39 +100,71 @@ fn naive_search(bytes: &[u8], pattern: &[Option<u8>]) -> Option<usize> {
     })
 }
 
-fn get_file_data(exe_path: &Path) -> Option<(usize, Vec<u8>, Version)> {
-    let file_map = FileMap::open(exe_path).ok()?;
-    let pe_file = PeFile::from_bytes(&file_map).ok()?;
+fn find_aob_normal(
+    name: &'static str,
+    aob: &str,
+    offset_read: usize,
+    offset_final: usize,
+    pe_file: &PeFile,
+) -> Option<(&'static str, usize)> {
+    let needle = into_needle(aob);
 
-    let text_section = pe_file.section_headers().iter().find(|sh| sh.name().unwrap() == ".text")?;
-    let bytes = pe_file.get_section_bytes(text_section).ok()?.to_vec();
+    pe_file
+        .section_headers()
+        .into_iter()
+        .filter_map(|sh| Some((sh.VirtualAddress as usize, pe_file.get_section_bytes(sh).ok()?)))
+        .find_map(|(base, bytes)| {
+            let offset = naive_search(bytes, &needle)?;
+            let val = u32::from_le_bytes(
+                bytes[offset + offset_read..offset + offset_read + 4].try_into().unwrap(),
+            ) as usize;
+            let addr = val + offset_final + offset + base;
 
-    let version = pe_file.resources().ok()?.version_info().ok()?.fixed()?.dwProductVersion;
-    let version = Version(version.Major as u32, version.Minor as u32, version.Patch as u32);
-
-    Some((text_section.VirtualAddress as usize, bytes, version))
+            Some((name, addr))
+        })
 }
 
-fn find_aobs(bytes: Vec<u8>) -> Vec<(&'static str, usize)> {
+fn find_aob_direct(
+    name: &'static str,
+    aob: &str,
+    pe_file: &PeFile,
+) -> Option<(&'static str, usize)> {
+    let needle = into_needle(aob);
+
+    pe_file
+        .section_headers()
+        .into_iter()
+        .filter_map(|sh| Some((sh.VirtualAddress as usize, pe_file.get_section_bytes(sh).ok()?)))
+        .find_map(|(base, bytes)| naive_search(bytes, &needle).map(|r| (name, r + base)))
+}
+
+fn find_aob_readme(
+    name: &'static str,
+    aob: &str,
+    offset: usize,
+    pe_file: &PeFile,
+) -> Option<(&'static str, usize)> {
+    let needle = into_needle(aob);
+
+    pe_file
+        .section_headers()
+        .into_iter()
+        .filter_map(|sh| pe_file.get_section_bytes(sh).ok())
+        .find_map(|bytes| {
+            naive_search(bytes, &needle).map(|r| {
+                let r =
+                    u32::from_le_bytes((&bytes[r + offset..r + offset + 4]).try_into().unwrap());
+                (name, r as usize)
+            })
+        })
+}
+
+fn find_aobs(pe_file: &PeFile) -> Vec<(&'static str, usize)> {
     let mut aob_offsets = AOBS
         .into_par_iter()
-        .filter_map(|(name, aob, offs_read, offs_final)| {
-            if let Some(r) = naive_search(&bytes, &into_needle(aob)) {
-                Some((name, r, offs_read, offs_final))
-            } else {
-                eprintln!("{name:24} not found");
-                None
-            }
+        .filter_map(|(name, aob, offset_read, offset_final)| {
+            find_aob_normal(name, aob, *offset_read, *offset_final, pe_file)
         })
-        .map(|(name, offset, c, f)| {
-            (
-                name,
-                offset,
-                *f,
-                u32::from_le_bytes(bytes[offset + c..offset + c + 4].try_into().unwrap()),
-            )
-        })
-        .map(|(name, offset, f, val)| (*name, (val + f as u32) as usize + offset))
         .collect::<Vec<_>>();
 
     aob_offsets.sort_by(|a, b| a.0.cmp(b.0));
@@ -144,14 +172,7 @@ fn find_aobs(bytes: Vec<u8>) -> Vec<(&'static str, usize)> {
     //
     let mut aob_offsets_direct = AOBS_DIRECT
         .iter()
-        .filter_map(|(name, aob)| {
-            if let Some(r) = aob.iter().find_map(|aob| naive_search(&bytes, &into_needle(aob))) {
-                Some((*name, r))
-            } else {
-                eprintln!("{name:24} not found");
-                None
-            }
-        })
+        .filter_map(|(name, aob)| aob.iter().find_map(|aob| find_aob_direct(name, aob, pe_file)))
         .collect::<Vec<_>>();
 
     aob_offsets_direct.sort_by(|a, b| a.0.cmp(b.0));
@@ -161,14 +182,8 @@ fn find_aobs(bytes: Vec<u8>) -> Vec<(&'static str, usize)> {
     //
     let mut aob_offsets_readme = AOBS_README
         .iter()
-        .filter_map(|(name, offs, aob)| {
-            if let Some(r) = aob.iter().find_map(|aob| naive_search(&bytes, &into_needle(aob))) {
-                let r = u32::from_le_bytes((&bytes[r + offs..r + offs + 4]).try_into().unwrap());
-                Some((*name, r as usize))
-            } else {
-                eprintln!("{name:24} not found");
-                None
-            }
+        .filter_map(|(name, aob, offset)| {
+            aob.iter().find_map(|aob| find_aob_readme(name, aob, *offset, pe_file))
         })
         .collect::<Vec<_>>();
 
@@ -178,40 +193,6 @@ fn find_aobs(bytes: Vec<u8>) -> Vec<(&'static str, usize)> {
 
     aob_offsets
 }
-
-// fn get_file_version(file: &Path) -> Version {
-//     let mut file_path = file.to_string_lossy().to_string();
-//     file_path.push(0 as char);
-//     let file_path = widestring::U16CString::from_str(file_path).unwrap();
-//     let mut version_info_size =
-//         unsafe { GetFileVersionInfoSizeW(PCWSTR(file_path.as_ptr()), None) };
-//     let mut version_info_buf = vec![0u8; version_info_size as usize];
-//     unsafe {
-//         GetFileVersionInfoW(
-//             PCWSTR(file_path.as_ptr()),
-//             0,
-//             version_info_size,
-//             version_info_buf.as_mut_ptr() as _,
-//         )
-//         .expect("GetFileVersionInfoW")
-//     };
-//
-//     let mut version_info: *mut VS_FIXEDFILEINFO = null_mut();
-//     unsafe {
-//         VerQueryValueW(
-//             version_info_buf.as_ptr() as _,
-//             PCWSTR(widestring::U16CString::from_str("\\\\\0").unwrap().as_ptr()),
-//             &mut version_info as *mut *mut _ as _,
-//             &mut version_info_size,
-//         )
-//     };
-//     let version_info = unsafe { version_info.as_ref().unwrap() };
-//     let major = (version_info.dwFileVersionMS >> 16) & 0xffff;
-//     let minor = (version_info.dwFileVersionMS) & 0xffff;
-//     let patch = (version_info.dwFileVersionLS >> 16) & 0xffff;
-//
-//     Version(major, minor, patch)
-// }
 
 // Codegen routine
 //
@@ -395,7 +376,7 @@ fn patches_paths() -> impl Iterator<Item = PathBuf> {
 fn codegen_base_addresses_path() -> PathBuf {
     Path::new(&env!("CARGO_MANIFEST_DIR"))
         .ancestors()
-        .nth(1)
+        .nth(2)
         .unwrap()
         .to_path_buf()
         .join("lib")
@@ -411,10 +392,18 @@ pub fn codegen_base_addresses() {
     let mut version_data = patches_paths()
         .filter(|p| p.exists())
         .filter_map(|exe| {
-            let Some((base_addr, bytes, version)) = get_file_data(&exe) else {
-                eprintln!("Couldn't retrieve file data for {exe:?}");
-                return None;
-            };
+            let file_map = FileMap::open(&exe).unwrap();
+            let pe_file = PeFile::from_bytes(&file_map).unwrap();
+
+            let version = pe_file
+                .resources()
+                .unwrap()
+                .version_info()
+                .unwrap()
+                .fixed()
+                .unwrap()
+                .dwProductVersion;
+            let version = Version(version.Major as u32, version.Minor as u32, version.Patch as u32);
 
             if processed_versions.contains(&version) {
                 None
@@ -422,7 +411,7 @@ pub fn codegen_base_addresses() {
                 let exe = exe.canonicalize().unwrap();
                 println!("\nVERSION {}: {:?}", version.to_fromsoft_string(), exe);
 
-                let aobs = find_aobs(bytes);
+                let aobs = find_aobs(&pe_file);
                 processed_versions.insert(version);
                 Some(VersionData { version, aobs })
             }
