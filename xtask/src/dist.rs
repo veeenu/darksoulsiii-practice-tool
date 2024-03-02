@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
-use crate::{cargo_command, project_root, Result};
+use crate::{cargo_command, project_root, target_path, Result};
 
 pub(crate) fn dist() -> Result<()> {
     let status = cargo_command("build")
@@ -49,14 +49,14 @@ pub(crate) fn dist() -> Result<()> {
     };
 
     add_zip(
-        project_root().join("target/release/jdsd_dsiii_practice_tool.exe"),
+        target_path("release").join("jdsd_dsiii_practice_tool.exe"),
         "jdsd_dsiii_practice_tool.exe",
     )?;
     add_zip(
-        project_root().join("target/release/libjdsd_dsiii_practice_tool.dll"),
+        target_path("release").join("libjdsd_dsiii_practice_tool.dll"),
         "jdsd_dsiii_practice_tool.dll",
     )?;
-    add_zip(project_root().join("target/release/dinput8nologo.dll"), "dinput8.dll")?;
+    add_zip(target_path("release").join("dinput8nologo.dll"), "dinput8.dll")?;
     add_zip(project_root().join("lib/data/RELEASE-README.txt"), "README.txt")?;
     add_zip(project_root().join("jdsd_dsiii_practice_tool.toml"), "jdsd_dsiii_practice_tool.toml")?;
 
@@ -93,12 +93,9 @@ pub(crate) fn dist_parammod() -> Result<()> {
         Ok(())
     };
 
-    add_zip(project_root().join("target/release/param-tinkerer.exe"), "param-tinkerer.exe")?;
-    add_zip(
-        project_root().join("target/release/jdsd_dsiii_param_tinkerer.dll"),
-        "param-tinkerer.dll",
-    )?;
-    add_zip(project_root().join("target/release/dinput8parammod.dll"), "dinput8.dll")?;
+    add_zip(target_path("release").join("param-tinkerer.exe"), "param-tinkerer.exe")?;
+    add_zip(target_path("release").join("jdsd_dsiii_param_tinkerer.dll"), "param-tinkerer.dll")?;
+    add_zip(target_path("release").join("dinput8parammod.dll"), "dinput8.dll")?;
     add_zip(project_root().join("lib/data/PARAM-TINKERER.txt"), "README.txt")?;
     add_zip(project_root().join("lib/param-mod/param-mod.toml"), "param-mod.toml")?;
 

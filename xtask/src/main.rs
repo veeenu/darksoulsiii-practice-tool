@@ -104,6 +104,15 @@ fn project_root() -> PathBuf {
     Path::new(&env!("CARGO_MANIFEST_DIR")).ancestors().nth(1).unwrap().to_path_buf()
 }
 
+fn target_path(target: &str) -> PathBuf {
+    let mut target_path = project_root().join("target");
+    if cfg!(not(windows)) {
+        target_path = target_path.join("x86_64-pc-windows-msvc");
+    }
+
+    target_path.join(target)
+}
+
 fn cargo_command(cmd: &'static str) -> Command {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
 
