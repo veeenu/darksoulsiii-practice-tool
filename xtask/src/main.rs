@@ -1,5 +1,3 @@
-#![feature(lazy_cell)]
-
 mod codegen;
 
 use std::env;
@@ -192,7 +190,7 @@ fn inject(mut args: impl Iterator<Item = String>) -> Result<()> {
     let dll = args.next().unwrap();
     let exe = args.next().unwrap();
 
-    do_inject(exe, dll_path)?;
+    do_inject(exe, dll)?;
 
     Ok(())
 }
@@ -304,6 +302,8 @@ fn dist_dir() -> PathBuf {
 
 fn do_inject<S: AsRef<str>, P: AsRef<Path>>(exe: S, dll_path: P) -> Result<()> {
     Process::by_name(exe.as_ref())
-        .ok_or_else(|| "Could not find process".to_string())?
-        .inject(dll_path.as_ref())
+        .map_err(|e| format!("Could not find process: {e:?}"))?
+        .inject(dll_path.as_ref().to_path_buf())?;
+
+    Ok(())
 }

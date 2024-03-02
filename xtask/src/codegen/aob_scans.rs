@@ -6,14 +6,14 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::ptr::{null, null_mut};
-use std::sync::LazyLock;
 
 use heck::AsSnakeCase;
+use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use textwrap::dedent;
 use widestring::U16CString;
 use windows::core::{PCWSTR, PWSTR};
-use windows::Win32::Foundation::{CloseHandle, GetLastError, BOOL, CHAR, DBG_CONTINUE};
+use windows::Win32::Foundation::{CloseHandle, GetLastError, BOOL, DBG_CONTINUE};
 use windows::Win32::Storage::FileSystem::{
     GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW, VS_FIXEDFILEINFO,
 };
@@ -57,21 +57,27 @@ const AOBS: &[(&str, &str, usize, usize)] = &[
     ("Param", "48 8B 0D ?? ?? ?? ?? 48 85 C9 74 0B 4C 8B C0 48 8B D7", 3, 7),
 ];
 
-static AOBS_README: LazyLock<Vec<(&str, usize, Vec<&str>)>> =
-    LazyLock::new(|| vec![("XA", 3, vec!["48 8B 83 ?? ?? ?? ?? 48 8B 10 48 85 D2 ?? ?? 8B"])]);
+static AOBS_README: Lazy<Vec<(&str, usize, Vec<&str>)>> =
+    Lazy::new(|| vec![("XA", 3, vec!["48 8B 83 ?? ?? ?? ?? 48 8B 10 48 85 D2 ?? ?? 8B"])]);
 
-static AOBS_DIRECT: LazyLock<Vec<(&str, Vec<&str>)>> = LazyLock::new(|| {
+static AOBS_DIRECT: Lazy<Vec<(&str, Vec<&str>)>> = Lazy::new(|| {
     vec![
         ("FormatString", vec!["3C 00 54 00 45 00 58 00 54 00 46 00 4F 00 52 00 4D 00 41 00 54 00"]),
         ("NoLogo", vec!["E8 ?? ?? ?? FF 90 4D 8B C7 49 8B D4 48 8B C8 E8 ?? ?? ?? FF"]),
         ("CurrentTarget", vec!["48 8B 80 ?? ?? ?? ?? 48 8B 08 48 8B ?? 58"]),
-        ("MenuTravel", vec![
-            "40 55 53 56 57 41 56 48 8D 6C 24 C9 48 81 EC 00 01 00 00 48 C7 45 97 FE FF FF FF",
-        ]),
-        ("MenuAttune", vec![
+        (
+            "MenuTravel",
+            vec![
+                "40 55 53 56 57 41 56 48 8D 6C 24 C9 48 81 EC 00 01 00 00 48 C7 45 97 FE FF FF FF",
+            ],
+        ),
+        (
+            "MenuAttune",
+            vec![
             "48 8D 45 0F 48 89 45 EF 48 8D 45 0F 48 89 45 F7 48 8D ?? ?? ?? ?? ?? 48 89 45 0F 48 \
              8D ?? ?? ?? ?? ?? 48 89 45 0F 48 8D ?? ?? ?? ?? ?? 48 89 45 17",
-        ]),
+        ],
+        ),
     ]
 });
 
@@ -89,8 +95,8 @@ struct VersionData {
     aobs: Vec<(&'static str, usize)>,
 }
 
-fn szcmp(source: &[CHAR], s: &str) -> bool {
-    source.iter().zip(s.chars()).all(|(a, b)| a.0 == b as u8)
+fn szcmp(source: &[i8], s: &str) -> bool {
+    source.iter().zip(s.chars()).all(|(&a, b)| a == b as i8)
 }
 
 fn into_needle(pattern: &str) -> Vec<Option<u8>> {
@@ -117,7 +123,7 @@ fn read_base_module_data(proc_name: &str, pid: u32) -> Option<(usize, Vec<u8>)> 
     let mut module_entry =
         MODULEENTRY32 { dwSize: std::mem::size_of::<MODULEENTRY32>() as _, ..Default::default() };
 
-    unsafe { Module32First(module_snapshot, &mut module_entry) };
+    unsafe { Module32First(module_snapshot, &mut module_entry).expect("Module32First") };
 
     loop {
         if szcmp(&module_entry.szModule, proc_name) {
@@ -132,12 +138,13 @@ fn read_base_module_data(proc_name: &str, pid: u32) -> Option<(usize, Vec<u8>)> 
                     module_entry.modBaseSize as usize,
                     Some(&mut bytes_read),
                 )
+                .expect("ReadProcessMemory")
             };
             println!("Read {:x} out of {:x} bytes", bytes_read, module_entry.modBaseSize);
-            unsafe { CloseHandle(process) };
+            unsafe { CloseHandle(process).expect("CloseHandle") };
             return Some((module_entry.modBaseAddr as usize, buf));
         }
-        if !unsafe { Module32Next(module_snapshot, &mut module_entry).as_bool() } {
+        if unsafe { Module32Next(module_snapshot, &mut module_entry).is_err() } {
             break;
         }
     }
@@ -167,7 +174,7 @@ fn get_base_module_bytes(exe_path: &Path) -> Option<(usize, Vec<u8>)> {
         )
     };
 
-    if !process.as_bool() {
+    if process.is_err() {
         eprintln!("Could not create process: {:x}", unsafe { GetLastError() }.0);
         return None;
     }
@@ -177,13 +184,10 @@ fn get_base_module_bytes(exe_path: &Path) -> Option<(usize, Vec<u8>)> {
     let mut debug_event = DEBUG_EVENT::default();
 
     loop {
-        unsafe { WaitForDebugEventEx(&mut debug_event, 1000) };
+        unsafe { WaitForDebugEventEx(&mut debug_event, 1000).expect("WaitForDebugEventEx") };
         unsafe {
-            ContinueDebugEvent(
-                process_info.dwProcessId,
-                process_info.dwThreadId,
-                DBG_CONTINUE.0 as _,
-            )
+            ContinueDebugEvent(process_info.dwProcessId, process_info.dwThreadId, DBG_CONTINUE)
+                .expect("ContinueDebugEvent")
         };
         if debug_event.dwDebugEventCode.0 == 2 {
             break;
@@ -195,7 +199,7 @@ fn get_base_module_bytes(exe_path: &Path) -> Option<(usize, Vec<u8>)> {
         process_info.dwProcessId,
     );
 
-    unsafe { TerminateProcess(process_info.hProcess, 0) };
+    unsafe { TerminateProcess(process_info.hProcess, 0).expect("TerminateProcess") };
 
     ret
 }
@@ -276,6 +280,7 @@ fn get_file_version(file: &Path) -> Version {
             version_info_size,
             version_info_buf.as_mut_ptr() as _,
         )
+        .expect("GetFileVersionInfoW")
     };
 
     let mut version_info: *mut VS_FIXEDFILEINFO = null_mut();

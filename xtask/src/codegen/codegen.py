@@ -14,7 +14,7 @@ SLUG_RE = re.compile(r'([^a-zA-Z]+)')
 PARAM_VTABLE_TEMPLATE = '''
 type BoxedVisitorLambda = Box<dyn Fn(*const c_void, &mut dyn ParamVisitor) + Send + Sync>;
 
-pub static PARAM_VTABLE: LazyLock<HashMap<String, BoxedVisitorLambda>> = LazyLock::new(|| {{
+pub static PARAM_VTABLE: Lazy<HashMap<String, BoxedVisitorLambda>> = Lazy::new(|| {{
     [
         {vtable_fields}
     ].into_iter().collect()
@@ -236,9 +236,9 @@ if __name__ == '__main__':
     print('// **********************************')
     print('use super::*;')
     print('use std::collections::HashMap;')
-    print('use std::sync::LazyLock;')
-    print('use crate::{ParamVisitor, ParamStruct};')
+    print('use once_cell::sync::Lazy;')
     print('use macro_param::ParamStruct;')
+    print('use crate::{ParamVisitor, ParamStruct};')
 
     print('''
 unsafe fn get_lambda<T: ParamStruct>() -> BoxedVisitorLambda {

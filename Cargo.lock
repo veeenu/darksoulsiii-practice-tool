@@ -1525,13 +1525,14 @@ dependencies = [
  "dotenv",
  "heck",
  "hudhook",
+ "once_cell",
  "rayon",
  "regex",
  "serde_json",
  "textwrap",
  "widestring",
  "winapi",
- "windows 0.42.0",
+ "windows 0.54.0",
  "zip",
 ]
 
