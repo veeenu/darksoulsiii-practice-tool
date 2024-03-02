@@ -120,19 +120,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "codegen"
-version = "1.5.1"
-dependencies = [
- "heck",
- "once_cell",
- "pelite",
- "rayon",
- "regex",
- "serde_json",
- "textwrap 0.16.1",
-]
-
-[[package]]
 name = "const_format"
 version = "0.2.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1073,17 +1060,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "textwrap"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23d434d3f8967a09480fb04132ebe0a3e088c173e6d0ee7897abbdf4eab0f8b9"
-dependencies = [
- "smawk",
- "unicode-linebreak",
- "unicode-width",
-]
-
-[[package]]
 name = "thiserror"
 version = "1.0.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1594,8 +1570,9 @@ dependencies = [
  "rayon",
  "regex",
  "serde_json",
- "textwrap 0.15.2",
+ "textwrap",
  "widestring",
+ "windows 0.54.0",
  "zip",
 ]
 

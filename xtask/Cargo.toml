@@ -14,6 +14,8 @@ heck = "0.4.0"
 textwrap = "0.15.0"
 dotenv = "0.15.0"
 once_cell.workspace = true
-hudhook.workspace = true
 pelite = "0.10.0"
 
+[target.'cfg(target_os = "windows")'.dependencies]
+hudhook = { workspace = true }
+windows = { workspace = true, features = ["Win32_System_LibraryLoader"] }

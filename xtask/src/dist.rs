@@ -1,50 +1,16 @@
-mod codegen;
+use std::{
+    env,
+    fs::File,
+    io::{Read, Write},
+    path::PathBuf,
+    process::Command,
+};
 
-use std::env;
-use std::fs::File;
-use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use zip::{write::FileOptions, CompressionMethod, ZipWriter};
 
-use hudhook::inject::Process;
-use widestring::U16CString;
-use winapi::ctypes::c_void;
-use winapi::shared::minwindef::FALSE;
-use winapi::shared::ntdef::{LANG_ENGLISH, MAKELANGID, SUBLANG_DEFAULT};
-use winapi::um::winbase::{BeginUpdateResourceW, EndUpdateResourceW, UpdateResourceW};
-use winapi::um::winuser::{MAKEINTRESOURCEW, RT_GROUP_ICON, RT_ICON};
-use zip::write::FileOptions;
-use zip::{CompressionMethod, ZipWriter};
+use crate::{project_root, Result};
 
-type DynError = Box<dyn std::error::Error>;
-type Result<T> = std::result::Result<T, DynError>;
-
-//
-// Main
-//
-
-fn main() -> Result<()> {
-    dotenv::dotenv().ok();
-
-    let task = env::args().nth(1);
-    match task.as_deref() {
-        Some("dist") => dist()?,
-        Some("dist-parammod") => dist_parammod()?,
-        Some("inject") => inject(env::args().skip(1).map(String::from))?,
-        Some("run") => run()?,
-        Some("run-param-tinkerer") => run_param_tinkerer()?,
-        Some("codegen") => codegen::codegen()?,
-        Some("help") => print_help(),
-        _ => print_help(),
-    }
-    Ok(())
-}
-
-//
-// Tasks
-//
-
-fn dist() -> Result<()> {
+pub(crate) fn dist() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
 
     let status = Command::new(&cargo)
@@ -110,7 +76,7 @@ fn dist() -> Result<()> {
     Ok(())
 }
 
-fn dist_parammod() -> Result<()> {
+pub(crate) fn dist_parammod() -> Result<()> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
 
     let status = Command::new(cargo)
@@ -156,86 +122,22 @@ fn dist_parammod() -> Result<()> {
     Ok(())
 }
 
-fn run() -> Result<()> {
-    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-    let status = Command::new(cargo)
-        .current_dir(project_root())
-        .args(["build", "--lib", "--package", "darksoulsiii-practice-tool"])
-        .status()
-        .map_err(|e| format!("cargo: {}", e))?;
-
-    if !status.success() {
-        return Err("cargo build failed".into());
-    }
-
-    let mut buf = String::new();
-    File::open(project_root().join("jdsd_dsiii_practice_tool.toml"))?.read_to_string(&mut buf)?;
-    File::create(
-        project_root().join("target").join("debug").join("jdsd_dsiii_practice_tool.toml"),
-    )?
-    .write_all(buf.as_bytes())?;
-
-    let dll_path = project_root()
-        .join("target")
-        .join("debug")
-        .join("libjdsd_dsiii_practice_tool.dll")
-        .canonicalize()?;
-
-    do_inject("DarkSoulsIII.exe", dll_path)?;
-
-    Ok(())
-}
-
-fn inject(mut args: impl Iterator<Item = String>) -> Result<()> {
-    let dll = args.next().unwrap();
-    let exe = args.next().unwrap();
-
-    do_inject(exe, dll)?;
-
-    Ok(())
-}
-
-fn run_param_tinkerer() -> Result<()> {
-    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
-    let status = Command::new(cargo)
-        .current_dir(project_root())
-        .args(["build", "--release", "--lib", "--package", "param-tinkerer"])
-        .status()
-        .map_err(|e| format!("cargo: {}", e))?;
-
-    if !status.success() {
-        return Err("cargo build failed".into());
-    }
-
-    let dll_path = project_root()
-        .join("target")
-        .join("release")
-        .join("jdsd_dsiii_param_tinkerer.dll")
-        .canonicalize()?;
-
-    do_inject("DarkSoulsIII.exe", dll_path)?;
-
-    Ok(())
-}
-
-fn print_help() {
-    eprintln!(
-        r#"
-Tasks:
-
-run ........... compile and start the practice tool
-dist .......... build distribution artifacts
-codegen ....... generate Rust code: parameters, base addresses, ...
-help .......... print this help
-"#
-    );
-}
-
-//
-// Utilities
-//
-
+#[cfg(not(target_os = "windows"))]
 fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
+    unimplemented!("Use a Windows target for this");
+}
+
+#[cfg(target_os = "windows")]
+fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
+    use std::ffi::c_void;
+    use std::os::windows::ffi::OsStrExt;
+    use windows::core::{w, PCWSTR};
+    use windows::Win32::System::LibraryLoader::{
+        BeginUpdateResourceW, EndUpdateResourceW, UpdateResourceW,
+    };
+    use windows::Win32::System::SystemServices::{LANG_ENGLISH, SUBLANG_DEFAULT};
+    use windows::Win32::UI::WindowsAndMessaging::RT_ICON;
+
     #[repr(C, packed)]
     struct GroupHeader {
         reserved: u16,
@@ -265,49 +167,35 @@ fn update_icon(path: PathBuf, icon: PathBuf) -> Result<()> {
     group_header.offset = 1;
 
     unsafe {
-        let handle =
-            BeginUpdateResourceW(U16CString::from_str(path.to_str().unwrap())?.as_ptr(), FALSE);
+        let path = path.as_os_str().encode_wide().collect::<Vec<_>>();
+        let handle = BeginUpdateResourceW(PCWSTR(path.as_ptr()), false)?;
 
+        let lang = (LANG_ENGLISH | (SUBLANG_DEFAULT << 8)) as u16;
         UpdateResourceW(
             handle,
             RT_ICON,
-            MAKEINTRESOURCEW(1),
-            MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-            icon_data.as_ptr() as *mut c_void,
+            PCWSTR(1 as *const u16),
+            // MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
+            lang,
+            Some(icon_data.as_ptr() as *const c_void),
             count as u32,
-        );
+        )?;
 
         UpdateResourceW(
             handle,
-            RT_GROUP_ICON,
-            U16CString::from_str("IDI_ICON")?.as_ptr(),
-            MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-            buf.as_ptr() as *mut c_void,
+            PCWSTR((RT_ICON.0 as usize + 11) as *const u16),
+            w!("IDI_ICON"),
+            lang,
+            Some(buf.as_ptr() as *const c_void),
             std::mem::size_of::<GroupHeader>() as u32,
-        );
+        )?;
 
-        EndUpdateResourceW(handle, FALSE);
+        EndUpdateResourceW(handle, false)?;
     }
 
     Ok(())
 }
 
-fn project_root() -> PathBuf {
-    Path::new(&env!("CARGO_MANIFEST_DIR")).ancestors().nth(1).unwrap().to_path_buf()
-}
-
 fn dist_dir() -> PathBuf {
     project_root().join("target/dist")
-}
-
-fn do_inject<S: AsRef<str>, P: AsRef<Path>>(exe: S, dll_path: P) -> Result<()> {
-    #[cfg(windows)]
-    Process::by_name(exe.as_ref())
-        .map_err(|e| format!("Could not find process: {e:?}"))?
-        .inject(dll_path.as_ref().to_path_buf())?;
-
-    #[cfg(not(windows))]
-    unimplemented!();
-
-    Ok(())
 }
