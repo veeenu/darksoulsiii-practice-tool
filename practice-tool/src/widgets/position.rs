@@ -1,39 +1,47 @@
+use std::fmt::Write;
+
 use libds3::memedit::PointerChain;
+use practice_tool_core::{
+    key::Key,
+    widgets::{
+        nudge_position::NudgePositionStorage,
+        position::{Position, PositionStorage},
+        Widget,
+    },
+};
 
-use super::Widget;
-use crate::util::KeyState;
-
-#[derive(Debug)]
-pub(crate) struct SavePosition {
+pub(super) struct SavePosition {
     ptr_angle: PointerChain<f32>,
     ptr_pos: PointerChain<[f32; 3]>,
-    hotkey: KeyState,
-    modifier: KeyState,
     saved_position: [f32; 4],
+    label_current: String,
+    label_stored: String,
+    valid: bool,
+    nudge: f32,
 }
 
 impl SavePosition {
-    pub(crate) fn new(
-        ptr: (PointerChain<f32>, PointerChain<[f32; 3]>),
-        hotkey: KeyState,
-        modifier: KeyState,
-    ) -> Self {
-        SavePosition {
+    pub(super) fn new(ptr: (PointerChain<f32>, PointerChain<[f32; 3]>), nudge: f32) -> Self {
+        Self {
             ptr_angle: ptr.0,
             ptr_pos: ptr.1,
-            hotkey,
-            modifier,
-            saved_position: [0f32; 4],
+            saved_position: [0.0; 4],
+            label_current: String::new(),
+            label_stored: String::new(),
+            valid: false,
+            nudge,
         }
     }
+}
 
-    fn save_position(&mut self) {
+impl PositionStorage for SavePosition {
+    fn read(&mut self) {
         if let (Some(pos), Some(angle)) = (self.ptr_pos.read(), self.ptr_angle.read()) {
             self.saved_position = [pos[0], pos[1], pos[2], angle];
         }
     }
 
-    fn load_position(&mut self) {
+    fn write(&mut self) {
         self.ptr_pos.write([
             self.saved_position[0],
             self.saved_position[1],
@@ -41,13 +49,12 @@ impl SavePosition {
         ]);
         self.ptr_angle.write(self.saved_position[3]);
     }
-}
 
-impl Widget for SavePosition {
-    fn render(&mut self, ui: &imgui::Ui) {
+    fn display_current(&mut self) -> &str {
+        self.label_current.clear();
+
         let pos = self.ptr_pos.read();
         let angle = self.ptr_angle.read();
-        let saved_pos = self.saved_position;
 
         let (read_pos, valid) = if let (Some(pos), Some(angle)) = (pos, angle) {
             ([pos[0], pos[1], pos[2], angle], true)
@@ -55,44 +62,51 @@ impl Widget for SavePosition {
             ([0f32; 4], false)
         };
 
-        let _token = ui.begin_disabled(!valid);
-        let button_width = super::BUTTON_WIDTH * super::scaling_factor(ui);
+        self.valid = valid;
 
-        if ui.button_with_size(format!("Load ({})", self.hotkey), [
-            button_width * 0.33 - 4.,
-            super::BUTTON_HEIGHT,
-        ]) {
-            self.load_position();
-        }
-        ui.same_line();
-        if ui.button_with_size(format!("Save ({} + {})", self.modifier, self.hotkey), [
-            button_width * 0.67 - 4.,
-            super::BUTTON_HEIGHT,
-        ]) {
-            self.save_position();
-        }
-        ui.text(format!(
+        write!(
+            self.label_current,
             "{:7.1} {:7.1} {:7.1} {:7.1}",
             read_pos[0], read_pos[1], read_pos[2], read_pos[3]
-        ));
-        ui.text(format!(
-            "{:7.1} {:7.1} {:7.1} {:7.1}",
-            saved_pos[0], saved_pos[1], saved_pos[2], saved_pos[3],
-        ));
+        )
+        .ok();
+
+        &self.label_current
     }
 
-    fn interact(&mut self, ui: &imgui::Ui) {
-        if ui.is_any_item_active() {
-            return;
-        }
+    fn display_stored(&mut self) -> &str {
+        self.label_stored.clear();
 
-        let key_up = self.hotkey.keyup(ui);
-        let mod_down = self.modifier.is_key_down(ui);
+        let [x, y, z, a] = self.saved_position;
 
-        if key_up && mod_down {
-            self.save_position();
-        } else if key_up {
-            self.load_position();
+        write!(self.label_stored, "{:7.1} {:7.1} {:7.1} {:7.1}", x, y, z, a);
+
+        &self.label_stored
+    }
+
+    fn is_valid(&self) -> bool {
+        self.valid
+    }
+}
+
+impl NudgePositionStorage for SavePosition {
+    fn nudge_up(&mut self) {
+        if let Some([x, y, z]) = self.ptr_pos.read() {
+            self.ptr_pos.write([x, y + self.nudge, z]);
         }
     }
+
+    fn nudge_down(&mut self) {
+        if let Some([x, y, z]) = self.ptr_pos.read() {
+            self.ptr_pos.write([x, y - self.nudge, z]);
+        }
+    }
+}
+
+pub(crate) fn save_position(
+    ptr: (PointerChain<f32>, PointerChain<[f32; 3]>),
+    key_load: Option<Key>,
+    key_save: Option<Key>,
+) -> Box<dyn Widget> {
+    Box::new(Position::new(SavePosition::new(ptr, 0.0), key_load, key_save))
 }

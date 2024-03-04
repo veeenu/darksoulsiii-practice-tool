@@ -1,12 +1,10 @@
 use imgui::{ProgressBar, StyleColor};
 use libds3::memedit::PointerChain;
 use libds3::pointer_chain;
+use practice_tool_core::{key::Key, widgets::Widget};
 use windows::Win32::System::Memory::{
     VirtualAlloc, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE,
 };
-
-use super::Widget;
-use crate::util::KeyState;
 
 #[derive(Debug, Default)]
 struct EnemyInfo {
@@ -59,7 +57,7 @@ pub(crate) struct Target {
     alloc_addr: PointerChain<[u8; 22]>,
     detour_addr: PointerChain<[u8; 7]>,
     detour_orig_data: [u8; 7],
-    hotkey: KeyState,
+    hotkey: Key,
     xa: u32,
     is_enabled: bool,
     entity_addr: u64,
@@ -69,7 +67,7 @@ unsafe impl Send for Target {}
 unsafe impl Sync for Target {}
 
 impl Target {
-    pub(crate) fn new(detour_addr: PointerChain<u64>, xa: u32, hotkey: KeyState) -> Self {
+    pub(crate) fn new(detour_addr: PointerChain<u64>, xa: u32, hotkey: Key) -> Self {
         let detour_addr = detour_addr.cast();
         let mut allocate_near = detour_addr.eval().unwrap() as usize;
 

@@ -1,22 +1,25 @@
 use std::cmp::Ordering;
 
 use libds3::memedit::PointerChain;
-
-use super::Widget;
-use crate::util::KeyState;
+use practice_tool_core::{
+    key::Key,
+    widgets::{store_value::ReadWrite, Widget},
+};
 
 #[derive(Debug)]
 pub(crate) struct CycleSpeed {
     ptr: PointerChain<f32>,
-    hotkey: KeyState,
+    key: Key,
     values: Vec<f32>,
+    current: Option<f32>,
+    label: String,
 }
 
 impl CycleSpeed {
-    pub(crate) fn new(values: &[f32], ptr: PointerChain<f32>, hotkey: KeyState) -> Self {
+    pub(crate) fn new(values: &[f32], ptr: PointerChain<f32>, key: Key) -> Self {
         let mut values = values.to_vec();
         values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-        CycleSpeed { ptr, hotkey, values }
+        CycleSpeed { ptr, key, values, current: None, label: String::new() }
     }
 
     fn cycle(&self) -> Option<f32> {
@@ -32,32 +35,33 @@ impl CycleSpeed {
     }
 }
 
-impl Widget for CycleSpeed {
-    fn render(&mut self, ui: &imgui::Ui) {
-        let speed = self.ptr.read();
-        let _token = ui.begin_disabled(speed.is_none());
+impl ReadWrite for CycleSpeed {
+    fn read(&mut self) -> bool {
+        self.current = self.ptr.read();
+    }
 
-        let label = if let Some(speed) = speed {
-            format!("Speed [{:.1}x] ({})", speed, self.hotkey)
-        } else {
-            format!("Speed ({})", self.hotkey)
+    fn write(&mut self) {
+        let next = *self
+            .values
+            .iter()
+            .find(|&&x| x > self.current)
+            .unwrap_or_else(|| self.values.first().unwrap_or(&1.0));
+
+        self.ptr.write(next);
+    }
+
+    fn label(&self) -> &str {
+        self.label.clear();
+
+        match self.current {
+            Some(c) => write!(self.label, "Speed [{:.1}x]", c),
+            None => write!(self.label, "Speed"),
         };
 
-        if ui.button_with_size(label, [
-            super::BUTTON_WIDTH * super::scaling_factor(ui),
-            super::BUTTON_HEIGHT,
-        ]) {
-            self.cycle();
-        }
+        &self.label
     }
+}
 
-    fn interact(&mut self, ui: &imgui::Ui) {
-        if ui.is_any_item_active() {
-            return;
-        }
-
-        if self.hotkey.keyup(ui) {
-            self.cycle();
-        }
-    }
+pub(crate) fn cycle_speed(values: &[f32], ptr: PointerChain<f32>, key: Key) -> Box<dyn Widget> {
+    Box::new(CycleSpeed::new(values, ptr, key))
 }

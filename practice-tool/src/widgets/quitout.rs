@@ -1,37 +1,36 @@
 use libds3::memedit::PointerChain;
+use practice_tool_core::{
+    key::Key,
+    widgets::{
+        store_value::{ReadWrite, StoreValue},
+        Widget,
+    },
+};
 
-use super::Widget;
-use crate::util::KeyState;
-
-#[derive(Debug)]
-pub(crate) struct Quitout {
-    label: String,
+struct Quitout {
     ptr: PointerChain<u8>,
-    hotkey: KeyState,
 }
 
 impl Quitout {
-    pub(crate) fn new(ptr: PointerChain<u8>, hotkey: KeyState) -> Self {
-        Quitout { label: format!("Quitout ({})", hotkey), ptr, hotkey }
+    fn new(ptr: PointerChain<u32>) -> Self {
+        Self { ptr }
     }
 }
 
-impl Widget for Quitout {
-    fn render(&mut self, ui: &imgui::Ui) {
-        let scale = super::scaling_factor(ui);
-
-        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH * scale, super::BUTTON_HEIGHT]) {
-            self.ptr.write(1);
-        }
+impl ReadWrite for Quitout {
+    fn read(&mut self) -> bool {
+        self.ptr.read().is_some()
     }
 
-    fn interact(&mut self, ui: &imgui::Ui) {
-        if ui.is_any_item_active() {
-            return;
-        }
-
-        if self.hotkey.keyup(ui) {
-            self.ptr.write(1);
-        }
+    fn write(&mut self) {
+        self.ptr.write(1)
     }
+
+    fn label(&self) -> &str {
+        "Quitout"
+    }
+}
+
+pub(crate) fn quitout(ptr: PointerChain<u8>, key: Key) -> Box<dyn Widget> {
+    Box::new(StoreValue::new(Quitout::new(ptr), Some(key)))
 }
