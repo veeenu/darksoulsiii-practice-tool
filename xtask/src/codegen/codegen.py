@@ -236,9 +236,11 @@ if __name__ == '__main__':
     print('// **********************************')
     print('use super::*;')
     print('use std::collections::HashMap;')
+    print('use std::ffi::c_void;')
+    print('')
     print('use once_cell::sync::Lazy;')
     print('use macro_param::ParamStruct;')
-    print('use crate::{ParamVisitor, ParamStruct};')
+    print('use crate::prelude::*;')
 
     print('''
 unsafe fn get_lambda<T: ParamStruct>() -> BoxedVisitorLambda {

@@ -38,6 +38,7 @@ pub(crate) struct Settings {
 #[serde(untagged)]
 enum PlaceholderOption<T> {
     Data(T),
+    #[allow(dead_code)]
     Placeholder(bool),
 }
 
