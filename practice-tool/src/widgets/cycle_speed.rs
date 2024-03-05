@@ -20,18 +20,6 @@ impl CycleSpeed {
         values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
         CycleSpeed { ptr, values, current: None, label: String::new() }
     }
-
-    // fn cycle(&self) -> Option<f32> {
-    //     let next = self.ptr.read().map(|speed| {
-    //         *self
-    //             .values
-    //             .iter()
-    //             .find(|&&x| x > speed)
-    //             .unwrap_or_else(|| self.values.first().unwrap_or(&1.0))
-    //     });
-    //     next.map(|speed| self.ptr.write(speed));
-    //     next
-    // }
 }
 
 impl ReadWrite for CycleSpeed {
