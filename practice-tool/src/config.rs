@@ -25,12 +25,29 @@ pub(crate) struct Config {
     commands: Vec<CfgCommand>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub(crate) struct Settings {
     pub(crate) log_level: LevelFilterSerde,
     pub(crate) display: Key,
+    pub(crate) hide: Option<Key>,
     #[serde(default)]
     pub(crate) show_console: bool,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+enum PlaceholderOption<T> {
+    Data(T),
+    Placeholder(bool),
+}
+
+impl<T> PlaceholderOption<T> {
+    fn into_option(self) -> Option<T> {
+        match self {
+            PlaceholderOption::Data(d) => Some(d),
+            PlaceholderOption::Placeholder(_) => None,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,19 +55,19 @@ pub(crate) struct Settings {
 enum CfgCommand {
     SavefileManager {
         #[serde(rename = "savefile_manager")]
-        hotkey_load: Key,
+        hotkey_load: PlaceholderOption<Key>,
     },
     ItemSpawner {
         #[serde(rename = "item_spawner")]
-        hotkey_load: Key,
+        hotkey_load: PlaceholderOption<Key>,
     },
     Flag {
         flag: FlagSpec,
         hotkey: Option<Key>,
     },
     Position {
-        position_load: Key,
-        position_save: Key,
+        position: PlaceholderOption<Key>,
+        save: Option<Key>,
     },
     CycleSpeed {
         #[serde(rename = "cycle_speed")]
@@ -59,7 +76,7 @@ enum CfgCommand {
     },
     CharacterStats {
         #[serde(rename = "character_stats")]
-        value: bool,
+        value: PlaceholderOption<Key>,
     },
     Souls {
         #[serde(rename = "souls")]
@@ -73,11 +90,11 @@ enum CfgCommand {
     },
     Quitout {
         #[serde(rename = "quitout")]
-        hotkey: Key,
+        hotkey: PlaceholderOption<Key>,
     },
     Target {
         #[serde(rename = "target")]
-        hotkey: Key,
+        hotkey: PlaceholderOption<Key>,
     },
     NudgePosition {
         nudge: f32,
@@ -91,7 +108,56 @@ enum CfgCommand {
     },
 }
 
-#[derive(Deserialize, Debug)]
+impl CfgCommand {
+    fn into_widget(self, settings: &Settings, chains: &PointerChains) -> Box<dyn Widget> {
+        match self {
+            CfgCommand::Flag { flag, hotkey: key } => {
+                flag_widget(&flag.label, (flag.getter)(chains).clone(), key)
+            },
+            CfgCommand::SavefileManager { hotkey_load: key_load } => {
+                savefile_manager(key_load.into_option(), settings.display)
+            },
+            CfgCommand::ItemSpawner { hotkey_load: key_load } => Box::new(ItemSpawner::new(
+                chains.spawn_item_func_ptr as usize,
+                chains.map_item_man as usize,
+                chains.gravity.clone(),
+                key_load.into_option(),
+                settings.display,
+            )),
+            CfgCommand::Position { position, save } => {
+                save_position(chains.position.clone(), position.into_option(), save)
+            },
+            CfgCommand::NudgePosition { nudge, nudge_up, nudge_down } => {
+                nudge_position(chains.position.clone(), nudge, nudge_up, nudge_down)
+            },
+            CfgCommand::CharacterStats { value } => character_stats_edit(
+                chains.character_stats.clone(),
+                value.into_option(),
+                settings.display,
+            ),
+            CfgCommand::CycleSpeed { values, hotkey } => {
+                cycle_speed(values.as_slice(), chains.speed.clone(), hotkey)
+            },
+            CfgCommand::Souls { amount, hotkey } => souls(amount, chains.souls.clone(), hotkey),
+            CfgCommand::Quitout { hotkey } => quitout(chains.quitout.clone(), hotkey.into_option()),
+            CfgCommand::OpenMenu { hotkey, kind } => {
+                open_menu(kind, chains.travel_ptr, chains.attune_ptr, hotkey)
+            },
+            CfgCommand::Target { hotkey } => Box::new(Target::new(
+                chains.current_target.clone(),
+                chains.xa,
+                hotkey.into_option(),
+            )),
+            CfgCommand::Group { label, commands } => group(
+                label.as_str(),
+                commands.into_iter().map(|c| c.into_widget(settings, chains)).collect(),
+                settings.display,
+            ),
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Clone)]
 #[serde(try_from = "String")]
 pub(crate) struct LevelFilterSerde(LevelFilter);
 
@@ -117,60 +183,8 @@ impl Config {
         toml::from_str::<Config>(cfg).map_err(|e| format!("TOML configuration parse error: {}", e))
     }
 
-    fn make_commands_inner(
-        commands: &[CfgCommand],
-        settings: &Settings,
-        chains: &PointerChains,
-    ) -> Vec<Box<dyn Widget>> {
-        commands
-            .iter()
-            .map(|cmd| match cmd {
-                CfgCommand::Flag { flag, hotkey: key } => {
-                    flag_widget(&flag.label, (flag.getter)(chains).clone(), *key)
-                },
-                CfgCommand::SavefileManager { hotkey_load: key_load } => {
-                    savefile_manager(*key_load, settings.display)
-                },
-                CfgCommand::ItemSpawner { hotkey_load: key_load } => Box::new(ItemSpawner::new(
-                    chains.spawn_item_func_ptr as usize,
-                    chains.map_item_man as usize,
-                    chains.gravity.clone(),
-                    *key_load,
-                    settings.display,
-                )),
-                CfgCommand::Position { position_load: load, position_save: save } => {
-                    save_position(chains.position.clone(), Some(*load), Some(*save))
-                },
-                CfgCommand::NudgePosition { nudge, nudge_up, nudge_down } => {
-                    nudge_position(chains.position.clone(), *nudge, *nudge_up, *nudge_down)
-                },
-                CfgCommand::CharacterStats { .. } => {
-                    character_stats_edit(chains.character_stats.clone(), settings.display)
-                },
-                CfgCommand::CycleSpeed { values, hotkey: key } => {
-                    cycle_speed(values.as_slice(), chains.speed.clone(), *key)
-                },
-                CfgCommand::Souls { amount, hotkey: key } => {
-                    souls(*amount, chains.souls.clone(), *key)
-                },
-                CfgCommand::Quitout { hotkey: key } => quitout(chains.quitout.clone(), *key),
-                CfgCommand::OpenMenu { hotkey: key, kind } => {
-                    open_menu(*kind, chains.travel_ptr, chains.attune_ptr, *key)
-                },
-                CfgCommand::Target { hotkey: key } => {
-                    Box::new(Target::new(chains.current_target.clone(), chains.xa, *key))
-                },
-                CfgCommand::Group { label, commands } => group(
-                    label.as_str(),
-                    Self::make_commands_inner(commands.as_slice(), settings, chains),
-                    settings.display,
-                ),
-            })
-            .collect()
-    }
-
-    pub(crate) fn make_commands(&self, chains: &PointerChains) -> Vec<Box<dyn Widget>> {
-        Self::make_commands_inner(&self.commands, &self.settings, chains)
+    pub(crate) fn make_commands(self, chains: &PointerChains) -> Vec<Box<dyn Widget>> {
+        self.commands.into_iter().map(|c| c.into_widget(&self.settings, chains)).collect()
     }
 }
 
@@ -180,6 +194,7 @@ impl Default for Config {
             settings: Settings {
                 log_level: LevelFilterSerde(LevelFilter::DEBUG),
                 display: "0".parse().unwrap(),
+                hide: "rshift+0".parse().ok(),
                 show_console: false,
             },
             commands: Vec::new(),

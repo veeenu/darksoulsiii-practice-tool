@@ -31,6 +31,6 @@ impl ReadWrite for Quitout {
     }
 }
 
-pub(crate) fn quitout(ptr: PointerChain<u8>, key: Key) -> Box<dyn Widget> {
-    Box::new(StoreValue::new(Quitout::new(ptr), Some(key)))
+pub(crate) fn quitout(ptr: PointerChain<u8>, key: Option<Key>) -> Box<dyn Widget> {
+    Box::new(StoreValue::new(Quitout::new(ptr), key))
 }

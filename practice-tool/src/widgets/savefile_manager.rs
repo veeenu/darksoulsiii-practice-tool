@@ -5,9 +5,9 @@ use practice_tool_core::{
     widgets::{savefile_manager::SavefileManager, Widget},
 };
 
-pub(crate) fn savefile_manager(key_load: Key, key_close: Key) -> Box<dyn Widget> {
+pub(crate) fn savefile_manager(key_load: Option<Key>, key_close: Key) -> Box<dyn Widget> {
     // TODO
-    Box::new(SavefileManager::new(Some(key_load), Some(key_close), get_savefile_path().unwrap()))
+    Box::new(SavefileManager::new(key_load, Some(key_close), get_savefile_path().unwrap()))
 }
 
 fn get_savefile_path() -> Result<PathBuf, String> {

@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Instant;
 
+use config::Settings;
 use const_format::formatcp;
 use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::tracing::metadata::LevelFilter;
@@ -17,7 +18,6 @@ use libds3::prelude::*;
 use pkg_version::*;
 use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
-use sys::ImGuiKey_RightShift;
 use tracing_subscriber::prelude::*;
 use windows::Win32::Foundation::HINSTANCE;
 use windows::Win32::System::SystemServices::DLL_PROCESS_ATTACH;
@@ -41,7 +41,7 @@ enum UiState {
 }
 
 struct PracticeTool {
-    config: config::Config,
+    settings: Settings,
     widgets: Vec<Box<dyn Widget>>,
     pointers: PointerChains,
     log: Vec<(Instant, String)>,
@@ -129,7 +129,9 @@ impl PracticeTool {
             debug!("{:?}", err);
         }
 
-        if config.settings.log_level.inner() < LevelFilter::DEBUG || !config.settings.show_console {
+        let settings = config.settings.clone();
+
+        if settings.log_level.inner() < LevelFilter::DEBUG || !settings.show_console {
             hudhook::free_console().ok();
         } else {
             hudhook::enable_console_colors();
@@ -158,7 +160,7 @@ impl PracticeTool {
         info!("Initialized");
 
         PracticeTool {
-            config,
+            settings,
             pointers,
             widgets,
             ui_state: UiState::Closed,
@@ -259,7 +261,7 @@ impl PracticeTool {
                              your tool by editing\nthe jdsd_dsiii_practice_tool.toml file with\na \
                              text editor. If you break something,\njust download a fresh \
                              file!\n\nThank you for using my tool! <3\n",
-                            self.config.settings.display
+                            self.settings.display
                         ));
                         ui.separator();
                         ui.text("-- johndisandonato");
@@ -376,11 +378,11 @@ impl ImguiRenderLoop for PracticeTool {
     fn render(&mut self, ui: &mut imgui::Ui) {
         let font_token = self.set_font(ui);
 
-        if !ui.io().want_capture_keyboard && self.config.settings.display.is_pressed(ui) {
-            let rshift = ui.io().keys_down[ImGuiKey_RightShift as usize];
-            // let rshift = unsafe { GetAsyncKeyState(VK_RSHIFT.0 as _) < 0 };
+        let display = self.settings.display.is_pressed(ui);
+        let hide = self.settings.hide.map(|k| k.is_pressed(ui)).unwrap_or(false);
 
-            self.ui_state = match (&self.ui_state, rshift) {
+        if !ui.io().want_capture_keyboard && (display || hide) {
+            self.ui_state = match (&self.ui_state, hide) {
                 (UiState::Hidden, _) => UiState::Closed,
                 (_, true) => UiState::Hidden,
                 (UiState::MenuOpen, _) => UiState::Closed,

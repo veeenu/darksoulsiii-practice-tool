@@ -8,9 +8,9 @@ commands = [
   { open_menu = "attune" },
   { group = "Positions", commands = [
     { nudge = 1.0, nudge_up = "[", nudge_down = "]" },
-    { position_load = "h", position_save = "rshift+h" },
-    { position_load = "j", position_save = "rshift+j" },
-    { position_load = "k", position_save = "rshift+k" },
+    { position = "h", save = "rshift+h" },
+    { position = "j", save = "rshift+j" },
+    { position = "k", save = "rshift+k" },
   ]},
   { group = "Render flags", commands = [
     { flag = "rend_chr", hotkey = "F4" },
@@ -43,4 +43,5 @@ commands = [
 [settings]
 log_level = "DEBUG"
 display = "0"
+hide = "rshift+0"
 show_console = false

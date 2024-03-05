@@ -50,10 +50,12 @@ impl Stats for CharacterStatsEdit {
 
 pub(crate) fn character_stats_edit(
     character_stats: PointerChain<CharacterStats>,
+    key_open: Option<Key>,
     key_close: Key,
 ) -> Box<dyn Widget> {
     Box::new(StatsEditor::new(
         CharacterStatsEdit { ptr: character_stats, stats: None },
+        key_open,
         Some(key_close),
     ))
 }

@@ -57,7 +57,7 @@ pub(crate) struct Target {
     alloc_addr: PointerChain<[u8; 22]>,
     detour_addr: PointerChain<[u8; 7]>,
     detour_orig_data: [u8; 7],
-    hotkey: Key,
+    hotkey: Option<Key>,
     xa: u32,
     is_enabled: bool,
     entity_addr: u64,
@@ -67,7 +67,7 @@ unsafe impl Send for Target {}
 unsafe impl Sync for Target {}
 
 impl Target {
-    pub(crate) fn new(detour_addr: PointerChain<u64>, xa: u32, hotkey: Key) -> Self {
+    pub(crate) fn new(detour_addr: PointerChain<u64>, xa: u32, hotkey: Option<Key>) -> Self {
         let detour_addr = detour_addr.cast();
         let mut allocate_near = detour_addr.eval().unwrap() as usize;
 
@@ -88,7 +88,10 @@ impl Target {
         };
 
         Target {
-            label: format!("Target entity info ({})", hotkey),
+            label: hotkey
+                .as_ref()
+                .map(|k| format!("Target entity info ({})", k))
+                .unwrap_or_else(|| "Target entity info".to_string()),
             alloc_addr,
             detour_addr,
             detour_orig_data: Default::default(),
@@ -292,7 +295,7 @@ impl Widget for Target {
             return;
         }
 
-        if self.hotkey.is_pressed(ui) {
+        if self.hotkey.map(|k| k.is_pressed(ui)).unwrap_or(false) {
             if self.is_enabled {
                 self.disable();
             } else {

@@ -157,7 +157,7 @@ static ITEM_ID_TREE: Lazy<Vec<ItemIDNode>> =
 pub(crate) struct ItemSpawner<'a> {
     func_ptr: usize,
     map_item_man: usize,
-    hotkey_load: Key,
+    hotkey_load: Option<Key>,
     hotkey_close: Key,
     sentinel: Bitflag<u8>,
 
@@ -180,10 +180,14 @@ impl ItemSpawner<'_> {
         func_ptr: usize,
         map_item_man: usize,
         sentinel: Bitflag<u8>,
-        hotkey_load: Key,
+        hotkey_load: Option<Key>,
         hotkey_close: Key,
     ) -> Self {
-        let label_load = format!("Spawn item ({hotkey_load})");
+        let label_load = if let Some(hotkey_load) = hotkey_load {
+            format!("Spawn item ({hotkey_load})")
+        } else {
+            "Spawn item".to_string()
+        };
         let label_close = format!("Close ({hotkey_close})");
         ItemSpawner {
             func_ptr,
@@ -331,7 +335,7 @@ impl Widget for ItemSpawner<'_> {
             return;
         }
 
-        if self.hotkey_load.is_pressed(ui) {
+        if self.hotkey_load.map(|k| k.is_pressed(ui)).unwrap_or(false) {
             self.spawn();
         }
     }
