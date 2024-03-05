@@ -2,15 +2,15 @@ use std::borrow::Cow;
 use std::ffi::c_void;
 use std::fmt::Display;
 
-use imgui::*;
+use imgui::sys::{igGetCursorPosX, igGetCursorPosY, igGetWindowPos, igSetNextWindowPos, ImVec2};
+use imgui::{Condition, InputText, TreeNodeFlags};
 use libds3::memedit::Bitflag;
 use once_cell::sync::Lazy;
+use practice_tool_core::crossbeam_channel::Sender;
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer};
-use sys::{igGetCursorPosX, igGetCursorPosY, igGetWindowPos, igSetNextWindowPos, ImVec2};
-
-use crate::util::KeyState;
-use crate::widgets::{scaling_factor, Widget};
 
 static INFUSION_TYPES: [(u32, &str); 16] = [
     (0, "Normal"),
@@ -157,8 +157,8 @@ static ITEM_ID_TREE: Lazy<Vec<ItemIDNode>> =
 pub(crate) struct ItemSpawner<'a> {
     func_ptr: usize,
     map_item_man: usize,
-    hotkey_load: KeyState,
-    hotkey_close: KeyState,
+    hotkey_load: Option<Key>,
+    hotkey_close: Key,
     sentinel: Bitflag<u8>,
 
     label_load: String,
@@ -171,7 +171,7 @@ pub(crate) struct ItemSpawner<'a> {
     infusion_type: usize,
 
     filter_string: String,
-    log: Option<Vec<String>>,
+    logs: Vec<String>,
     item_id_tree: Vec<ItemIDNodeRef<'a>>,
 }
 
@@ -180,10 +180,14 @@ impl ItemSpawner<'_> {
         func_ptr: usize,
         map_item_man: usize,
         sentinel: Bitflag<u8>,
-        hotkey_load: KeyState,
-        hotkey_close: KeyState,
+        hotkey_load: Option<Key>,
+        hotkey_close: Key,
     ) -> Self {
-        let label_load = format!("Spawn item ({hotkey_load})");
+        let label_load = if let Some(hotkey_load) = hotkey_load {
+            format!("Spawn item ({hotkey_load})")
+        } else {
+            "Spawn item".to_string()
+        };
         let label_close = format!("Close ({hotkey_close})");
         ItemSpawner {
             func_ptr,
@@ -199,7 +203,7 @@ impl ItemSpawner<'_> {
             upgrade: 0,
             infusion_type: 0,
             filter_string: String::new(),
-            log: None,
+            logs: Vec::new(),
             item_id_tree: ITEM_ID_TREE.iter().map(ItemIDNodeRef::from).collect(),
         }
     }
@@ -234,20 +238,15 @@ impl ItemSpawner<'_> {
     }
 
     fn write_log(&mut self, log: String) {
-        let logs = self.log.take();
-        self.log = match logs {
-            Some(mut v) => {
-                v.push(log);
-                Some(v)
-            },
-            None => Some(vec![log]),
-        };
+        self.logs.push(log);
     }
 }
 
 impl Widget for ItemSpawner<'_> {
     fn render(&mut self, ui: &imgui::Ui) {
         let scale = scaling_factor(ui);
+        let button_width = BUTTON_WIDTH * scale;
+        let button_height = BUTTON_HEIGHT;
 
         let (x, y) = unsafe {
             let mut wnd_pos = ImVec2::default();
@@ -255,10 +254,7 @@ impl Widget for ItemSpawner<'_> {
             (igGetCursorPosX() + wnd_pos.x, igGetCursorPosY() + wnd_pos.y)
         };
 
-        if ui.button_with_size(&self.label_load, [
-            super::BUTTON_WIDTH * super::scaling_factor(ui),
-            super::BUTTON_HEIGHT,
-        ]) {
+        if ui.button_with_size(&self.label_load, [button_width, button_height]) {
             ui.open_popup(ISP_TAG);
         }
 
@@ -278,7 +274,7 @@ impl Widget for ItemSpawner<'_> {
             .scroll_bar(false)
             .begin_popup()
         {
-            let button_height = super::BUTTON_HEIGHT * super::scaling_factor(ui);
+            let button_height = button_height * scale;
 
             {
                 let _tok = ui.push_item_width(-1.);
@@ -312,9 +308,7 @@ impl Widget for ItemSpawner<'_> {
 
             ui.slider_config("Qty", 1, 99).build(&mut self.qty);
             ui.slider_config("Dur", 0, 9999).build(&mut self.durability);
-            if self.hotkey_load.keyup(ui)
-                || ui.button_with_size(&self.label_load, [400., button_height])
-            {
+            if ui.button_with_size(&self.label_load, [400., button_height]) {
                 self.spawn();
             }
 
@@ -329,15 +323,11 @@ impl Widget for ItemSpawner<'_> {
             }
 
             if ui.button_with_size(&self.label_close, [400., button_height])
-                || (self.hotkey_close.keyup(ui) && !ui.is_any_item_active())
+                || (self.hotkey_close.is_pressed(ui) && !ui.is_any_item_active())
             {
                 ui.close_current_popup();
             }
         }
-    }
-
-    fn log(&mut self) -> Option<Vec<String>> {
-        self.log.take()
     }
 
     fn interact(&mut self, ui: &imgui::Ui) {
@@ -345,8 +335,14 @@ impl Widget for ItemSpawner<'_> {
             return;
         }
 
-        if self.hotkey_load.keyup(ui) {
+        if self.hotkey_load.map(|k| k.is_pressed(ui)).unwrap_or(false) {
             self.spawn();
+        }
+    }
+
+    fn log(&mut self, tx: Sender<String>) {
+        for x in self.logs.drain(..) {
+            tx.send(x).ok();
         }
     }
 }

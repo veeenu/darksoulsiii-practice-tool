@@ -1,49 +1,40 @@
 use libds3::memedit::PointerChain;
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::store_value::{ReadWrite, StoreValue};
+use practice_tool_core::widgets::Widget;
 
-use super::Widget;
-use crate::util::KeyState;
-
-#[derive(Debug)]
-pub(crate) struct Souls {
-    label: String,
+struct Souls {
     ptr: PointerChain<u32>,
-    hotkey: KeyState,
+    current: u32,
     amount: u32,
+    label: String,
 }
 
 impl Souls {
-    pub(crate) fn new(amount: u32, ptr: PointerChain<u32>, hotkey: KeyState) -> Self {
-        Souls { label: format!("Add {} Souls ({})", amount, hotkey), ptr, hotkey, amount }
-    }
-
-    fn add(&self) -> Option<u32> {
-        let cur_souls = self.ptr.read();
-
-        cur_souls.map(|souls| {
-            self.ptr.write(souls + self.amount);
-            souls + self.amount
-        })
+    fn new(amount: u32, ptr: PointerChain<u32>) -> Self {
+        Self { ptr, current: 0, amount, label: format!("Add {amount} souls") }
     }
 }
 
-impl Widget for Souls {
-    fn render(&mut self, ui: &imgui::Ui) {
-        let scale = super::scaling_factor(ui);
-        let souls = self.ptr.read();
-        let _token = ui.begin_disabled(souls.is_none());
-
-        if ui.button_with_size(&self.label, [super::BUTTON_WIDTH * scale, super::BUTTON_HEIGHT]) {
-            self.add();
+impl ReadWrite for Souls {
+    fn read(&mut self) -> bool {
+        if let Some(current) = self.ptr.read() {
+            self.current = current;
+            true
+        } else {
+            false
         }
     }
 
-    fn interact(&mut self, ui: &imgui::Ui) {
-        if ui.is_any_item_active() {
-            return;
-        }
-
-        if self.hotkey.keyup(ui) {
-            self.add();
-        }
+    fn write(&mut self) {
+        self.ptr.write(self.current + self.amount);
     }
+
+    fn label(&self) -> &str {
+        &self.label
+    }
+}
+
+pub(crate) fn souls(amount: u32, ptr: PointerChain<u32>, key: Key) -> Box<dyn Widget> {
+    Box::new(StoreValue::new(Souls::new(amount, ptr), Some(key)))
 }

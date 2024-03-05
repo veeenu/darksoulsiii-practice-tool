@@ -1,9 +1,9 @@
 use std::mem;
 
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::store_value::{ReadWrite, StoreValue};
+use practice_tool_core::widgets::Widget;
 use serde::Deserialize;
-
-use super::Widget;
-use crate::util::KeyState;
 
 #[derive(Deserialize, Debug, Clone, Copy)]
 pub(crate) enum OpenMenuKind {
@@ -14,21 +14,15 @@ pub(crate) enum OpenMenuKind {
 }
 
 #[derive(Debug)]
-pub(crate) struct OpenMenu {
+struct OpenMenu {
     kind: OpenMenuKind,
     travel_ptr: usize,
     attune_ptr: usize,
-    hotkey: Option<KeyState>,
 }
 
 impl OpenMenu {
-    pub(crate) fn new(
-        kind: OpenMenuKind,
-        travel_ptr: usize,
-        attune_ptr: usize,
-        hotkey: Option<KeyState>,
-    ) -> Self {
-        Self { kind, travel_ptr, attune_ptr, hotkey }
+    pub(crate) fn new(kind: OpenMenuKind, travel_ptr: usize, attune_ptr: usize) -> Self {
+        Self { kind, travel_ptr, attune_ptr }
     }
 
     fn call(&self) {
@@ -44,26 +38,28 @@ impl OpenMenu {
     }
 }
 
-impl Widget for OpenMenu {
-    fn render(&mut self, ui: &imgui::Ui) {
-        let scale = super::scaling_factor(ui);
-        let label = match self.kind {
+impl ReadWrite for OpenMenu {
+    fn read(&mut self) -> bool {
+        true
+    }
+
+    fn write(&mut self) {
+        self.call()
+    }
+
+    fn label(&self) -> &str {
+        match self.kind {
             OpenMenuKind::Travel => "Warp menu",
             OpenMenuKind::Attune => "Attune menu",
-        };
-
-        if ui.button_with_size(label, [super::BUTTON_WIDTH * scale, super::BUTTON_HEIGHT]) {
-            self.call();
         }
     }
+}
 
-    fn interact(&mut self, ui: &imgui::Ui) {
-        if ui.is_any_item_active() {
-            return;
-        }
-
-        if self.hotkey.map(|k| k.keyup(ui)).unwrap_or(false) {
-            self.call();
-        }
-    }
+pub(crate) fn open_menu(
+    kind: OpenMenuKind,
+    travel_ptr: usize,
+    attune_ptr: usize,
+    key: Option<Key>,
+) -> Box<dyn Widget> {
+    Box::new(StoreValue::new(OpenMenu::new(kind, travel_ptr, attune_ptr), key))
 }

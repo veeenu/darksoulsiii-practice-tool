@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Instant;
 
+use config::Settings;
 use const_format::formatcp;
 use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::tracing::metadata::LevelFilter;
@@ -15,11 +16,11 @@ use hudhook::{eject, Hudhook, ImguiRenderLoop, TextureLoader};
 use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
+use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
+use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use tracing_subscriber::prelude::*;
-use widgets::{BUTTON_HEIGHT, BUTTON_WIDTH};
 use windows::Win32::Foundation::HINSTANCE;
 use windows::Win32::System::SystemServices::DLL_PROCESS_ATTACH;
-use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_RSHIFT};
 
 const VERSION: (usize, usize, usize) =
     (pkg_version_major!(), pkg_version_minor!(), pkg_version_patch!());
@@ -40,10 +41,12 @@ enum UiState {
 }
 
 struct PracticeTool {
-    config: config::Config,
-    widgets: Vec<Box<dyn widgets::Widget>>,
+    settings: Settings,
+    widgets: Vec<Box<dyn Widget>>,
     pointers: PointerChains,
     log: Vec<(Instant, String)>,
+    log_rx: Receiver<String>,
+    log_tx: Sender<String>,
     ui_state: UiState,
     fonts: Option<FontIDs>,
 }
@@ -126,7 +129,9 @@ impl PracticeTool {
             debug!("{:?}", err);
         }
 
-        if config.settings.log_level.inner() < LevelFilter::DEBUG || !config.settings.show_console {
+        let settings = config.settings.clone();
+
+        if settings.log_level.inner() < LevelFilter::DEBUG || !settings.show_console {
             hudhook::free_console().ok();
         } else {
             hudhook::enable_console_colors();
@@ -151,15 +156,18 @@ impl PracticeTool {
             }
         }
 
+        let (log_tx, log_rx) = crossbeam_channel::unbounded();
         info!("Initialized");
 
         PracticeTool {
-            config,
+            settings,
             pointers,
             widgets,
             ui_state: UiState::Closed,
             log: Vec::new(),
             fonts: None,
+            log_rx,
+            log_tx,
         }
     }
 
@@ -183,17 +191,15 @@ impl PracticeTool {
                     w.render(ui);
                 }
 
-                if ui.button_with_size("Close", [
-                    BUTTON_WIDTH * widgets::scaling_factor(ui),
-                    BUTTON_HEIGHT,
-                ]) {
+                if ui.button_with_size("Close", [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT])
+                {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
                 }
 
                 if option_env!("CARGO_XTASK_DIST").is_none()
                     && ui.button_with_size("Eject", [
-                        BUTTON_WIDTH * widgets::scaling_factor(ui),
+                        BUTTON_WIDTH * scaling_factor(ui),
                         BUTTON_HEIGHT,
                     ])
                 {
@@ -255,7 +261,7 @@ impl PracticeTool {
                              your tool by editing\nthe jdsd_dsiii_practice_tool.toml file with\na \
                              text editor. If you break something,\njust download a fresh \
                              file!\n\nThank you for using my tool! <3\n",
-                            self.config.settings.display
+                            self.settings.display
                         ));
                         ui.separator();
                         ui.text("-- johndisandonato");
@@ -372,10 +378,11 @@ impl ImguiRenderLoop for PracticeTool {
     fn render(&mut self, ui: &mut imgui::Ui) {
         let font_token = self.set_font(ui);
 
-        if !ui.io().want_capture_keyboard && self.config.settings.display.keyup(ui) {
-            let rshift = unsafe { GetAsyncKeyState(VK_RSHIFT.0 as _) < 0 };
+        let display = self.settings.display.is_pressed(ui);
+        let hide = self.settings.hide.map(|k| k.is_pressed(ui)).unwrap_or(false);
 
-            self.ui_state = match (&self.ui_state, rshift) {
+        if !ui.io().want_capture_keyboard && (display || hide) {
+            self.ui_state = match (&self.ui_state, hide) {
                 (UiState::Hidden, _) => UiState::Closed,
                 (_, true) => UiState::Hidden,
                 (UiState::MenuOpen, _) => UiState::Closed,
@@ -403,12 +410,14 @@ impl ImguiRenderLoop for PracticeTool {
         }
 
         for w in &mut self.widgets {
-            if let Some(logs) = w.log() {
-                let now = Instant::now();
-                self.log.extend(logs.into_iter().map(|l| (now, l)));
-            }
-            self.log.retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
+            w.log(self.log_tx.clone());
         }
+
+        let now = Instant::now();
+        self.log.extend(
+            self.log_rx.try_iter().inspect(|log| debug!("Received log: {}", log)).map(|l| (now, l)),
+        );
+        self.log.retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
 
         self.render_logs(ui);
         drop(font_token);
