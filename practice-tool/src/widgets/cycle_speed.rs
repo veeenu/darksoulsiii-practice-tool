@@ -2,13 +2,9 @@ use std::cmp::Ordering;
 use std::fmt::Write;
 
 use libds3::memedit::PointerChain;
-use practice_tool_core::{
-    key::Key,
-    widgets::{
-        store_value::{ReadWrite, StoreValue},
-        Widget,
-    },
-};
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::store_value::{ReadWrite, StoreValue};
+use practice_tool_core::widgets::Widget;
 
 #[derive(Debug)]
 struct CycleSpeed {

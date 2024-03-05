@@ -1,7 +1,6 @@
-use practice_tool_core::{
-    key::Key,
-    widgets::{group::Group, Widget},
-};
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::group::Group;
+use practice_tool_core::widgets::Widget;
 
 pub(crate) fn group(
     label: &str,

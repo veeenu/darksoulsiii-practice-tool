@@ -1,14 +1,10 @@
 use std::fmt::Write;
 
 use libds3::memedit::PointerChain;
-use practice_tool_core::{
-    key::Key,
-    widgets::{
-        nudge_position::NudgePositionStorage,
-        position::{Position, PositionStorage},
-        Widget,
-    },
-};
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::nudge_position::NudgePositionStorage;
+use practice_tool_core::widgets::position::{Position, PositionStorage};
+use practice_tool_core::widgets::Widget;
 
 pub(super) struct SavePosition {
     ptr_angle: PointerChain<f32>,

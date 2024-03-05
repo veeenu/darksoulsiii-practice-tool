@@ -1,9 +1,8 @@
 use std::path::PathBuf;
 
-use practice_tool_core::{
-    key::Key,
-    widgets::{savefile_manager::SavefileManager, Widget},
-};
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::savefile_manager::SavefileManager;
+use practice_tool_core::widgets::Widget;
 
 pub(crate) fn savefile_manager(key_load: Option<Key>, key_close: Key) -> Box<dyn Widget> {
     // TODO

@@ -1,7 +1,8 @@
 use imgui::{ProgressBar, StyleColor};
 use libds3::memedit::PointerChain;
 use libds3::pointer_chain;
-use practice_tool_core::{key::Key, widgets::Widget};
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::Widget;
 use windows::Win32::System::Memory::{
     VirtualAlloc, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE,
 };

@@ -1,6 +1,7 @@
 use libds3::prelude::*;
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::nudge_position::NudgePosition;
 use practice_tool_core::widgets::Widget;
-use practice_tool_core::{key::Key, widgets::nudge_position::NudgePosition};
 
 use crate::widgets::position::SavePosition;
 

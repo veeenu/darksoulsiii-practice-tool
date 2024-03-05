@@ -1,11 +1,7 @@
 use libds3::memedit::Bitflag as BitflagInner;
-use practice_tool_core::{
-    key::Key,
-    widgets::{
-        flag::{Flag, FlagWidget},
-        Widget,
-    },
-};
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::flag::{Flag, FlagWidget};
+use practice_tool_core::widgets::Widget;
 
 struct Bitflag(BitflagInner<u8>);
 
@@ -35,8 +31,8 @@ pub(crate) fn flag_widget(
 // }
 //
 // impl Flag {
-//     pub(crate) fn new(label: &str, bitflag: Bitflag<u8>, hotkey: Option<KeyState>) -> Self {
-//         let label = match &hotkey {
+//     pub(crate) fn new(label: &str, bitflag: Bitflag<u8>, hotkey:
+// Option<KeyState>) -> Self {         let label = match &hotkey {
 //             Some(k) => format!("{} ({})", label, k),
 //             None => label.to_string(),
 //         };

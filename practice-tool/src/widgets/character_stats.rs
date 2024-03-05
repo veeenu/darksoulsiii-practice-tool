@@ -1,11 +1,7 @@
 use libds3::prelude::*;
-use practice_tool_core::{
-    key::Key,
-    widgets::{
-        stats_editor::{Datum, Stats, StatsEditor},
-        Widget,
-    },
-};
+use practice_tool_core::key::Key;
+use practice_tool_core::widgets::stats_editor::{Datum, Stats, StatsEditor};
+use practice_tool_core::widgets::Widget;
 
 #[derive(Debug)]
 struct CharacterStatsEdit {
