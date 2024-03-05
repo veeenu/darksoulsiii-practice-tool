@@ -42,6 +42,7 @@ features = [
   "Win32_System_Memory",
   "Win32_System_Diagnostics_Debug",
   "Win32_System_ProcessStatus",
+  "Win32_System_SystemInformation",
   "Win32_System_Threading",
 ]
 
