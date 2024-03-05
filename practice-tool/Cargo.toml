@@ -33,8 +33,7 @@ imgui.workspace = true
 imgui-sys.workspace = true
 once_cell.workspace = true
 windows.workspace = true
-# practice-tool-core = { git = "https://github.com/veeenu/practice-tool-core", version = "0.1.0" }
-practice-tool-core = { path = "../../practice-tool-core/" }
+practice-tool-core.workspace = true
 
 [build-dependencies]
 embed-resource = "2.4.1"
