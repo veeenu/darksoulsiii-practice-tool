@@ -7,9 +7,6 @@ use practice_tool_core::{
     },
 };
 
-use hudhook::tracing::debug;
-use imgui::sys::{igGetCursorPosX, igGetCursorPosY, igGetWindowPos, igSetNextWindowPos, ImVec2};
-
 #[derive(Debug)]
 struct CharacterStatsEdit {
     ptr: PointerChain<CharacterStats>,
@@ -53,7 +50,10 @@ impl Stats for CharacterStatsEdit {
 
 pub(crate) fn character_stats_edit(
     character_stats: PointerChain<CharacterStats>,
-    key_close: Option<Key>,
+    key_close: Key,
 ) -> Box<dyn Widget> {
-    Box::new(StatsEditor::new(CharacterStatsEdit { ptr: character_stats, stats: None }, key_close))
+    Box::new(StatsEditor::new(
+        CharacterStatsEdit { ptr: character_stats, stats: None },
+        Some(key_close),
+    ))
 }

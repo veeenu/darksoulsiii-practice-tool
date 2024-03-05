@@ -38,6 +38,9 @@ impl PositionStorage for SavePosition {
     fn read(&mut self) {
         if let (Some(pos), Some(angle)) = (self.ptr_pos.read(), self.ptr_angle.read()) {
             self.saved_position = [pos[0], pos[1], pos[2], angle];
+            self.valid = true;
+        } else {
+            self.valid = false;
         }
     }
 
@@ -79,7 +82,7 @@ impl PositionStorage for SavePosition {
 
         let [x, y, z, a] = self.saved_position;
 
-        write!(self.label_stored, "{:7.1} {:7.1} {:7.1} {:7.1}", x, y, z, a);
+        write!(self.label_stored, "{:7.1} {:7.1} {:7.1} {:7.1}", x, y, z, a).ok();
 
         &self.label_stored
     }

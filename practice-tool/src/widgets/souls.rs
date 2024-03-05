@@ -31,7 +31,7 @@ impl ReadWrite for Souls {
     }
 
     fn write(&mut self) {
-        self.ptr.write(self.current + self.amount)
+        self.ptr.write(self.current + self.amount);
     }
 
     fn label(&self) -> &str {

@@ -5,8 +5,8 @@ use practice_tool_core::{
 
 pub(crate) fn group(
     label: &str,
-    key_close: Key,
     commands: Vec<Box<dyn Widget>>,
+    key_close: Key,
 ) -> Box<dyn Widget> {
     Box::new(Group::new(label, key_close, commands))
 }

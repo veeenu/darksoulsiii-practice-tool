@@ -1,13 +1,8 @@
-mod vk;
-
 use std::ffi::OsString;
-use std::fmt::Display;
 use std::os::windows::prelude::OsStringExt;
 use std::path::PathBuf;
 
 use hudhook::tracing::error;
-use serde::Deserialize;
-pub(crate) use vk::*;
 use windows::core::PCSTR;
 use windows::Win32::Foundation::{HMODULE, MAX_PATH};
 use windows::Win32::System::LibraryLoader::{

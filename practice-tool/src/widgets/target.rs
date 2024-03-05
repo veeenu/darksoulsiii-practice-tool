@@ -292,7 +292,7 @@ impl Widget for Target {
             return;
         }
 
-        if self.hotkey.keyup(ui) {
+        if self.hotkey.is_pressed(ui) {
             if self.is_enabled {
                 self.disable();
             } else {

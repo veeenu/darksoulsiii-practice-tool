@@ -2,12 +2,12 @@ use std::str::FromStr;
 
 use libds3::prelude::*;
 use practice_tool_core::key::Key;
+use practice_tool_core::widgets::Widget;
 use serde::Deserialize;
 use tracing_subscriber::filter::LevelFilter;
 
-use crate::util;
 use crate::widgets::character_stats::character_stats_edit;
-use crate::widgets::cycle_speed::{cycle_speed, CycleSpeed};
+use crate::widgets::cycle_speed::cycle_speed;
 use crate::widgets::flag::flag_widget;
 use crate::widgets::group::group;
 use crate::widgets::item_spawn::ItemSpawner;
@@ -15,10 +15,9 @@ use crate::widgets::nudge_pos::nudge_position;
 use crate::widgets::open_menu::{open_menu, OpenMenuKind};
 use crate::widgets::position::save_position;
 use crate::widgets::quitout::quitout;
-use crate::widgets::savefile_manager::SavefileManager;
+use crate::widgets::savefile_manager::savefile_manager;
 use crate::widgets::souls::souls;
 use crate::widgets::target::Target;
-use crate::widgets::Widget;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Config {
@@ -39,26 +38,24 @@ pub(crate) struct Settings {
 enum CfgCommand {
     SavefileManager {
         #[serde(rename = "savefile_manager")]
-        key_load: Key,
-        key_open: Option<Key>,
+        hotkey_load: Key,
     },
     ItemSpawner {
         #[serde(rename = "item_spawner")]
-        key_load: Key,
+        hotkey_load: Key,
     },
     Flag {
         flag: FlagSpec,
-        key: Option<Key>,
+        hotkey: Option<Key>,
     },
     Position {
-        #[serde(rename = "position")]
-        load: Option<Key>,
-        save: Option<Key>,
+        position_load: Key,
+        position_save: Key,
     },
     CycleSpeed {
         #[serde(rename = "cycle_speed")]
         values: Vec<f32>,
-        key: Key,
+        hotkey: Key,
     },
     CharacterStats {
         #[serde(rename = "character_stats")]
@@ -67,20 +64,20 @@ enum CfgCommand {
     Souls {
         #[serde(rename = "souls")]
         amount: u32,
-        key: Key,
+        hotkey: Key,
     },
     OpenMenu {
         #[serde(rename = "open_menu")]
         kind: OpenMenuKind,
-        key: Option<Key>,
+        hotkey: Option<Key>,
     },
     Quitout {
         #[serde(rename = "quitout")]
-        key: Key,
+        hotkey: Key,
     },
     Target {
         #[serde(rename = "target")]
-        key: Key,
+        hotkey: Key,
     },
     NudgePosition {
         nudge: f32,
@@ -128,43 +125,45 @@ impl Config {
         commands
             .iter()
             .map(|cmd| match cmd {
-                CfgCommand::Flag { flag, key } => {
+                CfgCommand::Flag { flag, hotkey: key } => {
                     flag_widget(&flag.label, (flag.getter)(chains).clone(), *key)
                 },
-                CfgCommand::SavefileManager { key_load, key_open } => {
-                    SavefileManager::new_widget(*key_load, *key_open, settings.display)
+                CfgCommand::SavefileManager { hotkey_load: key_load } => {
+                    savefile_manager(*key_load, settings.display)
                 },
-                CfgCommand::ItemSpawner { key_load } => Box::new(ItemSpawner::new(
+                CfgCommand::ItemSpawner { hotkey_load: key_load } => Box::new(ItemSpawner::new(
                     chains.spawn_item_func_ptr as usize,
                     chains.map_item_man as usize,
                     chains.gravity.clone(),
                     *key_load,
                     settings.display,
                 )),
-                CfgCommand::Position { load, save } => {
-                    save_position(chains.position.clone(), *load, *save)
+                CfgCommand::Position { position_load: load, position_save: save } => {
+                    save_position(chains.position.clone(), Some(*load), Some(*save))
                 },
                 CfgCommand::NudgePosition { nudge, nudge_up, nudge_down } => {
-                    nudge_position(chains.position.clone().1, *nudge, *nudge_up, *nudge_down)
+                    nudge_position(chains.position.clone(), *nudge, *nudge_up, *nudge_down)
                 },
                 CfgCommand::CharacterStats { .. } => {
-                    character_stats_edit(chains.character_stats.clone(), Some(settings.display))
+                    character_stats_edit(chains.character_stats.clone(), settings.display)
                 },
-                CfgCommand::CycleSpeed { values, key } => {
+                CfgCommand::CycleSpeed { values, hotkey: key } => {
                     cycle_speed(values.as_slice(), chains.speed.clone(), *key)
                 },
-                CfgCommand::Souls { amount, key } => souls(*amount, chains.souls.clone(), *key),
-                CfgCommand::Quitout { key } => quitout(chains.quitout.clone(), *key),
-                CfgCommand::OpenMenu { key, kind } => {
-                    open_menu(kind, chains.travel_ptr, chains.attune_ptr, *key)
+                CfgCommand::Souls { amount, hotkey: key } => {
+                    souls(*amount, chains.souls.clone(), *key)
                 },
-                CfgCommand::Target { key } => {
+                CfgCommand::Quitout { hotkey: key } => quitout(chains.quitout.clone(), *key),
+                CfgCommand::OpenMenu { hotkey: key, kind } => {
+                    open_menu(*kind, chains.travel_ptr, chains.attune_ptr, *key)
+                },
+                CfgCommand::Target { hotkey: key } => {
                     Box::new(Target::new(chains.current_target.clone(), chains.xa, *key))
                 },
                 CfgCommand::Group { label, commands } => group(
                     label.as_str(),
-                    settings.display,
                     Self::make_commands_inner(commands.as_slice(), settings, chains),
+                    settings.display,
                 ),
             })
             .collect()
@@ -245,7 +244,7 @@ mod tests {
     use super::Config;
 
     #[test]
-    fn test_parse() {
+    fn test_parse_ok() {
         println!(
             "{:#?}",
             toml::from_str::<toml::Value>(include_str!("../../jdsd_dsiii_practice_tool.toml"))

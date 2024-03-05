@@ -45,16 +45,10 @@ fn run() -> Result<()> {
 
     let mut buf = String::new();
     File::open(project_root().join("jdsd_dsiii_practice_tool.toml"))?.read_to_string(&mut buf)?;
-    File::create(
-        project_root().join("target").join("debug").join("jdsd_dsiii_practice_tool.toml"),
-    )?
-    .write_all(buf.as_bytes())?;
+    File::create(target_path("debug").join("jdsd_dsiii_practice_tool.toml"))?
+        .write_all(buf.as_bytes())?;
 
-    let dll_path = project_root()
-        .join("target")
-        .join("debug")
-        .join("libjdsd_dsiii_practice_tool.dll")
-        .canonicalize()?;
+    let dll_path = target_path("debug").join("libjdsd_dsiii_practice_tool.dll").canonicalize()?;
 
     inject(iter::once(dll_path))?;
 
@@ -124,10 +118,19 @@ fn cargo_command(cmd: &'static str) -> Command {
 }
 
 fn inject<S: AsRef<OsStr>>(args: impl Iterator<Item = S>) -> Result<()> {
-    cargo_command("run")
-        .args(["--release", "--bin", "inject", "--"])
-        .args(args)
+    cargo_command("build")
+        .args(["--release", "--bin", "inject"])
         .status()
         .map_err(|e| format!("cargo: {}", e))?;
+
+    let mut cmd = if cfg!(windows) {
+        Command::new(target_path("release").join("inject"))
+    } else {
+        let mut c = Command::new(env::var("XTASK_WINE").expect("XTASK_WINE not defined"));
+        c.arg(target_path("release").join("inject.exe").strip_prefix(project_root()).unwrap());
+        c
+    };
+
+    cmd.args(args).status().map_err(|e| format!("inject: {}", e))?;
     Ok(())
 }

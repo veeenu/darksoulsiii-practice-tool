@@ -15,11 +15,12 @@ use hudhook::{eject, Hudhook, ImguiRenderLoop, TextureLoader};
 use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
+use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
+use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
+use sys::ImGuiKey_RightShift;
 use tracing_subscriber::prelude::*;
-use widgets::{BUTTON_HEIGHT, BUTTON_WIDTH};
 use windows::Win32::Foundation::HINSTANCE;
 use windows::Win32::System::SystemServices::DLL_PROCESS_ATTACH;
-use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_RSHIFT};
 
 const VERSION: (usize, usize, usize) =
     (pkg_version_major!(), pkg_version_minor!(), pkg_version_patch!());
@@ -41,9 +42,11 @@ enum UiState {
 
 struct PracticeTool {
     config: config::Config,
-    widgets: Vec<Box<dyn widgets::Widget>>,
+    widgets: Vec<Box<dyn Widget>>,
     pointers: PointerChains,
     log: Vec<(Instant, String)>,
+    log_rx: Receiver<String>,
+    log_tx: Sender<String>,
     ui_state: UiState,
     fonts: Option<FontIDs>,
 }
@@ -151,6 +154,7 @@ impl PracticeTool {
             }
         }
 
+        let (log_tx, log_rx) = crossbeam_channel::unbounded();
         info!("Initialized");
 
         PracticeTool {
@@ -160,6 +164,8 @@ impl PracticeTool {
             ui_state: UiState::Closed,
             log: Vec::new(),
             fonts: None,
+            log_rx,
+            log_tx,
         }
     }
 
@@ -183,19 +189,17 @@ impl PracticeTool {
                     w.render(ui);
                 }
 
-                if ui.button_with_size("Close", [
-                    BUTTON_WIDTH * widgets::scaling_factor(ui),
-                    BUTTON_HEIGHT,
-                ]) {
+                if ui.button_with_size("Close", [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT])
+                {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
                 }
 
                 if option_env!("CARGO_XTASK_DIST").is_none()
-                    && ui.button_with_size("Eject", [
-                        BUTTON_WIDTH * widgets::scaling_factor(ui),
-                        BUTTON_HEIGHT,
-                    ])
+                    && ui.button_with_size(
+                        "Eject",
+                        [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT],
+                    )
                 {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
@@ -372,8 +376,9 @@ impl ImguiRenderLoop for PracticeTool {
     fn render(&mut self, ui: &mut imgui::Ui) {
         let font_token = self.set_font(ui);
 
-        if !ui.io().want_capture_keyboard && self.config.settings.display.keyup(ui) {
-            let rshift = unsafe { GetAsyncKeyState(VK_RSHIFT.0 as _) < 0 };
+        if !ui.io().want_capture_keyboard && self.config.settings.display.is_pressed(ui) {
+            let rshift = ui.io().keys_down[ImGuiKey_RightShift as usize];
+            // let rshift = unsafe { GetAsyncKeyState(VK_RSHIFT.0 as _) < 0 };
 
             self.ui_state = match (&self.ui_state, rshift) {
                 (UiState::Hidden, _) => UiState::Closed,
@@ -403,12 +408,14 @@ impl ImguiRenderLoop for PracticeTool {
         }
 
         for w in &mut self.widgets {
-            if let Some(logs) = w.log() {
-                let now = Instant::now();
-                self.log.extend(logs.into_iter().map(|l| (now, l)));
-            }
-            self.log.retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
+            w.log(self.log_tx.clone());
         }
+
+        let now = Instant::now();
+        self.log.extend(
+            self.log_rx.try_iter().inspect(|log| debug!("Received log: {}", log)).map(|l| (now, l)),
+        );
+        self.log.retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
 
         self.render_logs(ui);
         drop(font_token);

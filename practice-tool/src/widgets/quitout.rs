@@ -12,7 +12,7 @@ struct Quitout {
 }
 
 impl Quitout {
-    fn new(ptr: PointerChain<u32>) -> Self {
+    fn new(ptr: PointerChain<u8>) -> Self {
         Self { ptr }
     }
 }
@@ -23,7 +23,7 @@ impl ReadWrite for Quitout {
     }
 
     fn write(&mut self) {
-        self.ptr.write(1)
+        self.ptr.write(1);
     }
 
     fn label(&self) -> &str {
