@@ -1,4 +1,5 @@
 mod codegen;
+mod dist;
 
 use std::ffi::OsStr;
 use std::fs::File;
@@ -6,8 +7,6 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{env, iter};
-
-mod dist;
 
 type DynError = Box<dyn std::error::Error>;
 type Result<T> = std::result::Result<T, DynError>;

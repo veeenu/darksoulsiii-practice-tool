@@ -73,7 +73,7 @@ enum CfgCommand {
     CycleSpeed {
         #[serde(rename = "cycle_speed")]
         values: Vec<f32>,
-        hotkey: Key,
+        hotkey: Option<Key>,
     },
     CharacterStats {
         #[serde(rename = "character_stats")]
@@ -82,7 +82,7 @@ enum CfgCommand {
     Souls {
         #[serde(rename = "souls")]
         amount: u32,
-        hotkey: Key,
+        hotkey: Option<Key>,
     },
     OpenMenu {
         #[serde(rename = "open_menu")]

@@ -50,6 +50,10 @@ impl ReadWrite for CycleSpeed {
     }
 }
 
-pub(crate) fn cycle_speed(values: &[f32], ptr: PointerChain<f32>, key: Key) -> Box<dyn Widget> {
-    Box::new(StoreValue::new(CycleSpeed::new(values, ptr), Some(key)))
+pub(crate) fn cycle_speed(
+    values: &[f32],
+    ptr: PointerChain<f32>,
+    key: Option<Key>,
+) -> Box<dyn Widget> {
+    Box::new(StoreValue::new(CycleSpeed::new(values, ptr), key))
 }

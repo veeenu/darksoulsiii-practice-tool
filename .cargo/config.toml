@@ -2,6 +2,8 @@
 rustflags = ["-C", "link-args=-Wl,--subsystem,windows"]
 
 [alias]
-brl = "build --release --lib"
-xtask = "run --package xtask --"
-r = "run --package xtask -- run"
+xtask = "run --package xtask --release --"
+t = "xwin test --target x86_64-pc-windows-msvc --"
+c = "xwin clippy --target x86_64-pc-windows-msvc"
+d = "xtask dist"
+r = "xtask run"
