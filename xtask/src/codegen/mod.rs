@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::process::Command;
 
+use anyhow::{bail, Context};
 use regex::Regex;
 
 use crate::{project_root, Result};
@@ -30,11 +31,11 @@ fn run_python_script() -> Result<()> {
             project_root().join("xtask"),
         ])
         .output()
-        .map_err(|e| format!("python: {}", e))?;
+        .context("python")?;
 
     if !cmd.status.success() {
         eprintln!("{}", std::str::from_utf8(&cmd.stderr).unwrap());
-        return Err("python codegen failed".into());
+        bail!("python codegen failed");
     }
 
     File::create(project_root().join("lib/libds3/src/params/param_data.rs"))?
@@ -96,30 +97,30 @@ fn checkout_paramdex() -> Result<()> {
             .current_dir(project_root().join("target/Paramdex"))
             .args(["fetch"])
             .status()
-            .map_err(|e| format!("git: {}", e))?;
+            .context("git")?;
 
         if !status.success() {
-            return Err("git fetch failed".into());
+            bail!("git fetch failed");
         }
 
         let status = Command::new(&git)
             .current_dir(project_root().join("target/Paramdex"))
             .args(["pull"])
             .status()
-            .map_err(|e| format!("git: {}", e))?;
+            .context("git")?;
 
         if !status.success() {
-            return Err("git pull failed".into());
+            bail!("git pull failed");
         }
     } else {
         let status = Command::new(&git)
             .current_dir(project_root().join("target"))
             .args(["clone", "https://github.com/soulsmods/Paramdex.git"])
             .status()
-            .map_err(|e| format!("git: {}", e))?;
+            .context("git")?;
 
         if !status.success() {
-            return Err("git clone failed".into());
+            bail!("git clone failed");
         }
     }
 

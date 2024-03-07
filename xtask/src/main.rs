@@ -1,11 +1,9 @@
-// mod codegen;
+mod codegen;
 
 use std::ffi::OsStr;
-use std::fs;
-use std::{env, iter};
+use std::{env, fs, iter};
 
 use anyhow::{bail, Context, Result};
-
 use practice_tool_tasks::{
     cargo_command, project_root, steam_command, target_path, Distribution, FileInstall,
 };
@@ -19,7 +17,7 @@ fn main() -> Result<()> {
     match task.as_deref() {
         Some("dist") => dist()?,
         Some("dist-param-mod") => dist_param_mod()?,
-        // Some("codegen") => codegen::codegen()?,
+        Some("codegen") => codegen::codegen()?,
         Some("inject") => inject(env::args().skip(1).map(String::from))?,
         Some("run") => run()?,
         Some("run-param-tinkerer") => run_param_tinkerer()?,
