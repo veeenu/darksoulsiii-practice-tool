@@ -15,3 +15,6 @@ textwrap = "0.15.0"
 dotenv = "0.15.0"
 once_cell.workspace = true
 pelite = "0.10.0"
+
+practice-tool-tasks.workspace = true
+anyhow = "1.0.80"
