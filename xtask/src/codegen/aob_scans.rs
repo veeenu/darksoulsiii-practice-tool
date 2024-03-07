@@ -31,7 +31,7 @@ fn base_addresses_rs_path() -> PathBuf {
         .join("base_addresses.rs")
 }
 
-pub fn codegen_base_addresses() {
+pub fn get_base_addresses() {
     let aobs = &[
         aob_indirect_twice(
             "WorldChrMan",
