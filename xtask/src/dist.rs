@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
@@ -28,8 +28,8 @@ pub(crate) fn dist() -> Result<()> {
         return Err("cargo build failed".into());
     }
 
-    std::fs::remove_dir_all(dist_dir()).ok();
-    std::fs::create_dir_all(dist_dir())?;
+    fs::remove_dir_all(dist_dir()).ok();
+    fs::create_dir_all(dist_dir())?;
 
     let mut zip = ZipWriter::new(File::create(dist_dir().join("jdsd_dsiii_practice_tool.zip"))?);
     let file_options = FileOptions::default().compression_method(CompressionMethod::Deflated);

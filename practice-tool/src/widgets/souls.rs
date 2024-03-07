@@ -35,6 +35,6 @@ impl ReadWrite for Souls {
     }
 }
 
-pub(crate) fn souls(amount: u32, ptr: PointerChain<u32>, key: Key) -> Box<dyn Widget> {
-    Box::new(StoreValue::new(Souls::new(amount, ptr), Some(key)))
+pub(crate) fn souls(amount: u32, ptr: PointerChain<u32>, key: Option<Key>) -> Box<dyn Widget> {
+    Box::new(StoreValue::new(Souls::new(amount, ptr), key))
 }
