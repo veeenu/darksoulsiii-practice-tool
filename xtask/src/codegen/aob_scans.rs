@@ -6,8 +6,8 @@ use textwrap::dedent;
 
 fn patches_paths() -> impl Iterator<Item = PathBuf> {
     let base_path = PathBuf::from(
-        env::var("DSIIIPT_PATCHES_PATH").unwrap_or_else(|_| panic!("{}", dedent(r"
-            DSIIIPT_PATCHES_PATH environment variable undefined.
+        env::var("DSIII_PATCHES_PATH").unwrap_or_else(|_| panic!("{}", dedent(r"
+            DSIII_PATCHES_PATH environment variable undefined.
             Check the documentation: https://github.com/veeenu/darksoulsiii-practice-tool/README.md#building
         "))),
     );
@@ -33,23 +33,6 @@ fn base_addresses_rs_path() -> PathBuf {
 
 pub fn codegen_base_addresses() {
     let aobs = &[
-        aob_direct(
-            "FormatString",
-            &["3C 00 54 00 45 00 58 00 54 00 46 00 4F 00 52 00 4D 00 41 00 54 00"],
-        ),
-        aob_direct("NoLogo", &["E8 ?? ?? ?? FF 90 4D 8B C7 49 8B D4 48 8B C8 E8 ?? ?? ?? FF"]),
-        aob_direct("CurrentTarget", &["48 8B 80 ?? ?? ?? ?? 48 8B 08 48 8B ?? 58"]),
-        aob_direct(
-            "MenuTravel",
-            &["40 55 53 56 57 41 56 48 8D 6C 24 C9 48 81 EC 00 01 00 00 48 C7 45 97 FE FF FF FF"],
-        ),
-        aob_direct(
-            "MenuAttune",
-            &["48 8D 45 0F 48 89 45 EF 48 8D 45 0F 48 89 45 F7 48 8D ?? ?? \
-               ?? ?? ?? 48 89 45 0F 48 8D ?? ?? ?? ?? ?? 48 89 45 0F 48 8D \
-               ?? ?? ?? ?? ?? 48 89 45 17"],
-        ),
-        aob_indirect("XA", &["48 8B 83 ?? ?? ?? ?? 48 8B 10 48 85 D2 ?? ?? 8B"], 3),
         aob_indirect_twice(
             "WorldChrMan",
             &["48 8B 1D ?? ?? ?? 04 48 8B F9 48 85 DB ?? ?? 8B 11 85 D2 ?? ?? 8D"],
@@ -109,6 +92,18 @@ pub fn codegen_base_addresses() {
             3,
             7,
         ),
+        aob_direct("FormatString", &[
+            "3C 00 54 00 45 00 58 00 54 00 46 00 4F 00 52 00 4D 00 41 00 54 00"
+        ]),
+        aob_direct("NoLogo", &["E8 ?? ?? ?? FF 90 4D 8B C7 49 8B D4 48 8B C8 E8 ?? ?? ?? FF"]),
+        aob_direct("CurrentTarget", &["48 8B 80 ?? ?? ?? ?? 48 8B 08 48 8B ?? 58"]),
+        aob_direct("MenuTravel", &[
+            "40 55 53 56 57 41 56 48 8D 6C 24 C9 48 81 EC 00 01 00 00 48 C7 45 97 FE FF FF FF"
+        ]),
+        aob_direct("MenuAttune", &["48 8D 45 0F 48 89 45 EF 48 8D 45 0F 48 89 45 F7 48 8D ?? ?? \
+                                    ?? ?? ?? 48 89 45 0F 48 8D ?? ?? ?? ?? ?? 48 89 45 0F 48 8D \
+                                    ?? ?? ?? ?? ?? 48 89 45 17"]),
+        aob_indirect("XA", &["48 8B 83 ?? ?? ?? ?? 48 8B 10 48 85 D2 ?? ?? 8B"], 3),
     ];
 
     codegen::codegen_base_addresses(base_addresses_rs_path(), patches_paths(), aobs)
