@@ -15,8 +15,9 @@ use tracing_subscriber::prelude::*;
 use crate::config::{Config, Settings};
 use crate::util;
 
-const VERSION: (usize, usize, usize) =
-    (pkg_version_major!(), pkg_version_minor!(), pkg_version_patch!());
+const MAJOR: usize = pkg_version_major!();
+const MINOR: usize = pkg_version_minor!();
+const PATCH: usize = pkg_version_patch!();
 
 struct FontIDs {
     small: FontId,
@@ -35,8 +36,10 @@ enum UiState {
 
 pub(crate) struct PracticeTool {
     settings: Settings,
-    widgets: Vec<Box<dyn Widget>>,
     pointers: PointerChains,
+    version_label: String,
+    widgets: Vec<Box<dyn Widget>>,
+
     log: Vec<(Instant, String)>,
     log_rx: Receiver<String>,
     log_tx: Sender<String>,
@@ -132,6 +135,11 @@ impl PracticeTool {
 
         let pointers = PointerChains::new();
 
+        let version_label = {
+            let (maj, min, patch) = (*VERSION).into();
+            format!("Game Ver {}.{:02}.{}", maj, min, patch)
+        };
+
         let widgets = config.make_commands(&pointers);
 
         {
@@ -155,12 +163,13 @@ impl PracticeTool {
         PracticeTool {
             settings,
             pointers,
+            version_label,
             widgets,
-            ui_state: UiState::Closed,
             log: Vec::new(),
-            fonts: None,
             log_rx,
             log_tx,
+            fonts: None,
+            ui_state: UiState::Closed,
         }
     }
 
@@ -242,9 +251,9 @@ impl PracticeTool {
                         self.pointers.cursor_show.set(true);
                         ui.text(formatcp!(
                             "Dark Souls III Practice Tool v{}.{}.{}",
-                            VERSION.0,
-                            VERSION.1,
-                            VERSION.2
+                            MAJOR,
+                            MINOR,
+                            PATCH
                         ));
                         ui.separator();
                         ui.text(format!(
@@ -274,7 +283,13 @@ impl PracticeTool {
                             )
                             .ok();
                         }
+                        ui.same_line();
+                        if ui.button("Support") {
+                            open::that("https://patreon.com/johndisandonato").ok();
+                        }
                     });
+
+                ui.text(&self.version_label);
 
                 if let Some(igt) = self.pointers.igt.read() {
                     let millis = (igt % 1000) / 10;

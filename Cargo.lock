@@ -815,7 +815,6 @@ checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 [[package]]
 name = "practice-tool-core"
 version = "0.1.0"
-source = "git+https://github.com/veeenu/practice-tool-core#1800c5c0c3c91733fdcde0892bf37c2f0b70f0ee"
 dependencies = [
  "crossbeam-channel",
  "imgui",

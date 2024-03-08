@@ -43,7 +43,7 @@ impl BaseAddresses {
             current_target: self.current_target + base,
             menu_travel: self.menu_travel + base,
             menu_attune: self.menu_attune + base,
-            xa: self.xa + base,
+            xa: self.xa,
         }
     }
 }

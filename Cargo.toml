@@ -30,7 +30,8 @@ imgui = "0.11.0"
 imgui-sys = "0.11.0"
 once_cell = "1.19.0"
 parking_lot = "0.12.1"
-practice-tool-core = { git = "https://github.com/veeenu/practice-tool-core", version = "0.1.0" }
+practice-tool-core = { path = "../practice-tool-core" }
+# { git = "https://github.com/veeenu/practice-tool-core", version = "0.1.0" }
 practice-tool-tasks = { path = "../practice-tool-core/tasks" }
 
 [workspace.dependencies.windows]
