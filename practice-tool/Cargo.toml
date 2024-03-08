@@ -21,8 +21,6 @@ parking_lot = "0.11.2"
 pkg-version = "1.0.0"
 regex = "1"
 semver = "0.11.0"
-serde = { version = "1.0.130", features = ["derive"] }
-serde_json = "1.0.57"
 toml = "0.5.6"
 tracing-subscriber = "0.3.17"
 ureq = { version = "2.8.0", features = ["json"] }
@@ -30,6 +28,8 @@ widestring = "0.5.1"
 
 libds3 = { path = "../lib/libds3" }
 
+serde.workspace = true
+serde_json.workspace = true
 hudhook.workspace = true
 imgui.workspace = true
 once_cell.workspace = true

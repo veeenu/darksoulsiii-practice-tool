@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 libds3 = { path = "../libds3" }
-serde = { version = "1.0.147", features = ["derive"] }
 toml = "0.5.9"
+serde.workspace = true
 windows.workspace = true
 once_cell.workspace = true

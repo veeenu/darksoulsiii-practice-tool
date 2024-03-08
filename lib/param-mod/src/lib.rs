@@ -27,6 +27,7 @@ unsafe impl Send for State {}
 unsafe impl Sync for State {}
 
 static STATE: Lazy<State> = Lazy::new(|| unsafe {
+    // TODO use GetSystemDirectory
     let dinput8 = LoadLibraryA(PCSTR(b"C:\\Windows\\System32\\dinput8.dll\0".as_ptr())).unwrap();
     let directinput8create =
         std::mem::transmute(GetProcAddress(dinput8, PCSTR(b"DirectInput8Create\0".as_ptr())));

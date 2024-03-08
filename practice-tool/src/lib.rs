@@ -61,16 +61,7 @@ static DIRECTINPUT8CREATE: Lazy<FDirectInput8Create> = Lazy::new(|| unsafe {
     let dinput8 = LoadLibraryW(PCWSTR(dinput8_path.as_ptr())).unwrap();
     let directinput8create = std::mem::transmute(GetProcAddress(dinput8, s!("DirectInput8Create")));
 
-    // This is evaluated twice: here and in [`PracticeTool::new()`]. No big deal,
-    // but might want to refactor that eventually.
-    let pointer_chains = PointerChains::new();
-    pointer_chains
-        .no_logo
-        .write([
-            0x48, 0x31, 0xC0, 0x48, 0x89, 0x02, 0x49, 0x89, 0x04, 0x24, 0x90, 0x90, 0x90, 0x90,
-            0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-        ])
-        .unwrap();
+    apply_no_logo();
 
     directinput8create
 });
@@ -84,6 +75,16 @@ unsafe extern "stdcall" fn DirectInput8Create(
     punkouter: HINSTANCE,
 ) -> HRESULT {
     (DIRECTINPUT8CREATE)(hinst, dwversion, riidltf, ppvout, punkouter)
+}
+
+fn apply_no_logo() {
+    // This is evaluated twice: here and in [`PracticeTool::new()`]. No big deal,
+    // but might want to refactor that eventually.
+    let pointer_chains = PointerChains::new();
+    pointer_chains.no_logo.write([
+        0x48, 0x31, 0xC0, 0x48, 0x89, 0x02, 0x49, 0x89, 0x04, 0x24, 0x90, 0x90, 0x90, 0x90, 0x90,
+        0x90, 0x90, 0x90, 0x90, 0x90,
+    ]);
 }
 
 fn start_practice_tool(hmodule: HINSTANCE) {

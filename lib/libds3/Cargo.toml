@@ -10,7 +10,7 @@ edition = "2021"
 log = "0.4.14"
 widestring = "0.5.1"
 macro-param = { path = "../macro-param" }
-serde_json = "1.0.73"
+serde_json.workspace = true
 parking_lot.workspace = true
 once_cell.workspace = true
 windows.workspace = true
