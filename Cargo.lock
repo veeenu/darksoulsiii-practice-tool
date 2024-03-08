@@ -29,6 +29,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.80"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ad32ce52e4161730f7098c077cd2ed6229b5804ccf99e5366be1ab72a98b4e1"
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -217,7 +223,6 @@ dependencies = [
  "hex",
  "hudhook",
  "imgui",
- "imgui-sys",
  "libds3",
  "log-panics",
  "once_cell",
@@ -383,9 +388,7 @@ dependencies = [
 
 [[package]]
 name = "hudhook"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "473dbc1031145217e2355c998bce728128d1937024cc053beb79750dfc0a6d21"
+version = "0.6.2"
 dependencies = [
  "cc",
  "gl_generator",
@@ -651,7 +654,6 @@ version = "1.6.0"
 dependencies = [
  "hudhook",
  "imgui",
- "imgui-sys",
  "libds3",
  "windows 0.42.0",
 ]
@@ -809,13 +811,31 @@ checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 [[package]]
 name = "practice-tool-core"
 version = "0.1.0"
-source = "git+https://github.com/veeenu/practice-tool-core#1800c5c0c3c91733fdcde0892bf37c2f0b70f0ee"
 dependencies = [
  "crossbeam-channel",
  "imgui",
  "once_cell",
  "parking_lot 0.12.1",
  "serde",
+]
+
+[[package]]
+name = "practice-tool-tasks"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dotenv",
+ "heck",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "pelite",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "textwrap",
+ "widestring",
+ "zip",
 ]
 
 [[package]]
@@ -1722,15 +1742,14 @@ checksum = "0fcb9cbac069e033553e8bb871be2fbdffcab578eb25bd0f7c508cedc6dcd75a"
 name = "xtask"
 version = "1.6.0"
 dependencies = [
+ "anyhow",
  "dotenv",
  "heck",
- "once_cell",
  "pelite",
- "rayon",
+ "practice-tool-tasks",
  "regex",
  "serde_json",
  "textwrap",
- "widestring",
  "zip",
 ]
 

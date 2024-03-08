@@ -32,7 +32,6 @@ libds3 = { path = "../lib/libds3" }
 
 hudhook.workspace = true
 imgui.workspace = true
-imgui-sys.workspace = true
 once_cell.workspace = true
 windows.workspace = true
 practice-tool-core.workspace = true
