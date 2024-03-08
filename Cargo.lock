@@ -223,7 +223,6 @@ dependencies = [
  "hex",
  "hudhook",
  "imgui",
- "imgui-sys",
  "libds3",
  "log-panics",
  "once_cell",
@@ -389,9 +388,7 @@ dependencies = [
 
 [[package]]
 name = "hudhook"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "473dbc1031145217e2355c998bce728128d1937024cc053beb79750dfc0a6d21"
+version = "0.6.2"
 dependencies = [
  "cc",
  "gl_generator",
@@ -657,7 +654,6 @@ version = "1.6.0"
 dependencies = [
  "hudhook",
  "imgui",
- "imgui-sys",
  "libds3",
  "windows 0.42.0",
 ]
@@ -1749,14 +1745,11 @@ dependencies = [
  "anyhow",
  "dotenv",
  "heck",
- "once_cell",
  "pelite",
  "practice-tool-tasks",
- "rayon",
  "regex",
  "serde_json",
  "textwrap",
- "widestring",
  "zip",
 ]
 

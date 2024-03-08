@@ -2,7 +2,10 @@ use std::borrow::Cow;
 use std::ffi::c_void;
 use std::fmt::Display;
 
-use imgui::sys::{igGetCursorPosX, igGetCursorPosY, igGetWindowPos, igSetNextWindowPos, ImVec2};
+use imgui::sys::{
+    igGetCursorPosX, igGetCursorPosY, igGetTreeNodeToLabelSpacing, igGetWindowPos, igIndent,
+    igSetNextWindowPos, igUnindent, ImVec2,
+};
 use imgui::{Condition, InputText, TreeNodeFlags};
 use libds3::memedit::Bitflag;
 use once_cell::sync::Lazy;
@@ -62,7 +65,7 @@ impl<'a> ItemIDNodeRef<'a> {
     fn render(&self, ui: &imgui::Ui, current: &mut u32, filtered: bool) {
         match self {
             ItemIDNodeRef::Leaf { node, value } => {
-                unsafe { imgui_sys::igUnindent(imgui_sys::igGetTreeNodeToLabelSpacing()) };
+                unsafe { igUnindent(igGetTreeNodeToLabelSpacing()) };
                 ui.tree_node_config(*node)
                     .label::<&str, &str>(node)
                     .flags(if current == value {
@@ -73,7 +76,7 @@ impl<'a> ItemIDNodeRef<'a> {
                         TreeNodeFlags::LEAF | TreeNodeFlags::NO_TREE_PUSH_ON_OPEN
                     })
                     .build(|| {});
-                unsafe { imgui_sys::igIndent(imgui_sys::igGetTreeNodeToLabelSpacing()) };
+                unsafe { igIndent(igGetTreeNodeToLabelSpacing()) };
                 if ui.is_item_clicked() {
                     *current = *value;
                 }
