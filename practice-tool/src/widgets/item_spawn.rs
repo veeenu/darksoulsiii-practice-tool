@@ -15,6 +15,8 @@ use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer};
 
+const DEFAULT_ITEM: u32 = 0x007A1200;
+
 static INFUSION_TYPES: [(u32, &str); 16] = [
     (0, "Normal"),
     (100, "Heavy"),
@@ -72,8 +74,11 @@ impl<'a> ItemIDNodeRef<'a> {
                         TreeNodeFlags::LEAF
                             | TreeNodeFlags::SELECTED
                             | TreeNodeFlags::NO_TREE_PUSH_ON_OPEN
+                            | TreeNodeFlags::SPAN_AVAIL_WIDTH
                     } else {
-                        TreeNodeFlags::LEAF | TreeNodeFlags::NO_TREE_PUSH_ON_OPEN
+                        TreeNodeFlags::LEAF
+                            | TreeNodeFlags::NO_TREE_PUSH_ON_OPEN
+                            | TreeNodeFlags::SPAN_AVAIL_WIDTH
                     })
                     .build(|| {});
                 unsafe { igIndent(igGetTreeNodeToLabelSpacing()) };
@@ -202,7 +207,7 @@ impl ItemSpawner<'_> {
             sentinel,
             qty: 1,
             durability: 100,
-            item_id: 0x40000000 + 2919,
+            item_id: DEFAULT_ITEM,
             upgrade: 0,
             infusion_type: 0,
             filter_string: String::new(),
@@ -319,7 +324,7 @@ impl Widget for ItemSpawner<'_> {
                 self.filter_string.clear();
                 self.qty = 1;
                 self.durability = 100;
-                self.item_id = 0x40000000 + 2919;
+                self.item_id = DEFAULT_ITEM;
                 self.upgrade = 0;
                 self.infusion_type = 0;
                 self.item_id_tree = ITEM_ID_TREE.iter().map(ItemIDNodeRef::from).collect();
@@ -334,7 +339,7 @@ impl Widget for ItemSpawner<'_> {
     }
 
     fn interact(&mut self, ui: &imgui::Ui) {
-        if ui.is_any_item_active() {
+        if ui.is_any_item_active() || ui.io().want_capture_keyboard {
             return;
         }
 
