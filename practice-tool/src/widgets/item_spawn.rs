@@ -331,7 +331,7 @@ impl Widget for ItemSpawner<'_> {
             }
 
             if ui.button_with_size(&self.label_close, [400., button_height])
-                || (self.hotkey_close.is_pressed(ui) && !ui.is_any_item_active())
+                || (self.hotkey_close.is_pressed(ui) && !ui.io().want_capture_keyboard)
             {
                 ui.close_current_popup();
             }
@@ -339,10 +339,6 @@ impl Widget for ItemSpawner<'_> {
     }
 
     fn interact(&mut self, ui: &imgui::Ui) {
-        if ui.is_any_item_active() || ui.io().want_capture_keyboard {
-            return;
-        }
-
         if self.hotkey_load.map(|k| k.is_pressed(ui)).unwrap_or(false) {
             self.spawn();
         }

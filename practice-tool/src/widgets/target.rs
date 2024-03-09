@@ -292,10 +292,6 @@ impl Widget for Target {
     }
 
     fn interact(&mut self, ui: &imgui::Ui) {
-        if ui.is_any_item_active() {
-            return;
-        }
-
         if self.hotkey.map(|k| k.is_pressed(ui)).unwrap_or(false) {
             if self.is_enabled {
                 self.disable();
