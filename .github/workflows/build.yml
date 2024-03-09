@@ -15,8 +15,7 @@ jobs:
 
       - name: Install Rust toolchain
         run: |
-          rustup toolchain install stable --profile minimal
-          rustup target add x86_64-pc-windows-msvc
+          rustup toolchain install stable --target x86_64-pc-windows-msvc --profile minimal -c rustfmt clippy
           rustup default stable
 
       - name: Distribution build

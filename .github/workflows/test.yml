@@ -21,6 +21,6 @@ jobs:
 
       - name: Lints
         run: |
-          cargo clippy -- -D warnings
+          cargo +nightly clippy -- -D warnings
           cargo +nightly fmt --all -- --check
 
