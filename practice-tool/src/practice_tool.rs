@@ -186,7 +186,6 @@ impl PracticeTool {
                     | WindowFlags::NO_MOVE
                     | WindowFlags::NO_SCROLLBAR
                     | WindowFlags::ALWAYS_AUTO_RESIZE
-                    | WindowFlags::NO_INPUTS
             })
             .build(|| {
                 if !(ui.io().want_capture_keyboard && ui.is_any_item_active()) {
