@@ -40,13 +40,14 @@ pub(crate) struct Settings {
 #[serde(try_from = "String")]
 pub(crate) enum Indicator {
     Igt,
+    Position,
     GameVersion,
     ImguiDebug,
 }
 
 impl Indicator {
     fn default_set() -> Vec<Indicator> {
-        vec![Indicator::GameVersion, Indicator::Igt]
+        vec![Indicator::GameVersion, Indicator::Position, Indicator::Igt]
     }
 }
 
@@ -56,6 +57,7 @@ impl TryFrom<String> for Indicator {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.as_str() {
             "igt" => Ok(Indicator::Igt),
+            "position" => Ok(Indicator::Position),
             "game_version" => Ok(Indicator::GameVersion),
             "imgui_debug" => Ok(Indicator::ImguiDebug),
             value => Err(format!("Unrecognized indicator: {value}")),

@@ -1,3 +1,4 @@
+use std::fmt::Write;
 use std::sync::Mutex;
 use std::time::Instant;
 
@@ -45,6 +46,9 @@ pub(crate) struct PracticeTool {
     log_tx: Sender<String>,
     ui_state: UiState,
     fonts: Option<FontIDs>,
+
+    position_bufs: [String; 4],
+    igt_buf: String,
 }
 
 impl PracticeTool {
@@ -125,22 +129,11 @@ impl PracticeTool {
             debug!("{:?}", err);
         }
 
-        let settings = config.settings.clone();
-
-        if settings.log_level.inner() < LevelFilter::DEBUG || !settings.show_console {
+        if config.settings.log_level.inner() < LevelFilter::DEBUG || !config.settings.show_console {
             hudhook::free_console().ok();
         } else {
             hudhook::enable_console_colors();
         }
-
-        let pointers = PointerChains::new();
-
-        let version_label = {
-            let (maj, min, patch) = (*VERSION).into();
-            format!("Game Ver {}.{:02}.{}", maj, min, patch)
-        };
-
-        let widgets = config.make_commands(&pointers);
 
         {
             let mut params = PARAMS.write();
@@ -157,6 +150,14 @@ impl PracticeTool {
             }
         }
 
+        let pointers = PointerChains::new();
+        let version_label = {
+            let (maj, min, patch) = (*VERSION).into();
+            format!("Game Ver {}.{:02}.{}", maj, min, patch)
+        };
+        let settings = config.settings.clone();
+        let widgets = config.make_commands(&pointers);
+
         let (log_tx, log_rx) = crossbeam_channel::unbounded();
         info!("Initialized");
 
@@ -170,6 +171,8 @@ impl PracticeTool {
             log_tx,
             fonts: None,
             ui_state: UiState::Closed,
+            position_bufs: Default::default(),
+            igt_buf: Default::default(),
         }
     }
 
@@ -183,6 +186,7 @@ impl PracticeTool {
                     | WindowFlags::NO_MOVE
                     | WindowFlags::NO_SCROLLBAR
                     | WindowFlags::ALWAYS_AUTO_RESIZE
+                    | WindowFlags::NO_INPUTS
             })
             .build(|| {
                 if !(ui.io().want_capture_keyboard && ui.is_any_item_active()) {
@@ -296,6 +300,34 @@ impl PracticeTool {
                         Indicator::GameVersion => {
                             ui.text(&self.version_label);
                         },
+                        Indicator::Position => {
+                            if let (Some([x, y, z]), Some(a)) =
+                                (self.pointers.position.1.read(), self.pointers.position.0.read())
+                            {
+                                self.position_bufs.iter_mut().for_each(String::clear);
+                                write!(self.position_bufs[0], "{x:.2}").ok();
+                                write!(self.position_bufs[1], "{y:.2}").ok();
+                                write!(self.position_bufs[2], "{z:.2}").ok();
+                                write!(self.position_bufs[3], "{a:.2}").ok();
+
+                                ui.text_colored(
+                                    [0.7048, 0.1228, 0.1734, 1.],
+                                    &self.position_bufs[0],
+                                );
+                                ui.same_line();
+                                ui.text_colored(
+                                    [0.1161, 0.5327, 0.3512, 1.],
+                                    &self.position_bufs[1],
+                                );
+                                ui.same_line();
+                                ui.text_colored(
+                                    [0.1445, 0.2852, 0.5703, 1.],
+                                    &self.position_bufs[2],
+                                );
+                                ui.same_line();
+                                ui.text(&self.position_bufs[3]);
+                            }
+                        },
                         Indicator::Igt => {
                             if let Some(igt) = self.pointers.igt.read() {
                                 let millis = (igt % 1000) / 10;
@@ -303,10 +335,13 @@ impl PracticeTool {
                                 let seconds = total_seconds % 60;
                                 let minutes = total_seconds / 60 % 60;
                                 let hours = total_seconds / 3600;
-                                ui.text(format!(
-                                    "IGT {:02}:{:02}:{:02}.{:02}",
-                                    hours, minutes, seconds, millis
-                                ));
+                                self.igt_buf.clear();
+                                write!(
+                                    self.igt_buf,
+                                    "IGT {hours:02}:{minutes:02}:{seconds:02}.{millis:02}",
+                                )
+                                .ok();
+                                ui.text(&self.igt_buf);
                             }
                         },
                         Indicator::ImguiDebug => {
@@ -442,7 +477,7 @@ impl ImguiRenderLoop for PracticeTool {
         drop(font_token);
     }
 
-    fn initialize(&mut self, ctx: &mut imgui::Context, _loader: TextureLoader) {
+    fn initialize(&mut self, ctx: &mut Context, _: TextureLoader) {
         let fonts = ctx.fonts();
         self.fonts = Some(FontIDs {
             small: fonts.add_font(&[FontSource::TtfData {
