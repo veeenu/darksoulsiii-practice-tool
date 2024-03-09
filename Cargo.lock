@@ -96,9 +96,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.89"
+version = "1.0.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0ba8f7aaa012f30d5b2861462f6708eccd49c3c39863fe083a308035f63d723"
+checksum = "8cd6604a82acf3039f1144f54b8eb34e91ffba622051189e71b781822d5ee1f5"
 dependencies = [
  "jobserver",
  "libc",
@@ -290,9 +290,9 @@ checksum = "11157ac094ffbdde99aa67b23417ebdd801842852b500e395a45a9c0aac03e4a"
 
 [[package]]
 name = "embed-resource"
-version = "2.4.1"
+version = "2.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bde55e389bea6a966bd467ad1ad7da0ae14546a5bc794d16d1e55e7fca44881"
+checksum = "c6985554d0688b687c5cb73898a34fbe3ad6c24c58c238a4d91d5e840670ee9d"
 dependencies = [
  "cc",
  "memchr",
@@ -378,8 +378,6 @@ dependencies = [
 [[package]]
 name = "hudhook"
 version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ba644287bbec395b56c410de3646d6a86d93780959ab7f10df738be95c81c9c"
 dependencies = [
  "cc",
  "imgui",
@@ -794,7 +792,6 @@ checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 [[package]]
 name = "practice-tool-core"
 version = "0.1.0"
-source = "git+https://github.com/veeenu/practice-tool-core#50fcc277df4621c9755d50dea943d9fc5b0fdc39"
 dependencies = [
  "crossbeam-channel",
  "imgui",
@@ -806,7 +803,6 @@ dependencies = [
 [[package]]
 name = "practice-tool-tasks"
 version = "0.1.0"
-source = "git+https://github.com/veeenu/practice-tool-core#50fcc277df4621c9755d50dea943d9fc5b0fdc39"
 dependencies = [
  "anyhow",
  "dotenv",
@@ -1652,9 +1648,9 @@ dependencies = [
 
 [[package]]
 name = "winreg"
-version = "0.51.0"
+version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "937f3df7948156640f46aacef17a70db0de5917bda9c92b0f751f3a955b588fc"
+checksum = "a277a57398d4bfa075df44f501a17cfdf8542d224f0d36095a2adc7aee4ef0a5"
 dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
