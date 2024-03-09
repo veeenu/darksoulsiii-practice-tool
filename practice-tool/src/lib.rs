@@ -51,13 +51,6 @@ static DIRECTINPUT8CREATE: Lazy<FDirectInput8Create> = Lazy::new(|| unsafe {
     // If count == 0, this will be fun
     std::ptr::copy_nonoverlapping(w!("\\dinput8.dll").0, dinput8_path[count..].as_mut_ptr(), 12);
 
-    dinput8_path
-        .iter()
-        .take_while(|c| **c != 0)
-        .map(|c| *c as u8 as char)
-        .for_each(|c| print!("{c}"));
-    println!();
-
     let dinput8 = LoadLibraryW(PCWSTR(dinput8_path.as_ptr())).unwrap();
     let directinput8create = std::mem::transmute(GetProcAddress(dinput8, s!("DirectInput8Create")));
 

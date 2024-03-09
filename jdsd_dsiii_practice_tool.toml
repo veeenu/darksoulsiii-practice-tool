@@ -1,6 +1,6 @@
 commands = [
   { savefile_manager = "ctrl+o" },
-  { item_spawner = true },
+  { item_spawner = "ctrl+u" },
   { character_stats = true },
   { cycle_speed = [1, 3], hotkey = "8" },
   { souls = 10000, hotkey = "9" },
@@ -45,3 +45,4 @@ log_level = "DEBUG"
 display = "0"
 hide = "rshift+0"
 show_console = false
+indicators = ["game_version", "igt"]

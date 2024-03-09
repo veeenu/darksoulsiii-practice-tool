@@ -12,7 +12,7 @@ use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use tracing_subscriber::prelude::*;
 
-use crate::config::{Config, Settings};
+use crate::config::{Config, Indicator, Settings};
 use crate::util;
 
 const MAJOR: usize = pkg_version_major!();
@@ -185,8 +185,10 @@ impl PracticeTool {
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
             .build(|| {
-                for w in self.widgets.iter_mut() {
-                    w.interact(ui);
+                if !(ui.io().want_capture_keyboard && ui.is_any_item_active()) {
+                    for w in self.widgets.iter_mut() {
+                        w.interact(ui);
+                    }
                 }
 
                 for w in self.widgets.iter_mut() {
@@ -289,18 +291,28 @@ impl PracticeTool {
                         }
                     });
 
-                ui.text(&self.version_label);
-
-                if let Some(igt) = self.pointers.igt.read() {
-                    let millis = (igt % 1000) / 10;
-                    let total_seconds = igt / 1000;
-                    let seconds = total_seconds % 60;
-                    let minutes = total_seconds / 60 % 60;
-                    let hours = total_seconds / 3600;
-                    ui.text(format!(
-                        "IGT {:02}:{:02}:{:02}.{:02}",
-                        hours, minutes, seconds, millis
-                    ));
+                for indicator in &self.settings.indicators {
+                    match indicator {
+                        Indicator::GameVersion => {
+                            ui.text(&self.version_label);
+                        },
+                        Indicator::Igt => {
+                            if let Some(igt) = self.pointers.igt.read() {
+                                let millis = (igt % 1000) / 10;
+                                let total_seconds = igt / 1000;
+                                let seconds = total_seconds % 60;
+                                let minutes = total_seconds / 60 % 60;
+                                let hours = total_seconds / 3600;
+                                ui.text(format!(
+                                    "IGT {:02}:{:02}:{:02}.{:02}",
+                                    hours, minutes, seconds, millis
+                                ));
+                            }
+                        },
+                        Indicator::ImguiDebug => {
+                            imgui_debug(ui);
+                        },
+                    }
                 }
 
                 for w in self.widgets.iter_mut() {
@@ -344,14 +356,15 @@ impl PracticeTool {
                     | WindowFlags::NO_MOVE
                     | WindowFlags::NO_SCROLLBAR
                     | WindowFlags::ALWAYS_AUTO_RESIZE
+                    | WindowFlags::NO_INPUTS
             })
             .size([ww, wh], Condition::Always)
             .bg_alpha(0.0)
             .build(|| {
-                for _ in 0..20 {
+                for _ in 0..5 {
                     ui.text("");
                 }
-                for l in self.log.iter() {
+                for l in self.log.iter().rev().take(3).rev() {
                     ui.text(&l.1);
                 }
                 ui.set_scroll_here_y();
@@ -422,9 +435,7 @@ impl ImguiRenderLoop for PracticeTool {
         }
 
         let now = Instant::now();
-        self.log.extend(
-            self.log_rx.try_iter().inspect(|log| debug!("Received log: {}", log)).map(|l| (now, l)),
-        );
+        self.log.extend(self.log_rx.try_iter().inspect(|log| info!("{}", log)).map(|l| (now, l)));
         self.log.retain(|(tm, _)| tm.elapsed() < std::time::Duration::from_secs(5));
 
         self.render_logs(ui);
@@ -459,4 +470,19 @@ impl ImguiRenderLoop for PracticeTool {
             UiState::Hidden => false,
         }
     }
+}
+
+// Display some imgui debug information. Very expensive.
+fn imgui_debug(ui: &Ui) {
+    let io = ui.io();
+    ui.text(format!("Mouse position     {:?}", io.mouse_pos));
+    ui.text(format!("Mouse down         {:?}", io.mouse_down));
+    ui.text(format!("Want capture mouse {:?}", io.want_capture_mouse));
+    ui.text(format!("Want capture kbd   {:?}", io.want_capture_keyboard));
+    ui.text(format!("Want text input    {:?}", io.want_text_input));
+    ui.text(format!("Want set mouse pos {:?}", io.want_set_mouse_pos));
+    ui.text(format!("Any item active    {:?}", ui.is_any_item_active()));
+    ui.text(format!("Any item hovered   {:?}", ui.is_any_item_hovered()));
+    ui.text(format!("Any item focused   {:?}", ui.is_any_item_focused()));
+    ui.text(format!("Any mouse down     {:?}", ui.is_any_mouse_down()));
 }
