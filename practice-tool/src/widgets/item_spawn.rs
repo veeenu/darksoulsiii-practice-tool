@@ -331,7 +331,8 @@ impl Widget for ItemSpawner<'_> {
             }
 
             if ui.button_with_size(&self.label_close, [400., button_height])
-                || (self.hotkey_close.is_pressed(ui) && !ui.io().want_capture_keyboard)
+                || (self.hotkey_close.is_pressed(ui)
+                    && !(ui.io().want_capture_keyboard && ui.is_any_item_active()))
             {
                 ui.close_current_popup();
             }
