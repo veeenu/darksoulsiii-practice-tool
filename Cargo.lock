@@ -378,6 +378,8 @@ dependencies = [
 [[package]]
 name = "hudhook"
 version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ba644287bbec395b56c410de3646d6a86d93780959ab7f10df738be95c81c9c"
 dependencies = [
  "cc",
  "imgui",
@@ -792,6 +794,7 @@ checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 [[package]]
 name = "practice-tool-core"
 version = "0.1.0"
+source = "git+https://github.com/veeenu/practice-tool-core#2960d851005ca0edaf030472cdddd3c992f077f9"
 dependencies = [
  "crossbeam-channel",
  "imgui",
@@ -803,6 +806,7 @@ dependencies = [
 [[package]]
 name = "practice-tool-tasks"
 version = "0.1.0"
+source = "git+https://github.com/veeenu/practice-tool-core#2960d851005ca0edaf030472cdddd3c992f077f9"
 dependencies = [
  "anyhow",
  "dotenv",
