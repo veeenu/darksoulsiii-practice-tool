@@ -18,15 +18,15 @@ The tool is free, and will always be free for everyone. If you enjoy it, please 
 
 Download the **latest stable release** [here](https://github.com/veeenu/darksoulsiii-practice-tool/releases/latest).
 
-### Prerequisites
+Prerequisites:
 
 - Steam must be open. Offline mode is fine, but the program must be started.
 - Antiviruses are disabled. This includes Windows Defender. If you don't want to do that, make sure to whitelist the contents of the practice tool in your antivirus.
 - You have a legitimate copy of the game. Pirated copies will never be supported.
 
-### Running the tool
+## Running the tool
 
-#### Standalone
+### Standalone
 
 - Extract all files from the zip archive. Anywhere will do.
 - Start Dark Souls III.
@@ -34,7 +34,7 @@ Download the **latest stable release** [here](https://github.com/veeenu/darksoul
 
 The tool will automatically appear over the game. Press `0` to open and close its interface.
 
-#### Installed
+### Installed
 
 - Extract all files from the zip archive.
 - Rename `jdsd_dsiii_practice_tool.dll` to `dinput8.dll`. Make sure your [file extensions are visible](https://www.howtogeek.com/205086/beginner-how-to-make-windows-show-file-extensions/)
@@ -48,11 +48,11 @@ keep it pressed for a few seconds until the tool appears on screen.
 
 If you don't do that, the tool won't load and the game will start normally.
 
-### Running the tool on Linux
+## Running the tool on Linux
 
 The tool fully supports Linux and should run on Steam Deck seamlessly.
 
-#### Standalone
+### Standalone
 
 If you want to run the tool in a standalone fashion, I recommend [protontricks](https://github.com/Matoking/protontricks):
 
@@ -60,7 +60,7 @@ If you want to run the tool in a standalone fashion, I recommend [protontricks](
 protontricks-launch --appid 374320 jdsd_dsiii_practice_tool.exe
 ```
 
-#### Installed
+### Installed
 
 Follow the same instructions as above. Additionally, you have to set the launch options in Steam as follows:
 
