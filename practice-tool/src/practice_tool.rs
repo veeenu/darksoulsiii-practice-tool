@@ -49,6 +49,7 @@ pub(crate) struct PracticeTool {
 
     position_bufs: [String; 4],
     igt_buf: String,
+    fps_buf: String,
 }
 
 impl PracticeTool {
@@ -173,6 +174,7 @@ impl PracticeTool {
             ui_state: UiState::Closed,
             position_bufs: Default::default(),
             igt_buf: Default::default(),
+            fps_buf: Default::default(),
         }
     }
 
@@ -341,6 +343,17 @@ impl PracticeTool {
                                 )
                                 .ok();
                                 ui.text(&self.igt_buf);
+                            }
+                        },
+                        Indicator::Fps => {
+                            if let Some(fps) = self.pointers.fps.read() {
+                                self.fps_buf.clear();
+                                write!(
+                                    self.fps_buf,
+                                    "FPS {fps}",
+                                )
+                                .ok();
+                                ui.text(&self.fps_buf);
                             }
                         },
                         Indicator::ImguiDebug => {
