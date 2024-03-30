@@ -43,7 +43,7 @@ pub(crate) enum Indicator {
     Position,
     GameVersion,
     ImguiDebug,
-    Fps
+    Fps,
 }
 
 impl Indicator {

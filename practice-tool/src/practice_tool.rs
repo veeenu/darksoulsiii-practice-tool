@@ -348,11 +348,7 @@ impl PracticeTool {
                         Indicator::Fps => {
                             if let Some(fps) = self.pointers.fps.read() {
                                 self.fps_buf.clear();
-                                write!(
-                                    self.fps_buf,
-                                    "FPS {fps}",
-                                )
-                                .ok();
+                                write!(self.fps_buf, "FPS {fps}",).ok();
                                 ui.text(&self.fps_buf);
                             }
                         },
