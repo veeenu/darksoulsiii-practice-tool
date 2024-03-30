@@ -45,4 +45,4 @@ log_level = "DEBUG"
 display = "0"
 hide = "rshift+0"
 show_console = false
-indicators = ["game_version", "igt"]
+indicators = ["game_version", "igt", "fps"]

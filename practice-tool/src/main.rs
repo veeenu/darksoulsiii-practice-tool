@@ -79,6 +79,10 @@ fn main() {
     match get_latest_version() {
         Ok((latest_version, download_url, release_notes)) => {
             if latest_version > current_version {
+                let release_notes = match release_notes.find("## What's Changed") {
+                    Some(i) => release_notes[..i].trim(),
+                    None => &release_notes,
+                };
                 let update_msg = format!(
                     "A new version of the practice tool is available!\n\nLatest version: \
                      {}\nInstalled version: {}\n\nRelease notes:\n{}\n\nDo you want to download \
