@@ -505,14 +505,6 @@ impl ImguiRenderLoop for PracticeTool {
             }]),
         });
     }
-
-    fn should_block_messages(&self, _: &Io) -> bool {
-        match &self.ui_state {
-            UiState::MenuOpen => true,
-            UiState::Closed => false,
-            UiState::Hidden => false,
-        }
-    }
 }
 
 // Display some imgui debug information. Very expensive.
