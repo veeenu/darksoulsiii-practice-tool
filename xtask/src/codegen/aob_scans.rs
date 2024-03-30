@@ -136,6 +136,14 @@ pub fn get_base_addresses() {
             true,
         ),
         aob_indirect("XA", &["48 8B 83 ?? ?? ?? ?? 48 8B 10 48 85 D2 ?? ?? 8B"], 3, false),
+        aob_indirect_twice(
+            "BaseFPS",
+            &["48 8B 0D ?? ?? ?? ?? 84 C0 74 32 48 85 C9 75 26 4C 8D 0D ?? ?? ?? ?? 4C 8D 05 ?? \
+               ?? ?? ?? 48 8D 0D ?? ?? ?? ??"],
+            3,
+            7,
+            true,
+        ),
     ];
 
     codegen::codegen_base_addresses(base_addresses_rs_path(), patches_paths(), aobs)

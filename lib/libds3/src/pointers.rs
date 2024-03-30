@@ -69,6 +69,7 @@ pub struct PointerChains {
     pub quitout: PointerChain<u8>,
     pub cursor_show: Bitflag<u8>,
     pub igt: PointerChain<u32>,
+    pub fps: PointerChain<f32>,
     pub no_logo: PointerChain<[u8; 20]>,
     pub current_target: PointerChain<u64>,
     pub map_item_man: u64,
@@ -93,6 +94,7 @@ impl From<BaseAddresses> for PointerChains {
             xa,
             world_chr_man_dbg,
             base_a,
+            base_fps,
             base_hbd,
             menu_man,
             spawn_item_func_ptr,
@@ -192,6 +194,7 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1
             | Version::V1_15_2 => 0xa4,
         };
+        let offs_fps = 0x08;
         let offs_debug_draw = match *VERSION {
             Version::V1_03_1
             | Version::V1_03_2
@@ -261,6 +264,7 @@ impl From<BaseAddresses> for PointerChains {
             world_chr_man,
             cursor_show: bitflag!(0b1; menu_man as _, mouse_enable_offs as _),
             igt: pointer_chain!(base_a as _, offs_igt),
+            fps: pointer_chain!(base_fps as _, offs_fps),
             quitout: pointer_chain!(menu_man as _, 0x250),
             current_target: pointer_chain!(current_target),
             no_logo: pointer_chain!(no_logo as _),

@@ -21,6 +21,7 @@ pub struct BaseAddresses {
     pub menu_travel: usize,
     pub menu_attune: usize,
     pub xa: usize,
+    pub base_fps: usize,
 }
 
 impl BaseAddresses {
@@ -44,6 +45,7 @@ impl BaseAddresses {
             menu_travel: self.menu_travel + base,
             menu_attune: self.menu_attune + base,
             xa: self.xa,
+            base_fps: self.base_fps + base,
         }
     }
 }
@@ -172,6 +174,7 @@ pub const BASE_ADDRESSES_1_03_1: BaseAddresses = BaseAddresses {
     menu_travel: 0xbb44d0,
     menu_attune: 0xbb3af9,
     xa: 0x1f70,
+    base_fps: 0x46e08a8,
 };
 
 pub const BASE_ADDRESSES_1_03_2: BaseAddresses = BaseAddresses {
@@ -193,6 +196,7 @@ pub const BASE_ADDRESSES_1_03_2: BaseAddresses = BaseAddresses {
     menu_travel: 0xbb44d0,
     menu_attune: 0xbb3af9,
     xa: 0x1f70,
+    base_fps: 0x46e18a8,
 };
 
 pub const BASE_ADDRESSES_1_04_1: BaseAddresses = BaseAddresses {
@@ -214,6 +218,7 @@ pub const BASE_ADDRESSES_1_04_1: BaseAddresses = BaseAddresses {
     menu_travel: 0xbb45c0,
     menu_attune: 0xbb3be9,
     xa: 0x1f70,
+    base_fps: 0x46e2bc8,
 };
 
 pub const BASE_ADDRESSES_1_04_2: BaseAddresses = BaseAddresses {
@@ -235,6 +240,7 @@ pub const BASE_ADDRESSES_1_04_2: BaseAddresses = BaseAddresses {
     menu_travel: 0xbb45c0,
     menu_attune: 0xbb3be9,
     xa: 0x1f70,
+    base_fps: 0x46e2bc8,
 };
 
 pub const BASE_ADDRESSES_1_04_3: BaseAddresses = BaseAddresses {
@@ -256,6 +262,7 @@ pub const BASE_ADDRESSES_1_04_3: BaseAddresses = BaseAddresses {
     menu_travel: 0xbb45c0,
     menu_attune: 0xbb3be9,
     xa: 0x1f70,
+    base_fps: 0x46e2bc8,
 };
 
 pub const BASE_ADDRESSES_1_05_0: BaseAddresses = BaseAddresses {
@@ -277,6 +284,7 @@ pub const BASE_ADDRESSES_1_05_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbb5420,
     menu_attune: 0xbb4a49,
     xa: 0x1f80,
+    base_fps: 0x46e6cd8,
 };
 
 pub const BASE_ADDRESSES_1_05_1: BaseAddresses = BaseAddresses {
@@ -298,6 +306,7 @@ pub const BASE_ADDRESSES_1_05_1: BaseAddresses = BaseAddresses {
     menu_travel: 0xbb5250,
     menu_attune: 0xbb4879,
     xa: 0x1f80,
+    base_fps: 0x46e5cd8,
 };
 
 pub const BASE_ADDRESSES_1_06_0: BaseAddresses = BaseAddresses {
@@ -319,6 +328,7 @@ pub const BASE_ADDRESSES_1_06_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbb5820,
     menu_attune: 0xbb4e49,
     xa: 0x1f80,
+    base_fps: 0x46e6d38,
 };
 
 pub const BASE_ADDRESSES_1_07_0: BaseAddresses = BaseAddresses {
@@ -340,6 +350,7 @@ pub const BASE_ADDRESSES_1_07_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbb7f50,
     menu_attune: 0xbb7579,
     xa: 0x1f80,
+    base_fps: 0x46eb5a8,
 };
 
 pub const BASE_ADDRESSES_1_08_0: BaseAddresses = BaseAddresses {
@@ -361,6 +372,7 @@ pub const BASE_ADDRESSES_1_08_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbcf6d0,
     menu_attune: 0xbcebf9,
     xa: 0x1f80,
+    base_fps: 0x4749f18,
 };
 
 pub const BASE_ADDRESSES_1_09_0: BaseAddresses = BaseAddresses {
@@ -382,6 +394,7 @@ pub const BASE_ADDRESSES_1_09_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbcfc90,
     menu_attune: 0xbcf1b9,
     xa: 0x1f80,
+    base_fps: 0x474a058,
 };
 
 pub const BASE_ADDRESSES_1_10_0: BaseAddresses = BaseAddresses {
@@ -403,6 +416,7 @@ pub const BASE_ADDRESSES_1_10_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbcfd00,
     menu_attune: 0xbcf229,
     xa: 0x1f80,
+    base_fps: 0x474a058,
 };
 
 pub const BASE_ADDRESSES_1_11_0: BaseAddresses = BaseAddresses {
@@ -424,6 +438,7 @@ pub const BASE_ADDRESSES_1_11_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbdfb90,
     menu_attune: 0xbdf0b9,
     xa: 0x1f88,
+    base_fps: 0x477d618,
 };
 
 pub const BASE_ADDRESSES_1_12_0: BaseAddresses = BaseAddresses {
@@ -445,6 +460,7 @@ pub const BASE_ADDRESSES_1_12_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbe09a0,
     menu_attune: 0xbdfec9,
     xa: 0x1f88,
+    base_fps: 0x47807a8,
 };
 
 pub const BASE_ADDRESSES_1_13_0: BaseAddresses = BaseAddresses {
@@ -466,6 +482,7 @@ pub const BASE_ADDRESSES_1_13_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbe2540,
     menu_attune: 0xbe1a69,
     xa: 0x1f90,
+    base_fps: 0x4783fc8,
 };
 
 pub const BASE_ADDRESSES_1_14_0: BaseAddresses = BaseAddresses {
@@ -487,6 +504,7 @@ pub const BASE_ADDRESSES_1_14_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbe2810,
     menu_attune: 0xbe1d39,
     xa: 0x1f90,
+    base_fps: 0x4786128,
 };
 
 pub const BASE_ADDRESSES_1_15_0: BaseAddresses = BaseAddresses {
@@ -508,6 +526,7 @@ pub const BASE_ADDRESSES_1_15_0: BaseAddresses = BaseAddresses {
     menu_travel: 0xbe2910,
     menu_attune: 0xbe1e39,
     xa: 0x1f90,
+    base_fps: 0x4786128,
 };
 
 pub const BASE_ADDRESSES_1_15_1: BaseAddresses = BaseAddresses {
@@ -529,6 +548,7 @@ pub const BASE_ADDRESSES_1_15_1: BaseAddresses = BaseAddresses {
     menu_travel: 0xbecec0,
     menu_attune: 0xbec3e9,
     xa: 0x1f90,
+    base_fps: 0x479ba08,
 };
 
 pub const BASE_ADDRESSES_1_15_2: BaseAddresses = BaseAddresses {
@@ -550,4 +570,5 @@ pub const BASE_ADDRESSES_1_15_2: BaseAddresses = BaseAddresses {
     menu_travel: 0xbecff0,
     menu_attune: 0xbec519,
     xa: 0x1f90,
+    base_fps: 0x479b9f8,
 };

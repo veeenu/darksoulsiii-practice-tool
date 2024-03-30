@@ -43,11 +43,12 @@ pub(crate) enum Indicator {
     Position,
     GameVersion,
     ImguiDebug,
+    Fps,
 }
 
 impl Indicator {
     fn default_set() -> Vec<Indicator> {
-        vec![Indicator::GameVersion, Indicator::Position, Indicator::Igt]
+        vec![Indicator::GameVersion, Indicator::Position, Indicator::Igt, Indicator::Fps]
     }
 }
 
@@ -60,6 +61,7 @@ impl TryFrom<String> for Indicator {
             "position" => Ok(Indicator::Position),
             "game_version" => Ok(Indicator::GameVersion),
             "imgui_debug" => Ok(Indicator::ImguiDebug),
+            "fps" => Ok(Indicator::Fps),
             value => Err(format!("Unrecognized indicator: {value}")),
         }
     }
