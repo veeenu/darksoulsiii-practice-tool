@@ -20,21 +20,23 @@ mod util;
 mod widgets;
 
 use std::ffi::c_void;
-use std::thread;
 use std::time::{Duration, Instant};
+use std::{mem, ptr, thread};
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;
+use hudhook::mh::{MH_ApplyQueued, MH_Initialize, MhHook, MH_STATUS};
 use hudhook::tracing::{error, trace};
 use hudhook::{eject, Hudhook};
 use libds3::pointers::PointerChains;
 use once_cell::sync::Lazy;
 use practice_tool::PracticeTool;
 use windows::core::{s, w, GUID, HRESULT, PCWSTR};
-use windows::Win32::Foundation::{HINSTANCE, MAX_PATH};
+use windows::Win32::Foundation::{ERROR_SUCCESS, HINSTANCE, MAX_PATH};
 use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
 use windows::Win32::System::SystemInformation::GetSystemDirectoryW;
 use windows::Win32::System::SystemServices::DLL_PROCESS_ATTACH;
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_RSHIFT};
+use windows::Win32::UI::Input::XboxController::XINPUT_STATE;
 
 type FDirectInput8Create = unsafe extern "stdcall" fn(
     hinst: HINSTANCE,
@@ -68,6 +70,66 @@ unsafe extern "stdcall" fn DirectInput8Create(
     punkouter: HINSTANCE,
 ) -> HRESULT {
     (DIRECTINPUT8CREATE)(hinst, dwversion, riidltf, ppvout, punkouter)
+}
+
+type FXInputGetState =
+    unsafe extern "stdcall" fn(dw_user_index: u32, xinput_state: *mut XINPUT_STATE) -> u32;
+
+static XINPUTGETSTATE: Lazy<FXInputGetState> = Lazy::new(|| unsafe {
+    let mut path = [0u16; MAX_PATH as usize];
+    let count = GetSystemDirectoryW(Some(&mut path)) as usize;
+
+    ptr::copy_nonoverlapping(w!("\\xinput1_3.dll").0, path[count..].as_mut_ptr(), 14);
+
+    let lib = LoadLibraryW(PCWSTR(path.as_ptr())).unwrap();
+
+    let xinput_get_state_addr = GetProcAddress(lib, s!("XInputGetState")).unwrap();
+
+    match MH_Initialize() {
+        MH_STATUS::MH_ERROR_ALREADY_INITIALIZED | MH_STATUS::MH_OK => {},
+        status @ MH_STATUS::MH_ERROR_MEMORY_ALLOC => {
+            panic!("XInputCreate hook: initialize: {status:?}");
+        },
+        _ => unreachable!(),
+    }
+
+    let hook =
+        MhHook::new(xinput_get_state_addr as *mut c_void, xinput_get_state_impl as *mut c_void)
+            .expect("XInputCreate hook: create");
+
+    hook.queue_enable().expect("XInputCreate hook: queue enable");
+    MH_ApplyQueued().ok().expect("XInputCreate hook: apply queued");
+
+    mem::transmute(hook.trampoline())
+});
+
+unsafe extern "stdcall" fn xinput_get_state_impl(
+    dw_user_index: u32,
+    xinput_state: *mut XINPUT_STATE,
+) -> u32 {
+    let r = (XINPUTGETSTATE)(dw_user_index, xinput_state);
+
+    if r != ERROR_SUCCESS.0 {
+        return r;
+    }
+
+    // Apply deadzone.
+    if let Some(state) = xinput_state.as_mut() {
+        if (-10..=10).contains(&state.Gamepad.sThumbLX) {
+            state.Gamepad.sThumbLX = 0;
+        }
+        if (-10..=10).contains(&state.Gamepad.sThumbLY) {
+            state.Gamepad.sThumbLY = 0;
+        }
+        if (-10..=10).contains(&state.Gamepad.sThumbRX) {
+            state.Gamepad.sThumbRX = 0;
+        }
+        if (-10..=10).contains(&state.Gamepad.sThumbRY) {
+            state.Gamepad.sThumbRY = 0;
+        }
+    }
+
+    r
 }
 
 fn apply_no_logo() {
@@ -132,6 +194,7 @@ pub unsafe extern "stdcall" fn DllMain(hmodule: HINSTANCE, reason: u32, _: *mut 
     if reason == DLL_PROCESS_ATTACH {
         trace!("DllMain()");
         Lazy::force(&DIRECTINPUT8CREATE);
+        Lazy::force(&XINPUTGETSTATE);
 
         thread::spawn(move || {
             if util::get_dll_path()
