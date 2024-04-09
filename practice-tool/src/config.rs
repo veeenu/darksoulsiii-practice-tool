@@ -283,7 +283,7 @@ impl TryFrom<String> for FlagSpec {
             "ik_foot_ray" => Ok(FlagSpec::new("IK foot ray", |c| &c.ik_foot_ray)),
             "debug_sphere_1" => Ok(FlagSpec::new("Debug sphere 1", |c| &c.debug_sphere_1)),
             "debug_sphere_2" => Ok(FlagSpec::new("Debug sphere 2", |c| &c.debug_sphere_2)),
-            "gravity" => Ok(FlagSpec::new("Gravity", |c| &c.gravity)),
+            "gravity" => Ok(FlagSpec::new("No Gravity", |c| &c.gravity)),
             e => Err(format!("\"{}\" is not a valid flag specifier", e)),
         }
     }
