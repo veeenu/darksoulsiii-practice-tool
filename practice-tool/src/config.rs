@@ -269,7 +269,11 @@ impl TryFrom<String> for FlagSpec {
             "no_death" => Ok(FlagSpec::new("No death", |c| &c.no_death)),
             "one_shot" => Ok(FlagSpec::new("One shot", |c| &c.one_shot)),
             "evt_draw" => Ok(FlagSpec::new("Event draw", |c| &c.evt_draw)),
-            "bloodstain_draw" => Ok(FlagSpec::new("Stable/Bloodstain draw (needs debug draw)", |c| &c.bloodstain_draw)),
+            "bloodstain_draw" => {
+                Ok(FlagSpec::new("Stable/Bloodstain draw (needs debug draw)", |c| {
+                    &c.bloodstain_draw
+                }))
+            },
             "evt_disable" => Ok(FlagSpec::new("Event disable", |c| &c.evt_disable)),
             "ai_disable" => Ok(FlagSpec::new("AI disable", |c| &c.ai_disable)),
             "rend_chr" => Ok(FlagSpec::new("Render characters", |c| &c.rend_chr)),
