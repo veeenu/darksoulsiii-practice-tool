@@ -25,6 +25,7 @@ commands = [
     { flag = "hurtbox", hotkey = "f9" },
     { flag = "debug_draw", hotkey = "f9" },
     { flag = "evt_draw", hotkey = "f10" },
+    { flag = "bloodstain_draw", hotkey = "f11" },
   ]},
   { flag = "all_no_damage", hotkey = "1" },
   { flag = "inf_stamina", hotkey = "2" },
