@@ -144,6 +144,13 @@ pub fn get_base_addresses() {
             7,
             true,
         ),
+        aob_indirect_twice(
+            "BaseBloodstain",
+            &["48 89 0D ?? ?? ?? ?? 83 F8 19 77 61 83 FE 66 74 42 83 FE 70 74 23 83 FE 7C"],
+            3,
+            7,
+            true,
+        ),
     ];
 
     codegen::codegen_base_addresses(base_addresses_rs_path(), patches_paths(), aobs)
