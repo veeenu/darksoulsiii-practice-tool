@@ -19,13 +19,13 @@ commands = [
     { flag = "rend_mesh_hi", hotkey = "f7" },
     { flag = "rend_mesh_lo", hotkey = "f8" },
     # { flag = "all_draw_hit" }, # conflicts with debug_draw
-    { flag = "ik_foot_ray", hotkey = "f9" },
-    { flag = "debug_sphere_1", hotkey = "f9" },
-    { flag = "debug_sphere_2", hotkey = "f9" },
-    { flag = "hurtbox", hotkey = "f9" },
-    { flag = "debug_draw", hotkey = "f9" },
-    { flag = "evt_draw", hotkey = "f10" },
-    { flag = "bloodstain_draw", hotkey = "f11" },
+    { flag = "ik_foot_ray" },
+    { flag = "debug_sphere_1" },
+    { flag = "debug_sphere_2" },
+    { flag = "evt_draw" },
+    { flag = "debug_draw" },
+    { flag = "hurtbox" },
+    { flag = "bloodstain_draw" },
   ]},
   { flag = "all_no_damage", hotkey = "1" },
   { flag = "inf_stamina", hotkey = "2" },
@@ -46,4 +46,4 @@ log_level = "DEBUG"
 display = "0"
 hide = "rshift+0"
 show_console = false
-indicators = ["game_version", "igt", "fps"]
+indicators = ["game_version", "position", "igt", "fps"]
