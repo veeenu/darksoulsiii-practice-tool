@@ -151,6 +151,28 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1
             | Version::V1_15_2 => 0x90,
         };
+        let offs_bloodstain_draw = match *VERSION {
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0 => 0x1bd,
+
+            Version::V1_08_0
+            | Version::V1_09_0
+            | Version::V1_10_0
+            | Version::V1_11_0
+            | Version::V1_12_0
+            | Version::V1_13_0
+            | Version::V1_14_0
+            | Version::V1_15_0
+            | Version::V1_15_1
+            | Version::V1_15_2 => 0x1dd,
+        };
         let offs_speed = match *VERSION {
             Version::V1_03_1
             | Version::V1_03_2
@@ -235,7 +257,7 @@ impl From<BaseAddresses> for PointerChains {
             inf_consumables: bitflag!(0b1000; world_chr_man, 0x80, offs_no_goods_consume as _),
             deathcam: bitflag!(0b1; world_chr_man, offs_deathcam as usize),
             evt_draw: bitflag!(0b1; sprj_debug_event, 0xa8),
-            bloodstain_draw: bitflag!(0b1; world_chr_man, 0x40, 0x0, 0x58, 0x338, 0x0, 0x1dd),
+            bloodstain_draw: bitflag!(0b1; world_chr_man, 0x40, 0x0, 0x58, 0x338, 0x0, offs_bloodstain_draw as _),
             evt_disable: bitflag!(0b1; sprj_debug_event, 0xd4),
             ai_disable: bitflag!(0b1; debug + offs_no_update_ai as usize),
             rend_chr: bitflag!(0b1; grend + 2),
