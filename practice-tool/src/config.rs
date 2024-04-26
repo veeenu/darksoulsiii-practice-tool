@@ -44,6 +44,7 @@ pub(crate) enum Indicator {
     GameVersion,
     ImguiDebug,
     Fps,
+    FrameCount,
 }
 
 impl Indicator {
@@ -62,6 +63,7 @@ impl TryFrom<String> for Indicator {
             "game_version" => Ok(Indicator::GameVersion),
             "imgui_debug" => Ok(Indicator::ImguiDebug),
             "fps" => Ok(Indicator::Fps),
+            "framecount" => Ok(Indicator::FrameCount),
             value => Err(format!("Unrecognized indicator: {value}")),
         }
     }
