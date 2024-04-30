@@ -9,9 +9,9 @@ use tracing_subscriber::filter::LevelFilter;
 use crate::widgets::character_stats::character_stats_edit;
 use crate::widgets::cycle_speed::cycle_speed;
 use crate::widgets::flag::flag_widget;
-use crate::widgets::label::label_widget;
 use crate::widgets::group::group;
 use crate::widgets::item_spawn::ItemSpawner;
+use crate::widgets::label::label_widget;
 use crate::widgets::nudge_pos::nudge_position;
 use crate::widgets::open_menu::{open_menu, OpenMenuKind};
 use crate::widgets::position::save_position;
@@ -155,9 +155,7 @@ impl CfgCommand {
             CfgCommand::Flag { flag, hotkey: key } => {
                 flag_widget(&flag.label, (flag.getter)(chains).clone(), key)
             },
-            CfgCommand::Label { label } => {
-                label_widget(label.as_str())
-            },
+            CfgCommand::Label { label } => label_widget(label.as_str()),
             CfgCommand::SavefileManager { hotkey_load: key_load } => {
                 savefile_manager(key_load.into_option(), settings.display)
             },
