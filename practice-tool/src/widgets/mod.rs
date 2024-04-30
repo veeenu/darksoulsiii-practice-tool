@@ -1,6 +1,7 @@
 pub(crate) mod character_stats;
 pub(crate) mod cycle_speed;
 pub(crate) mod flag;
+pub(crate) mod label;
 pub(crate) mod group;
 pub(crate) mod item_spawn;
 pub(crate) mod nudge_pos;
