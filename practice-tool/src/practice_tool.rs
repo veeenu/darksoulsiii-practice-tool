@@ -50,6 +50,9 @@ pub(crate) struct PracticeTool {
     position_bufs: [String; 4],
     igt_buf: String,
     fps_buf: String,
+
+    framecount: u32,
+    framecount_buf: String,
 }
 
 impl PracticeTool {
@@ -175,6 +178,8 @@ impl PracticeTool {
             position_bufs: Default::default(),
             igt_buf: Default::default(),
             fps_buf: Default::default(),
+            framecount: 0,
+            framecount_buf: Default::default(),
         }
     }
 
@@ -351,6 +356,12 @@ impl PracticeTool {
                                 write!(self.fps_buf, "FPS {fps}",).ok();
                                 ui.text(&self.fps_buf);
                             }
+                        },
+                        Indicator::FrameCount => {
+                            self.framecount_buf.clear();
+                            write!(self.framecount_buf, "Frame count {0}", self.framecount,).ok();
+                            ui.text(&self.framecount_buf);
+                            self.framecount += 1;
                         },
                         Indicator::ImguiDebug => {
                             imgui_debug(ui);
