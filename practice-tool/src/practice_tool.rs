@@ -260,7 +260,6 @@ impl PracticeTool {
                     .movable(false)
                     .title_bar(false)
                     .build(|| {
-
                         let style = ui.clone_style();
 
                         self.pointers.cursor_show.set(true);
@@ -293,21 +292,25 @@ impl PracticeTool {
                                 ui.same_line();
 
                                 let btn_reset_label = "Reset";
-                                let btn_reset_width = ui.calc_text_size(btn_reset_label)[0] + style.frame_padding[0] * 2.0;
+                                let btn_reset_width = ui.calc_text_size(btn_reset_label)[0]
+                                    + style.frame_padding[0] * 2.0;
 
-                                ui.set_cursor_pos([ui.content_region_max()[0] - btn_reset_width, ui.cursor_pos()[1]]);
+                                ui.set_cursor_pos([
+                                    ui.content_region_max()[0] - btn_reset_width,
+                                    ui.cursor_pos()[1],
+                                ]);
 
                                 if ui.button("Reset") {
                                     self.framecount = 0;
                                 }
                             }
-                            
                         }
 
                         ui.separator();
 
                         let btn_close_label = "Close";
-                        let btn_close_width = ui.content_region_max()[0] - style.frame_padding[0] * 2.0;
+                        let btn_close_width =
+                            ui.content_region_max()[0] - style.frame_padding[0] * 2.0;
 
                         if ui.button_with_size("Close", [btn_close_width, 0.0]) {
                             ui.close_current_popup();
