@@ -13,7 +13,7 @@ use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use tracing_subscriber::prelude::*;
 
-use crate::config::{Config, Indicator, Settings};
+use crate::config::{Config, Indicator, IndicatorType, Settings};
 use crate::util;
 
 const MAJOR: usize = pkg_version_major!();
@@ -302,11 +302,15 @@ impl PracticeTool {
                     });
 
                 for indicator in &self.settings.indicators {
-                    match indicator {
-                        Indicator::GameVersion { enabled: true } => {
+                    if !indicator.enabled {
+                        continue;
+                    }
+
+                    match indicator.indicator {
+                        IndicatorType::GameVersion => {
                             ui.text(&self.version_label);
                         },
-                        Indicator::Position { enabled: true } => {
+                        IndicatorType::Position => {
                             if let (Some([x, y, z]), Some(a)) =
                                 (self.pointers.position.1.read(), self.pointers.position.0.read())
                             {
@@ -334,7 +338,7 @@ impl PracticeTool {
                                 ui.text(&self.position_bufs[3]);
                             }
                         },
-                        Indicator::Igt { enabled: true } => {
+                        IndicatorType::Igt => {
                             if let Some(igt) = self.pointers.igt.read() {
                                 let millis = (igt % 1000) / 10;
                                 let total_seconds = igt / 1000;
@@ -350,19 +354,19 @@ impl PracticeTool {
                                 ui.text(&self.igt_buf);
                             }
                         },
-                        Indicator::Fps { enabled: true } => {
+                        IndicatorType::Fps => {
                             if let Some(fps) = self.pointers.fps.read() {
                                 self.fps_buf.clear();
                                 write!(self.fps_buf, "FPS {fps}",).ok();
                                 ui.text(&self.fps_buf);
                             }
                         },
-                        Indicator::FrameCount { enabled: true } => {
+                        IndicatorType::FrameCount => {
                             self.framecount_buf.clear();
                             write!(self.framecount_buf, "Frame count {0}", self.framecount,).ok();
                             ui.text(&self.framecount_buf);
                         },
-                        Indicator::ImguiDebug { enabled: true } => {
+                        IndicatorType::ImguiDebug => {
                             imgui_debug(ui);
                         },
                         _ => {},

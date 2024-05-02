@@ -38,33 +38,39 @@ pub(crate) struct Settings {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-struct IndicatorConfig {
-    indicator: String,
-    enabled: bool,
+pub(crate) enum IndicatorType {
+    Igt,
+    Position,
+    GameVersion,
+    ImguiDebug,
+    Fps,
+    FrameCount,
 }
 
-#[derive(Deserialize, Copy, Clone, Debug)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(try_from = "IndicatorConfig")]
-pub(crate) enum Indicator {
-    Igt { enabled: bool },
-    Position { enabled: bool },
-    GameVersion { enabled: bool },
-    ImguiDebug { enabled: bool },
-    Fps { enabled: bool },
-    FrameCount { enabled: bool },
+pub(crate) struct Indicator {
+    pub(crate) indicator: IndicatorType,
+    pub(crate) enabled: bool,
 }
 
 impl Indicator {
     fn default_set() -> Vec<Indicator> {
         vec![
-            Indicator::GameVersion { enabled: true },
-            Indicator::Igt { enabled: true },
-            Indicator::Position { enabled: false },
-            Indicator::Fps { enabled: false },
-            Indicator::FrameCount { enabled: false },
-            Indicator::ImguiDebug { enabled: false },
+            Indicator { indicator: IndicatorType::GameVersion, enabled: true },
+            Indicator { indicator: IndicatorType::Igt, enabled: true },
+            Indicator { indicator: IndicatorType::Position, enabled: false },
+            Indicator { indicator: IndicatorType::Fps, enabled: false },
+            Indicator { indicator: IndicatorType::FrameCount, enabled: false },
+            Indicator { indicator: IndicatorType::ImguiDebug, enabled: false },
         ]
     }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct IndicatorConfig {
+    indicator: String,
+    enabled: bool,
 }
 
 impl TryFrom<IndicatorConfig> for Indicator {
@@ -72,12 +78,20 @@ impl TryFrom<IndicatorConfig> for Indicator {
 
     fn try_from(indicator: IndicatorConfig) -> Result<Self, Self::Error> {
         match indicator.indicator.as_str() {
-            "igt" => Ok(Indicator::Igt { enabled: indicator.enabled }),
-            "position" => Ok(Indicator::Position { enabled: indicator.enabled }),
-            "game_version" => Ok(Indicator::GameVersion { enabled: indicator.enabled }),
-            "imgui_debug" => Ok(Indicator::ImguiDebug { enabled: indicator.enabled }),
-            "fps" => Ok(Indicator::Fps { enabled: indicator.enabled }),
-            "framecount" => Ok(Indicator::FrameCount { enabled: indicator.enabled }),
+            "igt" => Ok(Indicator { indicator: IndicatorType::Igt, enabled: indicator.enabled }),
+            "position" => {
+                Ok(Indicator { indicator: IndicatorType::Position, enabled: indicator.enabled })
+            },
+            "game_version" => {
+                Ok(Indicator { indicator: IndicatorType::GameVersion, enabled: indicator.enabled })
+            },
+            "imgui_debug" => {
+                Ok(Indicator { indicator: IndicatorType::ImguiDebug, enabled: indicator.enabled })
+            },
+            "fps" => Ok(Indicator { indicator: IndicatorType::Fps, enabled: indicator.enabled }),
+            "framecount" => {
+                Ok(Indicator { indicator: IndicatorType::FrameCount, enabled: indicator.enabled })
+            },
             value => Err(format!("Unrecognized indicator: {value}")),
         }
     }
