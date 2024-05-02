@@ -251,6 +251,58 @@ impl PracticeTool {
 
                 ui.same_line();
 
+                if ui.small_button("Indicators") {
+                    ui.open_popup("##indicators_window");
+                }
+
+                ui.modal_popup_config("##indicators_window")
+                    .resizable(false)
+                    .movable(false)
+                    .title_bar(false)
+                    .build(|| {
+                        self.pointers.cursor_show.set(true);
+                        ui.text(
+                            "You can toggle indicators here,\nas well as reset the frame \
+                             counter.\n\nKeep in mind that the available\nindicators and order of \
+                             them\ndepend on your config file.",
+                        );
+                        ui.separator();
+
+                        for indicator in &mut self.settings.indicators {
+                            let label = match indicator.indicator {
+                                IndicatorType::GameVersion => "Game Version",
+                                IndicatorType::Position => "Player Position",
+                                IndicatorType::Igt => "IGT Timer",
+                                IndicatorType::Fps => {
+                                    if ui.button("Reset") {
+                                        self.framecount = 0;
+                                    }
+
+                                    ui.same_line();
+
+                                    "FPS"
+                                },
+                                IndicatorType::FrameCount => "Frame Counter",
+                                IndicatorType::ImguiDebug => "ImGui Debug Info",
+                                _ => "?",
+                            };
+
+                            let mut state = indicator.enabled;
+
+                            if ui.checkbox(label, &mut state) {
+                                indicator.enabled = state;
+                            }
+                        }
+
+                        ui.separator();
+                        if ui.button("Close") {
+                            ui.close_current_popup();
+                            self.pointers.cursor_show.set(false);
+                        }
+                    });
+
+                ui.same_line();
+
                 if ui.small_button("Help") {
                     ui.open_popup("##help_window");
                 }
