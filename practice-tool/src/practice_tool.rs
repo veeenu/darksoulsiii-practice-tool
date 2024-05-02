@@ -260,11 +260,15 @@ impl PracticeTool {
                     .movable(false)
                     .title_bar(false)
                     .build(|| {
+
+                        let style = ui.clone_style();
+
                         self.pointers.cursor_show.set(true);
+
                         ui.text(
-                            "You can toggle indicators here,\nas well as reset the frame \
+                            "You can toggle indicators here, as\nwell as reset the frame \
                              counter.\n\nKeep in mind that the available\nindicators and order of \
-                             them\ndepend on your config file.",
+                             them depend\non your config file.",
                         );
                         ui.separator();
 
@@ -274,15 +278,7 @@ impl PracticeTool {
                                 IndicatorType::Position => "Player Position",
                                 IndicatorType::Igt => "IGT Timer",
                                 IndicatorType::Fps => "FPS",
-                                IndicatorType::FrameCount => {
-                                    if ui.button("Reset") {
-                                        self.framecount = 0;
-                                    }
-
-                                    ui.same_line();
-
-                                    "Frame Counter"
-                                }
+                                IndicatorType::FrameCount => "Frame Counter",
                                 IndicatorType::ImguiDebug => "ImGui Debug Info",
                                 _ => "?",
                             };
@@ -292,10 +288,28 @@ impl PracticeTool {
                             if ui.checkbox(label, &mut state) {
                                 indicator.enabled = state;
                             }
+
+                            if let IndicatorType::FrameCount = indicator.indicator {
+                                ui.same_line();
+
+                                let btn_reset_label = "Reset";
+                                let btn_reset_width = ui.calc_text_size(btn_reset_label)[0] + style.frame_padding[0] * 2.0;
+
+                                ui.set_cursor_pos([ui.content_region_max()[0] - btn_reset_width, ui.cursor_pos()[1]]);
+
+                                if ui.button("Reset") {
+                                    self.framecount = 0;
+                                }
+                            }
+                            
                         }
 
                         ui.separator();
-                        if ui.button("Close") {
+
+                        let btn_close_label = "Close";
+                        let btn_close_width = ui.content_region_max()[0] - style.frame_padding[0] * 2.0;
+
+                        if ui.button_with_size("Close", [btn_close_width, 0.0]) {
                             ui.close_current_popup();
                             self.pointers.cursor_show.set(false);
                         }
