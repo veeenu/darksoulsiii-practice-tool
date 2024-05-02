@@ -243,7 +243,7 @@ impl PracticeTool {
             .build(|| {
                 ui.text("johndisandonato's Dark Souls III Practice Tool");
 
-                ui.same_line();
+                // ui.same_line();
 
                 if ui.small_button("Open") {
                     self.ui_state = UiState::MenuOpen;
@@ -366,6 +366,8 @@ impl PracticeTool {
                             open::that("https://patreon.com/johndisandonato").ok();
                         }
                     });
+
+                ui.new_line();
 
                 for indicator in &self.settings.indicators {
                     if !indicator.enabled {
