@@ -302,11 +302,15 @@ impl PracticeTool {
                     });
 
                 for indicator in &self.settings.indicators {
-                    match indicator {
-                        Indicator::GameVersion => {
+                    if (!indicator.enabled) {
+                        continue;
+                    }
+
+                    match &indicator.indicator as &str {
+                        "game_version" => {
                             ui.text(&self.version_label);
                         },
-                        Indicator::Position => {
+                        "position" => {
                             if let (Some([x, y, z]), Some(a)) =
                                 (self.pointers.position.1.read(), self.pointers.position.0.read())
                             {
@@ -334,7 +338,7 @@ impl PracticeTool {
                                 ui.text(&self.position_bufs[3]);
                             }
                         },
-                        Indicator::Igt => {
+                        "igt" => {
                             if let Some(igt) = self.pointers.igt.read() {
                                 let millis = (igt % 1000) / 10;
                                 let total_seconds = igt / 1000;
@@ -350,22 +354,22 @@ impl PracticeTool {
                                 ui.text(&self.igt_buf);
                             }
                         },
-                        Indicator::Fps => {
+                        "fps" => {
                             if let Some(fps) = self.pointers.fps.read() {
                                 self.fps_buf.clear();
                                 write!(self.fps_buf, "FPS {fps}",).ok();
                                 ui.text(&self.fps_buf);
                             }
                         },
-                        Indicator::FrameCount => {
+                        "framecount" => {
                             self.framecount_buf.clear();
                             write!(self.framecount_buf, "Frame count {0}", self.framecount,).ok();
                             ui.text(&self.framecount_buf);
-                            self.framecount += 1;
                         },
-                        Indicator::ImguiDebug => {
+                        "imgui_debug" => {
                             imgui_debug(ui);
                         },
+                        &_ => {},
                     }
                 }
 
@@ -455,6 +459,8 @@ impl ImguiRenderLoop for PracticeTool {
 
         let display = self.settings.display.is_pressed(ui);
         let hide = self.settings.hide.map(|k| k.is_pressed(ui)).unwrap_or(false);
+
+        self.framecount += 1;
 
         if !ui.io().want_capture_keyboard && (display || hide) {
             self.ui_state = match (&self.ui_state, hide) {

@@ -33,40 +33,25 @@ pub(crate) struct Settings {
     pub(crate) hide: Option<Key>,
     #[serde(default)]
     pub(crate) show_console: bool,
-    #[serde(default = "Indicator::default_set")]
     pub(crate) indicators: Vec<Indicator>,
 }
 
-#[derive(Deserialize, Copy, Clone, Debug)]
-#[serde(try_from = "String")]
-pub(crate) enum Indicator {
-    Igt,
-    Position,
-    GameVersion,
-    ImguiDebug,
-    Fps,
-    FrameCount,
+#[derive(Debug, Deserialize, Clone)]
+pub(crate) struct Indicator {
+    pub(crate) indicator: String,
+    pub(crate) enabled: bool,
 }
 
 impl Indicator {
     fn default_set() -> Vec<Indicator> {
-        vec![Indicator::GameVersion, Indicator::Position, Indicator::Igt, Indicator::Fps]
-    }
-}
-
-impl TryFrom<String> for Indicator {
-    type Error = String;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.as_str() {
-            "igt" => Ok(Indicator::Igt),
-            "position" => Ok(Indicator::Position),
-            "game_version" => Ok(Indicator::GameVersion),
-            "imgui_debug" => Ok(Indicator::ImguiDebug),
-            "fps" => Ok(Indicator::Fps),
-            "framecount" => Ok(Indicator::FrameCount),
-            value => Err(format!("Unrecognized indicator: {value}")),
-        }
+        vec![
+            Indicator { indicator: "game_version".to_string(), enabled: true },
+            Indicator { indicator: "igt".to_string(), enabled: true },
+            Indicator { indicator: "position".to_string(), enabled: false },
+            Indicator { indicator: "fps".to_string(), enabled: false },
+            Indicator { indicator: "framecount".to_string(), enabled: false },
+            Indicator { indicator: "imgui_debug".to_string(), enabled: false },
+        ]
     }
 }
 

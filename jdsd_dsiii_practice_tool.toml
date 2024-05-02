@@ -48,4 +48,11 @@ log_level = "DEBUG"
 display = "0"
 hide = "rshift+0"
 show_console = false
-indicators = ["game_version", "position", "igt", "fps"]
+indicators = [
+  { indicator = "game_version", enabled = true },
+  { indicator = "igt", enabled = true },
+  { indicator = "position", enabled = true },
+  { indicator = "fps", enabled = true },
+  { indicator = "framecount", enabled = true },
+  { indicator = "imgui_debug", enabled = false }
+]
