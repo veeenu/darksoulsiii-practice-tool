@@ -278,9 +278,7 @@ impl TryFrom<String> for FlagSpec {
             "one_shot" => Ok(FlagSpec::new("One shot", |c| &c.one_shot)),
             "evt_draw" => Ok(FlagSpec::new("Event draw", |c| &c.evt_draw)),
             "bloodstain_draw" => {
-                Ok(FlagSpec::new("Stable/Bloodstain draw (needs debug draw)", |c| {
-                    &c.bloodstain_draw
-                }))
+                Ok(FlagSpec::new("Stable/Bloodstain draw", |c| &c.bloodstain_draw))
             },
             "evt_disable" => Ok(FlagSpec::new("Event disable", |c| &c.evt_disable)),
             "ai_disable" => Ok(FlagSpec::new("AI disable", |c| &c.ai_disable)),
@@ -291,7 +289,7 @@ impl TryFrom<String> for FlagSpec {
             "rend_mesh_lo" => Ok(FlagSpec::new("Collision mesh lo", |c| &c.rend_mesh_lo)),
             "rend_mesh_hit" => Ok(FlagSpec::new("Collision mesh hit", |c| &c.rend_mesh_hit)),
             "debug_draw" => Ok(FlagSpec::new("Debug draw", |c| &c.debug_draw)),
-            "hurtbox" => Ok(FlagSpec::new("Hurtbox (needs debug draw)", |c| &c.rend_hurtbox)),
+            "hurtbox" => Ok(FlagSpec::new("Hurtbox", |c| &c.rend_hurtbox)),
             "all_draw_hit" => Ok(FlagSpec::new("All draw hit", |c| &c.all_draw_hit)),
             "ik_foot_ray" => Ok(FlagSpec::new("IK foot ray", |c| &c.ik_foot_ray)),
             "debug_sphere_1" => Ok(FlagSpec::new("Debug sphere 1", |c| &c.debug_sphere_1)),
