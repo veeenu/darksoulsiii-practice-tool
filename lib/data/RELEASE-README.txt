@@ -1,10 +1,12 @@
 Welcome to the Dark Souls III Practice Tool!
 
-To run the tool:
+The tool can be run stand-alone, or it can be installed next to the game's executable.
+
+To run the tool stand-alone:
 
 - Double-click `jdsd_dsiii_practice_tool.exe` while the game is running.
 
-To install the tool: 
+To run the tool with installation:
 
 - Rename `jdsd_dsiii_practice_tool.dll` to `dinput8.dll`. Make sure your file extensions are visible
   to ensure you are naming the file correctly.

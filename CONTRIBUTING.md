@@ -46,3 +46,12 @@ $ cat .env
 DSIII_PATCHES_PATH="C:/Videogames/DarkSoulsIIIPatches"
 ```
 
+# Lints and format
+
+Before opening a pull request, please make sure that the code is formatted properly and has no 
+outstanding lints. Use `nightly` for opting into the experimental lints and format rules.
+
+```sh
+cargo +nightly clippy
+cargo +nightly fmt --all
+```
