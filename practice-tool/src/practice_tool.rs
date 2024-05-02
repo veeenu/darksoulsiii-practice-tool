@@ -273,16 +273,16 @@ impl PracticeTool {
                                 IndicatorType::GameVersion => "Game Version",
                                 IndicatorType::Position => "Player Position",
                                 IndicatorType::Igt => "IGT Timer",
-                                IndicatorType::Fps => {
+                                IndicatorType::Fps => "FPS",
+                                IndicatorType::FrameCount => {
                                     if ui.button("Reset") {
                                         self.framecount = 0;
                                     }
 
                                     ui.same_line();
 
-                                    "FPS"
-                                },
-                                IndicatorType::FrameCount => "Frame Counter",
+                                    "Frame Counter"
+                                }
                                 IndicatorType::ImguiDebug => "ImGui Debug Info",
                                 _ => "?",
                             };
