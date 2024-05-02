@@ -33,25 +33,53 @@ pub(crate) struct Settings {
     pub(crate) hide: Option<Key>,
     #[serde(default)]
     pub(crate) show_console: bool,
+    #[serde(default = "Indicator::default_set")]
     pub(crate) indicators: Vec<Indicator>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub(crate) struct Indicator {
-    pub(crate) indicator: String,
-    pub(crate) enabled: bool,
+struct IndicatorConfig {
+    indicator: String,
+    enabled: bool,
+}
+
+#[derive(Deserialize, Copy, Clone, Debug)]
+#[serde(try_from = "IndicatorConfig")]
+pub(crate) enum Indicator {
+    Igt { enabled: bool },
+    Position { enabled: bool },
+    GameVersion { enabled: bool },
+    ImguiDebug { enabled: bool },
+    Fps { enabled: bool },
+    FrameCount { enabled: bool },
 }
 
 impl Indicator {
     fn default_set() -> Vec<Indicator> {
         vec![
-            Indicator { indicator: "game_version".to_string(), enabled: true },
-            Indicator { indicator: "igt".to_string(), enabled: true },
-            Indicator { indicator: "position".to_string(), enabled: false },
-            Indicator { indicator: "fps".to_string(), enabled: false },
-            Indicator { indicator: "framecount".to_string(), enabled: false },
-            Indicator { indicator: "imgui_debug".to_string(), enabled: false },
+            Indicator::GameVersion { enabled: true },
+            Indicator::Igt { enabled: true },
+            Indicator::Position { enabled: false },
+            Indicator::Fps { enabled: false },
+            Indicator::FrameCount { enabled: false },
+            Indicator::ImguiDebug { enabled: false },
         ]
+    }
+}
+
+impl TryFrom<IndicatorConfig> for Indicator {
+    type Error = String;
+
+    fn try_from(indicator: IndicatorConfig) -> Result<Self, Self::Error> {
+        match indicator.indicator.as_str() {
+            "igt" => Ok(Indicator::Igt { enabled: indicator.enabled }),
+            "position" => Ok(Indicator::Position { enabled: indicator.enabled }),
+            "game_version" => Ok(Indicator::GameVersion { enabled: indicator.enabled }),
+            "imgui_debug" => Ok(Indicator::ImguiDebug { enabled: indicator.enabled }),
+            "fps" => Ok(Indicator::Fps { enabled: indicator.enabled }),
+            "framecount" => Ok(Indicator::FrameCount { enabled: indicator.enabled }),
+            value => Err(format!("Unrecognized indicator: {value}")),
+        }
     }
 }
 

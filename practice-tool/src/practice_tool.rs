@@ -302,15 +302,11 @@ impl PracticeTool {
                     });
 
                 for indicator in &self.settings.indicators {
-                    if (!indicator.enabled) {
-                        continue;
-                    }
-
-                    match &indicator.indicator as &str {
-                        "game_version" => {
+                    match indicator {
+                        Indicator::GameVersion { enabled: true } => {
                             ui.text(&self.version_label);
                         },
-                        "position" => {
+                        Indicator::Position { enabled: true } => {
                             if let (Some([x, y, z]), Some(a)) =
                                 (self.pointers.position.1.read(), self.pointers.position.0.read())
                             {
@@ -338,7 +334,7 @@ impl PracticeTool {
                                 ui.text(&self.position_bufs[3]);
                             }
                         },
-                        "igt" => {
+                        Indicator::Igt { enabled: true } => {
                             if let Some(igt) = self.pointers.igt.read() {
                                 let millis = (igt % 1000) / 10;
                                 let total_seconds = igt / 1000;
@@ -354,22 +350,22 @@ impl PracticeTool {
                                 ui.text(&self.igt_buf);
                             }
                         },
-                        "fps" => {
+                        Indicator::Fps { enabled: true } => {
                             if let Some(fps) = self.pointers.fps.read() {
                                 self.fps_buf.clear();
                                 write!(self.fps_buf, "FPS {fps}",).ok();
                                 ui.text(&self.fps_buf);
                             }
                         },
-                        "framecount" => {
+                        Indicator::FrameCount { enabled: true } => {
                             self.framecount_buf.clear();
                             write!(self.framecount_buf, "Frame count {0}", self.framecount,).ok();
                             ui.text(&self.framecount_buf);
                         },
-                        "imgui_debug" => {
+                        Indicator::ImguiDebug { enabled: true } => {
                             imgui_debug(ui);
                         },
-                        &_ => {},
+                        _ => {},
                     }
                 }
 
