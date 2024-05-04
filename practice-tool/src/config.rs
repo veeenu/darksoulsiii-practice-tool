@@ -309,6 +309,7 @@ impl TryFrom<String> for FlagSpec {
             },
             "evt_disable" => Ok(FlagSpec::new("Event disable", |c| &c.evt_disable)),
             "ai_disable" => Ok(FlagSpec::new("AI disable", |c| &c.ai_disable)),
+            "ember" => Ok(FlagSpec::new("Ember", |c| &c.ember)),
             "rend_chr" => Ok(FlagSpec::new("Render characters", |c| &c.rend_chr)),
             "rend_obj" => Ok(FlagSpec::new("Render objects", |c| &c.rend_obj)),
             "rend_map" => Ok(FlagSpec::new("Render map", |c| &c.rend_map)),
