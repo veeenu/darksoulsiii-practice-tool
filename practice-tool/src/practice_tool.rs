@@ -13,7 +13,7 @@ use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use tracing_subscriber::prelude::*;
 
-use crate::config::{Config, Indicator, IndicatorType, Settings};
+use crate::config::{Config, IndicatorType, Settings};
 use crate::util;
 
 const MAJOR: usize = pkg_version_major!();
@@ -283,7 +283,6 @@ impl PracticeTool {
                                 IndicatorType::FrameCount => "Frame Counter",
                                 IndicatorType::ImguiDebug => "ImGui Debug Info",
                                 IndicatorType::Animation => "Animation",
-                                _ => "?",
                             };
 
                             let mut state = indicator.enabled;
@@ -312,7 +311,6 @@ impl PracticeTool {
 
                         ui.separator();
 
-                        let btn_close_label = "Close";
                         let btn_close_width =
                             ui.content_region_max()[0] - style.frame_padding[0] * 2.0;
 
@@ -459,7 +457,6 @@ impl PracticeTool {
                         IndicatorType::ImguiDebug => {
                             imgui_debug(ui);
                         },
-                        _ => {},
                     }
                 }
 
