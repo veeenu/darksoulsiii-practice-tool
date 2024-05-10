@@ -45,6 +45,7 @@ pub(crate) enum IndicatorType {
     ImguiDebug,
     Fps,
     FrameCount,
+    Animation,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -60,6 +61,7 @@ impl Indicator {
             Indicator { indicator: IndicatorType::GameVersion, enabled: true },
             Indicator { indicator: IndicatorType::Igt, enabled: true },
             Indicator { indicator: IndicatorType::Position, enabled: false },
+            Indicator { indicator: IndicatorType::Animation, enabled: false },
             Indicator { indicator: IndicatorType::Fps, enabled: false },
             Indicator { indicator: IndicatorType::FrameCount, enabled: false },
             Indicator { indicator: IndicatorType::ImguiDebug, enabled: false },
@@ -91,6 +93,9 @@ impl TryFrom<IndicatorConfig> for Indicator {
             "fps" => Ok(Indicator { indicator: IndicatorType::Fps, enabled: indicator.enabled }),
             "framecount" => {
                 Ok(Indicator { indicator: IndicatorType::FrameCount, enabled: indicator.enabled })
+            },
+            "animation" => {
+                Ok(Indicator { indicator: IndicatorType::Animation, enabled: indicator.enabled })
             },
             value => Err(format!("Unrecognized indicator: {value}")),
         }

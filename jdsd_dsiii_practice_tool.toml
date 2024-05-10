@@ -53,6 +53,7 @@ indicators = [
   { indicator = "game_version", enabled = true },
   { indicator = "igt", enabled = true },
   { indicator = "position", enabled = true },
+  { indicator = "animation", enabled = true },
   { indicator = "fps", enabled = true },
   { indicator = "framecount", enabled = true },
   { indicator = "imgui_debug", enabled = false }
