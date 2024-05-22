@@ -251,6 +251,30 @@ impl From<BaseAddresses> for PointerChains {
         let mesh_hit = 0xF1;
         let mouse_enable_offs = 0x54;
 
+        let offs_anim = match *VERSION {
+            Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3 => 0x1F70,
+
+            Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0
+            | Version::V1_08_0
+            | Version::V1_09_0
+            | Version::V1_10_0
+            | Version::V1_11_0
+            | Version::V1_12_0 => 0x1F80,
+
+            Version::V1_13_0
+            | Version::V1_14_0
+            | Version::V1_15_0
+            | Version::V1_15_1
+            | Version::V1_15_2 => 0x1F90,
+        };
+
         PointerChains {
             all_no_damage: bitflag!(0b1; debug + offs_all_no_damage as usize),
             no_death: bitflag!(0b100; world_chr_man, 0x80, xa as _, 0x18, 0x1c0),
@@ -293,9 +317,9 @@ impl From<BaseAddresses> for PointerChains {
             cursor_show: bitflag!(0b1; menu_man as _, mouse_enable_offs as _),
             igt: pointer_chain!(base_a as _, offs_igt),
             fps: pointer_chain!(base_fps as _, offs_fps),
-            cur_anim: pointer_chain!(world_chr_man as _, 0x80, 0x1F90, 0x80, 0xC8),
-            cur_anim_time: pointer_chain!(world_chr_man as _, 0x80, 0x1F90, 0x10, 0x24),
-            cur_anim_length: pointer_chain!(world_chr_man as _, 0x80, 0x1F90, 0x10, 0x2C),
+            cur_anim: pointer_chain!(world_chr_man as _, 0x80, offs_anim as _, 0x80, 0xC8),
+            cur_anim_time: pointer_chain!(world_chr_man as _, 0x80, offs_anim as _, 0x10, 0x24),
+            cur_anim_length: pointer_chain!(world_chr_man as _, 0x80, offs_anim as _, 0x10, 0x2C),
             quitout: pointer_chain!(menu_man as _, 0x250),
             current_target: pointer_chain!(current_target),
             no_logo: pointer_chain!(no_logo as _),
