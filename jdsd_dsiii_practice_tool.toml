@@ -23,6 +23,8 @@ commands = [
     { flag = "debug_sphere_1" },
     { flag = "debug_sphere_2" },
     { flag = "evt_draw" },
+    { label = "" },
+    { label = "Below needs debug draw enabled:" },
     { flag = "debug_draw" },
     { flag = "hurtbox" },
     { flag = "bloodstain_draw" },
@@ -34,6 +36,7 @@ commands = [
   { flag = "deathcam", hotkey = "5" },
   { flag = "no_death", hotkey = "6" },
   { flag = "one_shot", hotkey = "7" },
+  { flag = "ember", hotkey = "o" },
   { target = "ctrl+n" },
   { flag = "ai_disable", hotkey = "f1" },
   { flag = "gravity", hotkey = "f2" },
@@ -46,4 +49,12 @@ log_level = "DEBUG"
 display = "0"
 hide = "rshift+0"
 show_console = false
-indicators = ["game_version", "position", "igt", "fps"]
+indicators = [
+  { indicator = "game_version", enabled = true },
+  { indicator = "igt", enabled = true },
+  { indicator = "position", enabled = true },
+  { indicator = "animation", enabled = true },
+  { indicator = "fps", enabled = true },
+  { indicator = "framecount", enabled = true },
+  { indicator = "imgui_debug", enabled = false }
+]

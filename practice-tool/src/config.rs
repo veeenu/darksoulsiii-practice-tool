@@ -11,6 +11,7 @@ use crate::widgets::cycle_speed::cycle_speed;
 use crate::widgets::flag::flag_widget;
 use crate::widgets::group::group;
 use crate::widgets::item_spawn::ItemSpawner;
+use crate::widgets::label::label_widget;
 use crate::widgets::nudge_pos::nudge_position;
 use crate::widgets::open_menu::{open_menu, OpenMenuKind};
 use crate::widgets::position::save_position;
@@ -36,34 +37,66 @@ pub(crate) struct Settings {
     pub(crate) indicators: Vec<Indicator>,
 }
 
-#[derive(Deserialize, Copy, Clone, Debug)]
-#[serde(try_from = "String")]
-pub(crate) enum Indicator {
+#[derive(Debug, Deserialize, Clone)]
+pub(crate) enum IndicatorType {
     Igt,
     Position,
     GameVersion,
     ImguiDebug,
     Fps,
     FrameCount,
+    Animation,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(try_from = "IndicatorConfig")]
+pub(crate) struct Indicator {
+    pub(crate) indicator: IndicatorType,
+    pub(crate) enabled: bool,
 }
 
 impl Indicator {
     fn default_set() -> Vec<Indicator> {
-        vec![Indicator::GameVersion, Indicator::Position, Indicator::Igt, Indicator::Fps]
+        vec![
+            Indicator { indicator: IndicatorType::GameVersion, enabled: true },
+            Indicator { indicator: IndicatorType::Igt, enabled: true },
+            Indicator { indicator: IndicatorType::Position, enabled: false },
+            Indicator { indicator: IndicatorType::Animation, enabled: false },
+            Indicator { indicator: IndicatorType::Fps, enabled: false },
+            Indicator { indicator: IndicatorType::FrameCount, enabled: false },
+            Indicator { indicator: IndicatorType::ImguiDebug, enabled: false },
+        ]
     }
 }
 
-impl TryFrom<String> for Indicator {
+#[derive(Debug, Deserialize, Clone)]
+struct IndicatorConfig {
+    indicator: String,
+    enabled: bool,
+}
+
+impl TryFrom<IndicatorConfig> for Indicator {
     type Error = String;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.as_str() {
-            "igt" => Ok(Indicator::Igt),
-            "position" => Ok(Indicator::Position),
-            "game_version" => Ok(Indicator::GameVersion),
-            "imgui_debug" => Ok(Indicator::ImguiDebug),
-            "fps" => Ok(Indicator::Fps),
-            "framecount" => Ok(Indicator::FrameCount),
+    fn try_from(indicator: IndicatorConfig) -> Result<Self, Self::Error> {
+        match indicator.indicator.as_str() {
+            "igt" => Ok(Indicator { indicator: IndicatorType::Igt, enabled: indicator.enabled }),
+            "position" => {
+                Ok(Indicator { indicator: IndicatorType::Position, enabled: indicator.enabled })
+            },
+            "game_version" => {
+                Ok(Indicator { indicator: IndicatorType::GameVersion, enabled: indicator.enabled })
+            },
+            "imgui_debug" => {
+                Ok(Indicator { indicator: IndicatorType::ImguiDebug, enabled: indicator.enabled })
+            },
+            "fps" => Ok(Indicator { indicator: IndicatorType::Fps, enabled: indicator.enabled }),
+            "framecount" => {
+                Ok(Indicator { indicator: IndicatorType::FrameCount, enabled: indicator.enabled })
+            },
+            "animation" => {
+                Ok(Indicator { indicator: IndicatorType::Animation, enabled: indicator.enabled })
+            },
             value => Err(format!("Unrecognized indicator: {value}")),
         }
     }
@@ -100,6 +133,10 @@ enum CfgCommand {
     Flag {
         flag: FlagSpec,
         hotkey: Option<Key>,
+    },
+    Label {
+        #[serde(rename = "label")]
+        label: String,
     },
     Position {
         position: PlaceholderOption<Key>,
@@ -150,6 +187,7 @@ impl CfgCommand {
             CfgCommand::Flag { flag, hotkey: key } => {
                 flag_widget(&flag.label, (flag.getter)(chains).clone(), key)
             },
+            CfgCommand::Label { label } => label_widget(label.as_str()),
             CfgCommand::SavefileManager { hotkey_load: key_load } => {
                 savefile_manager(key_load.into_option(), settings.display)
             },
@@ -272,12 +310,11 @@ impl TryFrom<String> for FlagSpec {
             "one_shot" => Ok(FlagSpec::new("One shot", |c| &c.one_shot)),
             "evt_draw" => Ok(FlagSpec::new("Event draw", |c| &c.evt_draw)),
             "bloodstain_draw" => {
-                Ok(FlagSpec::new("Stable/Bloodstain draw (needs debug draw)", |c| {
-                    &c.bloodstain_draw
-                }))
+                Ok(FlagSpec::new("Stable/Bloodstain draw", |c| &c.bloodstain_draw))
             },
             "evt_disable" => Ok(FlagSpec::new("Event disable", |c| &c.evt_disable)),
             "ai_disable" => Ok(FlagSpec::new("AI disable", |c| &c.ai_disable)),
+            "ember" => Ok(FlagSpec::new("Ember", |c| &c.ember)),
             "rend_chr" => Ok(FlagSpec::new("Render characters", |c| &c.rend_chr)),
             "rend_obj" => Ok(FlagSpec::new("Render objects", |c| &c.rend_obj)),
             "rend_map" => Ok(FlagSpec::new("Render map", |c| &c.rend_map)),
@@ -285,7 +322,7 @@ impl TryFrom<String> for FlagSpec {
             "rend_mesh_lo" => Ok(FlagSpec::new("Collision mesh lo", |c| &c.rend_mesh_lo)),
             "rend_mesh_hit" => Ok(FlagSpec::new("Collision mesh hit", |c| &c.rend_mesh_hit)),
             "debug_draw" => Ok(FlagSpec::new("Debug draw", |c| &c.debug_draw)),
-            "hurtbox" => Ok(FlagSpec::new("Hurtbox (needs debug draw)", |c| &c.rend_hurtbox)),
+            "hurtbox" => Ok(FlagSpec::new("Hurtbox", |c| &c.rend_hurtbox)),
             "all_draw_hit" => Ok(FlagSpec::new("All draw hit", |c| &c.all_draw_hit)),
             "ik_foot_ray" => Ok(FlagSpec::new("IK foot ray", |c| &c.ik_foot_ray)),
             "debug_sphere_1" => Ok(FlagSpec::new("Debug sphere 1", |c| &c.debug_sphere_1)),
