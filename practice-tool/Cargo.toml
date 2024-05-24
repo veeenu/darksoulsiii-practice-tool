@@ -15,7 +15,7 @@ name = "libjdsd_dsiii_practice_tool"
 [dependencies]
 const_format = "0.2.26"
 hex = "0.4.3"
-log-panics = "2.0.0"
+log-panics = { version = "2.0.0", features = ["with-backtrace"] }
 open = "1.4.0"
 parking_lot = "0.11.2"
 pkg-version = "1.0.0"
