@@ -115,7 +115,8 @@ impl From<BaseAddresses> for PointerChains {
         let offs_all_no_damage = 9;
         let offs_player_exterminate = 1;
         let offs_no_goods_consume = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -135,7 +136,8 @@ impl From<BaseAddresses> for PointerChains {
             Version::V1_15_0 | Version::V1_15_1 | Version::V1_15_2 => 0x1EEA,
         };
         let offs_deathcam = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -157,7 +159,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_2 => 0x90,
         };
         let offs_bloodstain_draw = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -178,7 +181,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_2 => 0x2195,
         };
         let offs_speed = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -200,7 +204,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_2 => 0xa58,
         };
         let offs_igt = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -223,7 +228,8 @@ impl From<BaseAddresses> for PointerChains {
         };
         let offs_fps = 0x08;
         let offs_debug_draw = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -253,7 +259,8 @@ impl From<BaseAddresses> for PointerChains {
         let mouse_enable_offs = 0x54;
 
         let offs_anim = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2

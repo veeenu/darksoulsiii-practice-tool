@@ -52,6 +52,7 @@ impl BaseAddresses {
 
 #[derive(Clone, Copy)]
 pub enum Version {
+    V1_01_1,
     V1_03_1,
     V1_03_2,
     V1_04_1,
@@ -76,6 +77,7 @@ pub enum Version {
 impl From<(u32, u32, u32)> for Version {
     fn from(v: (u32, u32, u32)) -> Self {
         match v {
+            (1, 1, 1) => Version::V1_01_1,
             (1, 3, 1) => Version::V1_03_1,
             (1, 3, 2) => Version::V1_03_2,
             (1, 4, 1) => Version::V1_04_1,
@@ -106,6 +108,7 @@ impl From<(u32, u32, u32)> for Version {
 impl From<Version> for (u32, u32, u32) {
     fn from(v: Version) -> Self {
         match v {
+            Version::V1_01_1 => (1, 1, 1),
             Version::V1_03_1 => (1, 3, 1),
             Version::V1_03_2 => (1, 3, 2),
             Version::V1_04_1 => (1, 4, 1),
@@ -132,6 +135,7 @@ impl From<Version> for (u32, u32, u32) {
 impl From<Version> for BaseAddresses {
     fn from(v: Version) -> Self {
         match v {
+            Version::V1_01_1 => BASE_ADDRESSES_1_01_1,
             Version::V1_03_1 => BASE_ADDRESSES_1_03_1,
             Version::V1_03_2 => BASE_ADDRESSES_1_03_2,
             Version::V1_04_1 => BASE_ADDRESSES_1_04_1,
@@ -154,6 +158,28 @@ impl From<Version> for BaseAddresses {
         }
     }
 }
+
+pub const BASE_ADDRESSES_1_01_1: BaseAddresses = BaseAddresses {
+    world_chr_man: 0x46bb4f8,
+    world_chr_man_dbg: 0x46bb618,
+    menu_man: 0x469e9d0,
+    base_a: 0x4692878,
+    base_d: 0x4696148,
+    sprj_debug_event: 0x468d4e8,
+    debug: 0x46bb5e8,
+    grend: 0x44b1010,
+    base_hbd: 0x46b9200,
+    map_item_man: 0x4692408,
+    spawn_item_func_ptr: 0x7a9510,
+    param: 0x46d81d0,
+    format_string: 0x2901430,
+    no_logo: 0xbb7aaf,
+    current_target: 0x8459aa,
+    menu_travel: 0xbb0fa0,
+    menu_attune: 0xbb05c9,
+    xa: 0x1f70,
+    base_fps: 0x46d8318,
+};
 
 pub const BASE_ADDRESSES_1_03_1: BaseAddresses = BaseAddresses {
     world_chr_man: 0x46c3aa8,
