@@ -40,7 +40,8 @@ commands = [
   { target = "ctrl+n" },
   { flag = "ai_disable", hotkey = "f1" },
   { flag = "gravity", hotkey = "f2" },
-  { flag = "evt_disable", hotkey = "f3" },
+  { flag = "collision", hotkey = "f3" },
+  { flag = "evt_disable", hotkey = "f9" },
   { quitout = "p" }
 ]
 

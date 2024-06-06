@@ -328,6 +328,7 @@ impl TryFrom<String> for FlagSpec {
             "debug_sphere_1" => Ok(FlagSpec::new("Debug sphere 1", |c| &c.debug_sphere_1)),
             "debug_sphere_2" => Ok(FlagSpec::new("Debug sphere 2", |c| &c.debug_sphere_2)),
             "gravity" => Ok(FlagSpec::new("No Gravity", |c| &c.gravity)),
+            "collision" => Ok(FlagSpec::new("No Collision", |c| &c.collision)),
             e => Err(format!("\"{}\" is not a valid flag specifier", e)),
         }
     }

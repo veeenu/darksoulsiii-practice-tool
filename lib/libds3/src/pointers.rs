@@ -64,6 +64,7 @@ pub struct PointerChains {
     pub debug_sphere_1: Bitflag<u8>,
     pub debug_sphere_2: Bitflag<u8>,
     pub gravity: Bitflag<u8>,
+    pub collision: Bitflag<u8>,
     pub speed: PointerChain<f32>,
     pub position: (PointerChain<f32>, PointerChain<[f32; 3]>),
     pub character_stats: PointerChain<CharacterStats>,
@@ -301,6 +302,7 @@ impl From<BaseAddresses> for PointerChains {
             debug_sphere_1: bitflag!(0b1; base_hbd, 0x30),
             debug_sphere_2: bitflag!(0b1; base_hbd, 0x31),
             gravity: bitflag!(0b1000000; world_chr_man, 0x80, 0x1a08),
+            collision: bitflag!(0b1; world_chr_man, 0x40, 0x0, 0x50, 0x187),
             speed: pointer_chain!(world_chr_man, 0x80, xa as _, 0x28, offs_speed as _),
             position: (
                 pointer_chain!(world_chr_man, 0x40, 0x28, 0x74),
