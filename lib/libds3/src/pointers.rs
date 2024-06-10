@@ -115,7 +115,8 @@ impl From<BaseAddresses> for PointerChains {
         let offs_all_no_damage = 9;
         let offs_player_exterminate = 1;
         let offs_no_goods_consume = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -135,7 +136,8 @@ impl From<BaseAddresses> for PointerChains {
             Version::V1_15_0 | Version::V1_15_1 | Version::V1_15_2 => 0x1EEA,
         };
         let offs_deathcam = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -157,7 +159,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_2 => 0x90,
         };
         let offs_bloodstain_draw = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -178,7 +181,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_2 => 0x2195,
         };
         let offs_speed = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -200,7 +204,8 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_2 => 0xa58,
         };
         let offs_igt = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -223,7 +228,8 @@ impl From<BaseAddresses> for PointerChains {
         };
         let offs_fps = 0x08;
         let offs_debug_draw = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -245,6 +251,30 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_2 => 0x65,
         };
 
+        let offs_ik_foot_ray = match *VERSION {
+            Version::V1_01_1
+            | Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0 => 0x5B,
+
+            Version::V1_08_0
+            | Version::V1_09_0
+            | Version::V1_10_0
+            | Version::V1_11_0
+            | Version::V1_12_0
+            | Version::V1_13_0
+            | Version::V1_14_0
+            | Version::V1_15_0
+            | Version::V1_15_1
+            | Version::V1_15_2 => 0x6B,
+        };
+
         let offs_no_update_ai = 0xD;
         let mesh_hi = 0xEC;
         let mesh_lo = 0xED;
@@ -253,7 +283,8 @@ impl From<BaseAddresses> for PointerChains {
         let mouse_enable_offs = 0x54;
 
         let offs_anim = match *VERSION {
-            Version::V1_03_1
+            Version::V1_01_1
+            | Version::V1_03_1
             | Version::V1_03_2
             | Version::V1_04_1
             | Version::V1_04_2
@@ -298,7 +329,7 @@ impl From<BaseAddresses> for PointerChains {
             rend_hurtbox: bitflag!(0b1; base_hbd + hurtbox as usize),
             debug_draw: bitflag!(0b1; world_chr_man_dbg, offs_debug_draw),
             all_draw_hit: bitflag!(0b1; world_chr_man_dbg, 0x66),
-            ik_foot_ray: bitflag!(0b1; world_chr_man_dbg, 0x6B),
+            ik_foot_ray: bitflag!(0b1; world_chr_man_dbg, offs_ik_foot_ray),
             debug_sphere_1: bitflag!(0b1; base_hbd, 0x30),
             debug_sphere_2: bitflag!(0b1; base_hbd, 0x31),
             gravity: bitflag!(0b1000000; world_chr_man, 0x80, 0x1a08),
