@@ -247,7 +247,7 @@ dependencies = [
 
 [[package]]
 name = "darksoulsiii-practice-tool"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "const_format",
  "embed-resource",
@@ -519,7 +519,7 @@ checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 
 [[package]]
 name = "libds3"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "log",
  "macro-param",
@@ -558,7 +558,7 @@ dependencies = [
 
 [[package]]
 name = "macro-param"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -607,7 +607,7 @@ checksum = "e53debba6bda7a793e5f99b8dacf19e626084f525f7829104ba9898f367d85ff"
 
 [[package]]
 name = "no-logo"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "libds3",
  "once_cell",
@@ -669,7 +669,7 @@ checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
 name = "param-mod"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "libds3",
  "once_cell",
@@ -680,7 +680,7 @@ dependencies = [
 
 [[package]]
 name = "param-tinkerer"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "hudhook",
  "imgui",
@@ -1056,7 +1056,7 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "scripts"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "hudhook",
 ]
@@ -1721,7 +1721,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "anyhow",
  "dotenv",
