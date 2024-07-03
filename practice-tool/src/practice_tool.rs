@@ -48,6 +48,9 @@ pub(crate) struct PracticeTool {
     fonts: Option<FontIDs>,
 
     position_bufs: [String; 4],
+    position_prev: [f32; 3],
+    position_change_buf: String,
+
     igt_buf: String,
     fps_buf: String,
 
@@ -177,7 +180,9 @@ impl PracticeTool {
             log_tx,
             fonts: None,
             ui_state: UiState::Closed,
+            position_prev: Default::default(),
             position_bufs: Default::default(),
+            position_change_buf: Default::default(),
             igt_buf: Default::default(),
             fps_buf: Default::default(),
             framecount: 0,
@@ -278,6 +283,7 @@ impl PracticeTool {
                             let label = match indicator.indicator {
                                 IndicatorType::GameVersion => "Game Version",
                                 IndicatorType::Position => "Player Position",
+                                IndicatorType::PositionChange => "Player Velocity",
                                 IndicatorType::Igt => "IGT Timer",
                                 IndicatorType::Fps => "FPS",
                                 IndicatorType::FrameCount => "Frame Counter",
@@ -388,10 +394,10 @@ impl PracticeTool {
                                 (self.pointers.position.1.read(), self.pointers.position.0.read())
                             {
                                 self.position_bufs.iter_mut().for_each(String::clear);
-                                write!(self.position_bufs[0], "{x:.2}").ok();
-                                write!(self.position_bufs[1], "{y:.2}").ok();
-                                write!(self.position_bufs[2], "{z:.2}").ok();
-                                write!(self.position_bufs[3], "{a:.2}").ok();
+                                write!(self.position_bufs[0], "{x:.3}").ok();
+                                write!(self.position_bufs[1], "{y:.3}").ok();
+                                write!(self.position_bufs[2], "{z:.3}").ok();
+                                write!(self.position_bufs[3], "{a:.3}").ok();
 
                                 ui.text_colored(
                                     [0.7048, 0.1228, 0.1734, 1.],
@@ -409,6 +415,31 @@ impl PracticeTool {
                                 );
                                 ui.same_line();
                                 ui.text(&self.position_bufs[3]);
+                            }
+                        },
+                        IndicatorType::PositionChange => {
+                            if let Some([x, y, z]) = self.pointers.position.1.read() {
+                                let position_change_xyz = ((x - self.position_prev[0]).powf(2.0)
+                                    + (y - self.position_prev[1]).powf(2.0)
+                                    + (z - self.position_prev[2]).powf(2.0))
+                                .sqrt();
+
+                                let position_change_xz = ((x - self.position_prev[0]).powf(2.0)
+                                    + (z - self.position_prev[2]).powf(2.0))
+                                .sqrt();
+
+                                let position_change_y = y - self.position_prev[1];
+
+                                self.position_change_buf.clear();
+                                write!(
+                                    self.position_change_buf,
+                                    "[XYZ] {position_change_xyz:.6} | [XZ] \
+                                     {position_change_xz:.6} | [Y] {position_change_y:.6}"
+                                )
+                                .ok();
+                                ui.text(&self.position_change_buf);
+
+                                self.position_prev = [x, y, z];
                             }
                         },
                         IndicatorType::Igt => {
