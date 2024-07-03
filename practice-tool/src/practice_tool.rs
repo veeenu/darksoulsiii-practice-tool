@@ -394,10 +394,10 @@ impl PracticeTool {
                                 (self.pointers.position.1.read(), self.pointers.position.0.read())
                             {
                                 self.position_bufs.iter_mut().for_each(String::clear);
-                                write!(self.position_bufs[0], "{x:.2}").ok();
-                                write!(self.position_bufs[1], "{y:.2}").ok();
-                                write!(self.position_bufs[2], "{z:.2}").ok();
-                                write!(self.position_bufs[3], "{a:.2}").ok();
+                                write!(self.position_bufs[0], "{x:.3}").ok();
+                                write!(self.position_bufs[1], "{y:.3}").ok();
+                                write!(self.position_bufs[2], "{z:.3}").ok();
+                                write!(self.position_bufs[3], "{a:.3}").ok();
 
                                 ui.text_colored(
                                     [0.7048, 0.1228, 0.1734, 1.],
