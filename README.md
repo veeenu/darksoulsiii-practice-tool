@@ -3,7 +3,7 @@
 [![build](https://github.com/veeenu/darksoulsiii-practice-tool/actions/workflows/build.yml/badge.svg)](https://github.com/veeenu/darksoulsiii-practice-tool/actions)
 [![GitHub all releases](https://img.shields.io/github/downloads/veeenu/darksoulsiii-practice-tool/total)](https://github.com/veeenu/darksoulsiii-practice-tool/releases/latest)
 [![GitHub](https://img.shields.io/github/license/veeenu/darksoulsiii-practice-tool)](https://github.com/veeenu/darksoulsiii-practice-tool/blob/main/LICENSE) 
-[![Discord](https://img.shields.io/discord/267623298647457802)](https://discord.gg/CVHbN7eF)
+[![Discord](https://img.shields.io/discord/267623298647457802)](https://discord.gg/jhF3jTTCUs)
 [![Twitch](https://img.shields.io/twitch/status/johndisandonato?style=social)](https://twitch.tv/johndisandonato)
 [![Patreon](https://img.shields.io/badge/Support_me-Patreon-orange)](https://www.patreon.com/johndisandonato)
 
