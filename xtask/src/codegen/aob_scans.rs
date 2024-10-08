@@ -34,6 +34,13 @@ fn base_addresses_rs_path() -> PathBuf {
 pub fn get_base_addresses() {
     let aobs = &[
         aob_indirect_twice(
+            "WindWorldImp",
+            &["48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 83 C4 ?? C3 CC"],
+            3,
+            7,
+            true,
+        ),
+        aob_indirect_twice(
             "WorldChrMan",
             &["48 8B 1D ?? ?? ?? 04 48 8B F9 48 85 DB ?? ?? 8B 11 85 D2 ?? ?? 8D"],
             3,

@@ -3,6 +3,7 @@
 // **********************************
 #[derive(Debug)]
 pub struct BaseAddresses {
+    pub wind_world_imp: usize,
     pub world_chr_man: usize,
     pub world_chr_man_dbg: usize,
     pub menu_man: usize,
@@ -27,6 +28,7 @@ pub struct BaseAddresses {
 impl BaseAddresses {
     pub fn with_module_base_addr(self, base: usize) -> BaseAddresses {
         BaseAddresses {
+            wind_world_imp: self.wind_world_imp + base,
             world_chr_man: self.world_chr_man + base,
             world_chr_man_dbg: self.world_chr_man_dbg + base,
             menu_man: self.menu_man + base,
@@ -160,6 +162,7 @@ impl From<Version> for BaseAddresses {
 }
 
 pub const BASE_ADDRESSES_1_01_1: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x489ddc0,
     world_chr_man: 0x46bb4f8,
     world_chr_man_dbg: 0x46bb618,
     menu_man: 0x469e9d0,
@@ -182,6 +185,7 @@ pub const BASE_ADDRESSES_1_01_1: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_03_1: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x48a6570,
     world_chr_man: 0x46c3aa8,
     world_chr_man_dbg: 0x46c3bc8,
     menu_man: 0x46a6f60,
@@ -204,6 +208,7 @@ pub const BASE_ADDRESSES_1_03_1: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_03_2: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x48a7570,
     world_chr_man: 0x46c4aa8,
     world_chr_man_dbg: 0x46c4bc8,
     menu_man: 0x46a7f60,
@@ -226,6 +231,7 @@ pub const BASE_ADDRESSES_1_03_2: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_04_1: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x48a8890,
     world_chr_man: 0x46c5dc8,
     world_chr_man_dbg: 0x46c5ee8,
     menu_man: 0x46a9280,
@@ -248,6 +254,7 @@ pub const BASE_ADDRESSES_1_04_1: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_04_2: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x48a8890,
     world_chr_man: 0x46c5dc8,
     world_chr_man_dbg: 0x46c5ee8,
     menu_man: 0x46a9280,
@@ -270,6 +277,7 @@ pub const BASE_ADDRESSES_1_04_2: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_04_3: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x48a8890,
     world_chr_man: 0x46c5dc8,
     world_chr_man_dbg: 0x46c5ee8,
     menu_man: 0x46a9280,
@@ -292,6 +300,7 @@ pub const BASE_ADDRESSES_1_04_3: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_05_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x48ac9a0,
     world_chr_man: 0x46c9ec8,
     world_chr_man_dbg: 0x46c9fe8,
     menu_man: 0x46ad380,
@@ -314,6 +323,7 @@ pub const BASE_ADDRESSES_1_05_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_05_1: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x48ab9a0,
     world_chr_man: 0x46c8ec8,
     world_chr_man_dbg: 0x46c8fe8,
     menu_man: 0x46ac380,
@@ -336,6 +346,7 @@ pub const BASE_ADDRESSES_1_05_1: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_06_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x48aca00,
     world_chr_man: 0x46c9f28,
     world_chr_man_dbg: 0x46ca048,
     menu_man: 0x46ad3e0,
@@ -358,6 +369,7 @@ pub const BASE_ADDRESSES_1_06_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_07_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x48b1280,
     world_chr_man: 0x46ce768,
     world_chr_man_dbg: 0x46ce888,
     menu_man: 0x46b1c18,
@@ -380,6 +392,7 @@ pub const BASE_ADDRESSES_1_07_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_08_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x4910400,
     world_chr_man: 0x472cf58,
     world_chr_man_dbg: 0x472d078,
     menu_man: 0x47103d8,
@@ -402,6 +415,7 @@ pub const BASE_ADDRESSES_1_08_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_09_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x4910540,
     world_chr_man: 0x472d098,
     world_chr_man_dbg: 0x472d1b8,
     menu_man: 0x4710518,
@@ -424,6 +438,7 @@ pub const BASE_ADDRESSES_1_09_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_10_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x4910540,
     world_chr_man: 0x472d098,
     world_chr_man_dbg: 0x472d1b8,
     menu_man: 0x4710518,
@@ -446,6 +461,7 @@ pub const BASE_ADDRESSES_1_10_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_11_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x4943db0,
     world_chr_man: 0x4760398,
     world_chr_man_dbg: 0x47604b8,
     menu_man: 0x4743808,
@@ -468,6 +484,7 @@ pub const BASE_ADDRESSES_1_11_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_12_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x4946f40,
     world_chr_man: 0x4763518,
     world_chr_man_dbg: 0x4763638,
     menu_man: 0x4746988,
@@ -490,6 +507,7 @@ pub const BASE_ADDRESSES_1_12_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_13_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x494a760,
     world_chr_man: 0x4766d18,
     world_chr_man_dbg: 0x4766e38,
     menu_man: 0x474a188,
@@ -512,6 +530,7 @@ pub const BASE_ADDRESSES_1_13_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_14_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x494c8c0,
     world_chr_man: 0x4768e78,
     world_chr_man_dbg: 0x4768f98,
     menu_man: 0x474c2e8,
@@ -534,6 +553,7 @@ pub const BASE_ADDRESSES_1_14_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_15_0: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x494c8c0,
     world_chr_man: 0x4768e78,
     world_chr_man_dbg: 0x4768f98,
     menu_man: 0x474c2e8,
@@ -556,6 +576,7 @@ pub const BASE_ADDRESSES_1_15_0: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_15_1: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x478cc98,
     world_chr_man: 0x477fdb8,
     world_chr_man_dbg: 0x477fed8,
     menu_man: 0x4763258,
@@ -578,6 +599,7 @@ pub const BASE_ADDRESSES_1_15_1: BaseAddresses = BaseAddresses {
 };
 
 pub const BASE_ADDRESSES_1_15_2: BaseAddresses = BaseAddresses {
+    wind_world_imp: 0x4763f38,
     world_chr_man: 0x477fdb8,
     world_chr_man_dbg: 0x477fec8,
     menu_man: 0x4763258,
