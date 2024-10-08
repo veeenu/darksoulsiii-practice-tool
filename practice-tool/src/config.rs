@@ -7,6 +7,7 @@ use serde::Deserialize;
 use tracing_subscriber::filter::LevelFilter;
 
 use crate::widgets::character_stats::character_stats_edit;
+use crate::widgets::cycle_color::cycle_color;
 use crate::widgets::cycle_speed::cycle_speed;
 use crate::widgets::flag::flag_widget;
 use crate::widgets::group::group;
@@ -153,6 +154,11 @@ enum CfgCommand {
         values: Vec<f32>,
         hotkey: Option<Key>,
     },
+    CycleColor {
+        #[serde(rename = "cycle_color")]
+        values: Vec<i32>,
+        hotkey: Option<Key>,
+    },
     CharacterStats {
         #[serde(rename = "character_stats")]
         value: PlaceholderOption<Key>,
@@ -217,6 +223,9 @@ impl CfgCommand {
             ),
             CfgCommand::CycleSpeed { values, hotkey } => {
                 cycle_speed(values.as_slice(), chains.speed.clone(), hotkey)
+            },
+            CfgCommand::CycleColor { values, hotkey } => {
+                cycle_color(values.as_slice(), chains.mesh_color.clone(), hotkey)
             },
             CfgCommand::Souls { amount, hotkey } => souls(amount, chains.souls.clone(), hotkey),
             CfgCommand::Quitout { hotkey } => quitout(chains.quitout.clone(), hotkey.into_option()),

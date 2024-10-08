@@ -3,6 +3,7 @@ commands = [
   { item_spawner = "ctrl+u" },
   { character_stats = true },
   { cycle_speed = [0.5, 1.0, 2.0, 5.0], hotkey = "8" },
+  { cycle_color = [0, 1, 2, 3] },
   { souls = 10000, hotkey = "9" },
   { open_menu = "travel" },
   { open_menu = "attune" },
