@@ -10,11 +10,17 @@ use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
 use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
+use practice_tool_core::widgets::radial_menu::radial_menu;
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
+use sys::ImVec2;
 use tracing_subscriber::prelude::*;
+use windows::Win32::UI::Input::XboxController::{
+    XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_BUTTON_FLAGS, XINPUT_GAMEPAD_LEFT_SHOULDER,
+    XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_STATE,
+};
 
-use crate::config::{Config, IndicatorType, Settings};
-use crate::util;
+use crate::config::{Config, IndicatorType, RadialMenu, Settings};
+use crate::{util, XINPUTGETSTATE};
 
 const MAJOR: usize = pkg_version_major!();
 const MINOR: usize = pkg_version_minor!();
@@ -40,6 +46,7 @@ pub(crate) struct PracticeTool {
     pointers: PointerChains,
     version_label: String,
     widgets: Vec<Box<dyn Widget>>,
+    radial_menu: Vec<RadialMenu>,
 
     log: Vec<(Instant, String)>,
     log_rx: Receiver<String>,
@@ -165,6 +172,7 @@ impl PracticeTool {
             format!("Game Ver {}.{:02}.{}", maj, min, patch)
         };
         let settings = config.settings.clone();
+        let radial_menu = config.radial_menu.clone();
         let widgets = config.make_commands(&pointers);
 
         let (log_tx, log_rx) = crossbeam_channel::unbounded();
@@ -175,6 +183,7 @@ impl PracticeTool {
             pointers,
             version_label,
             widgets,
+            radial_menu,
             log: Vec::new(),
             log_rx,
             log_tx,
@@ -220,10 +229,10 @@ impl PracticeTool {
                 }
 
                 if option_env!("CARGO_XTASK_DIST").is_none()
-                    && ui.button_with_size("Eject", [
-                        BUTTON_WIDTH * scaling_factor(ui),
-                        BUTTON_HEIGHT,
-                    ])
+                    && ui.button_with_size(
+                        "Eject",
+                        [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT],
+                    )
                 {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
@@ -569,6 +578,32 @@ impl PracticeTool {
 
         ui.push_font(font_id)
     }
+
+    fn render_radial(&mut self, ui: &imgui::Ui) {
+        let mut xinput_state: XINPUT_STATE = Default::default();
+        unsafe { (XINPUTGETSTATE)(0, &mut xinput_state) };
+
+        if xinput_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_LEFT_SHOULDER)
+            && xinput_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_RIGHT_SHOULDER)
+        {
+            let menu = self
+                .radial_menu
+                .iter()
+                .map(|RadialMenu { index, label }| label.as_str())
+                .collect::<Vec<_>>();
+            let pos = ImVec2 {
+                x: xinput_state.Gamepad.sThumbRX as f32,
+                y: xinput_state.Gamepad.sThumbRY as f32,
+            };
+            let menu_out = radial_menu(ui, &menu, pos);
+
+            if xinput_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A) {
+                if let Some(i) = menu_out {
+                    self.widgets[self.radial_menu[i].index].action();
+                }
+            }
+        }
+    }
 }
 
 impl ImguiRenderLoop for PracticeTool {
@@ -594,6 +629,8 @@ impl ImguiRenderLoop for PracticeTool {
                 UiState::Hidden => self.pointers.cursor_show.set(false),
             }
         }
+
+        self.render_radial(ui);
 
         match &self.ui_state {
             UiState::MenuOpen => {

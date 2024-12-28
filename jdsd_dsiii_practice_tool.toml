@@ -46,6 +46,14 @@ commands = [
   { quitout = "p" }
 ]
 
+radial-menu = [
+  { index = 23, label = "Quitout" },
+  { index = 0, label = "Load savefile" },
+  { index = 10, label = "No Damage" },
+  { index = 18, label = "Target Info" },
+  { index = 19, label = "AI Disable" },
+]
+
 [settings]
 log_level = "DEBUG"
 display = "0"

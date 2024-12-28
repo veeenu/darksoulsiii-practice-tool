@@ -24,6 +24,8 @@ use crate::widgets::target::Target;
 #[derive(Debug, Deserialize)]
 pub(crate) struct Config {
     pub(crate) settings: Settings,
+    #[serde(rename = "radial-menu")]
+    pub(crate) radial_menu: Vec<RadialMenu>,
     commands: Vec<CfgCommand>,
 }
 
@@ -36,6 +38,12 @@ pub(crate) struct Settings {
     pub(crate) show_console: bool,
     #[serde(default = "Indicator::default_set")]
     pub(crate) indicators: Vec<Indicator>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub(crate) struct RadialMenu {
+    pub index: usize,
+    pub label: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -287,6 +295,7 @@ impl Default for Config {
                 show_console: false,
                 indicators: Indicator::default_set(),
             },
+            radial_menu: Vec::new(),
             commands: Vec::new(),
         }
     }
