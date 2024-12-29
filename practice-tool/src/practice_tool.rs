@@ -15,8 +15,7 @@ use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_
 use sys::ImVec2;
 use tracing_subscriber::prelude::*;
 use windows::Win32::UI::Input::XboxController::{
-    XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_BUTTON_FLAGS, XINPUT_GAMEPAD_LEFT_SHOULDER,
-    XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_STATE,
+    XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_LEFT_SHOULDER, XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_STATE,
 };
 
 use crate::config::{Config, IndicatorType, RadialMenu, Settings};
@@ -234,10 +233,10 @@ impl PracticeTool {
                 }
 
                 if option_env!("CARGO_XTASK_DIST").is_none()
-                    && ui.button_with_size(
-                        "Eject",
-                        [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT],
-                    )
+                    && ui.button_with_size("Eject", [
+                        BUTTON_WIDTH * scaling_factor(ui),
+                        BUTTON_HEIGHT,
+                    ])
                 {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
