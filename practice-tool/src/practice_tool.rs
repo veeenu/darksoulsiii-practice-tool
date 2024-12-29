@@ -586,6 +586,7 @@ impl PracticeTool {
 
     fn render_radial(&mut self, ui: &imgui::Ui) {
         let contained_a = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
+        let [_, h] = ui.io().display_size;
         unsafe { (XINPUTGETSTATE)(0, &mut self.gamepad_state) };
 
         if self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_LEFT_SHOULDER)
@@ -603,7 +604,7 @@ impl PracticeTool {
                 self.gamepad_stick = ImVec2 { x, y };
             }
 
-            let menu_out = radial_menu(ui, &menu, self.gamepad_stick);
+            let menu_out = radial_menu(ui, &menu, self.gamepad_stick, h * 0.1, h * 0.25);
 
             if contained_a && !self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A) {
                 if let Some(i) = menu_out {
