@@ -65,6 +65,9 @@ pub(crate) struct PracticeTool {
     framecount_buf: String,
 
     cur_anim_buf: String,
+
+    gamepad_state: XINPUT_STATE,
+    gamepad_stick: ImVec2,
 }
 
 impl PracticeTool {
@@ -197,6 +200,8 @@ impl PracticeTool {
             framecount: 0,
             framecount_buf: Default::default(),
             cur_anim_buf: Default::default(),
+            gamepad_state: Default::default(),
+            gamepad_stick: Default::default(),
         }
     }
 
@@ -580,28 +585,33 @@ impl PracticeTool {
     }
 
     fn render_radial(&mut self, ui: &imgui::Ui) {
-        let mut xinput_state: XINPUT_STATE = Default::default();
-        unsafe { (XINPUTGETSTATE)(0, &mut xinput_state) };
+        let contained_a = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
+        unsafe { (XINPUTGETSTATE)(0, &mut self.gamepad_state) };
 
-        if xinput_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_LEFT_SHOULDER)
-            && xinput_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_RIGHT_SHOULDER)
+        if self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_LEFT_SHOULDER)
+            && self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_RIGHT_SHOULDER)
         {
             let menu = self
                 .radial_menu
                 .iter()
-                .map(|RadialMenu { index, label }| label.as_str())
+                .map(|RadialMenu { label, .. }| label.as_str())
                 .collect::<Vec<_>>();
-            let pos = ImVec2 {
-                x: xinput_state.Gamepad.sThumbRX as f32,
-                y: xinput_state.Gamepad.sThumbRY as f32,
-            };
-            let menu_out = radial_menu(ui, &menu, pos);
+            let x = self.gamepad_state.Gamepad.sThumbLX as f32;
+            let y = -(self.gamepad_state.Gamepad.sThumbLY as f32);
 
-            if xinput_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A) {
+            if x.abs() > 50.0 || y.abs() > 50.0 {
+                self.gamepad_stick = ImVec2 { x, y };
+            }
+
+            let menu_out = radial_menu(ui, &menu, self.gamepad_stick);
+
+            if contained_a && !self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A) {
                 if let Some(i) = menu_out {
                     self.widgets[self.radial_menu[i].index].action();
                 }
             }
+        } else {
+            self.gamepad_stick = ImVec2 { x: 0.0, y: 0.0 }
         }
     }
 }
