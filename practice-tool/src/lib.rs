@@ -21,7 +21,7 @@ mod widgets;
 
 use std::ffi::c_void;
 use std::time::{Duration, Instant};
-use std::{mem, ptr, thread};
+use std::{env, mem, ptr, thread};
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::mh::{MH_ApplyQueued, MH_Initialize, MhHook, MH_STATUS};
@@ -188,6 +188,15 @@ fn await_rshift() -> bool {
     false
 }
 
+fn env_start_requested() -> bool {
+    if env::var("DOLL_SKIP").ok().map(|s| s == "consistent").unwrap_or(false) {
+        thread::sleep(Duration::from_millis(2000));
+        true
+    } else {
+        false
+    }
+}
+
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe extern "stdcall" fn DllMain(hmodule: HINSTANCE, reason: u32, _: *mut c_void) {
@@ -203,7 +212,7 @@ pub unsafe extern "stdcall" fn DllMain(hmodule: HINSTANCE, reason: u32, _: *mut 
                 })
                 .unwrap_or(false)
             {
-                if await_rshift() {
+                if env_start_requested() || await_rshift() {
                     start_practice_tool(hmodule)
                 }
             } else {
