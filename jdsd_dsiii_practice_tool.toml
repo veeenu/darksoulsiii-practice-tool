@@ -47,11 +47,13 @@ commands = [
 ]
 
 radial-menu = [
-  { index = 23, label = "Quitout" },
-  { index = 0, label = "Load savefile" },
-  { index = 10, label = "No Damage" },
-  { index = 18, label = "Target Info" },
-  { index = 19, label = "AI Disable" },
+  { key = "p", label = "Quitout" },
+  { key = "h", label = "Load position" },
+  { key = "ctrl+o", label = "Load savefile" },
+  { key = "f1", label = "AI Disable" },
+  { key = "1", label = "No Damage" },
+  { key = "ctrl+n", label = "Target Info" },
+  { key = "rshift+h", label = "Save position" },
 ]
 
 [settings]

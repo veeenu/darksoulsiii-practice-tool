@@ -20,6 +20,7 @@ mod util;
 mod widgets;
 
 use std::ffi::c_void;
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use std::{env, mem, ptr, thread};
 
@@ -111,6 +112,11 @@ unsafe extern "stdcall" fn xinput_get_state_impl(
     xinput_state: *mut XINPUT_STATE,
 ) -> u32 {
     let r = (XINPUTGETSTATE)(dw_user_index, xinput_state);
+
+    if practice_tool::BLOCK_XINPUT.load(Ordering::SeqCst) {
+        *xinput_state = Default::default();
+        return r;
+    }
 
     if r != ERROR_SUCCESS.0 {
         return r;

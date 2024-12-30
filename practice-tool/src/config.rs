@@ -42,7 +42,8 @@ pub(crate) struct Settings {
 
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) struct RadialMenu {
-    pub index: usize,
+    // pub index: usize,
+    pub key: Key,
     pub label: String,
 }
 

@@ -1,4 +1,5 @@
 use std::fmt::Write;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::Instant;
 
@@ -24,6 +25,8 @@ use crate::{util, XINPUTGETSTATE};
 const MAJOR: usize = pkg_version_major!();
 const MINOR: usize = pkg_version_minor!();
 const PATCH: usize = pkg_version_patch!();
+
+pub(crate) static BLOCK_XINPUT: AtomicBool = AtomicBool::new(false);
 
 struct FontIDs {
     small: FontId,
@@ -67,6 +70,8 @@ pub(crate) struct PracticeTool {
 
     gamepad_state: XINPUT_STATE,
     gamepad_stick: ImVec2,
+    press_queue: Vec<imgui::Key>,
+    release_queue: Vec<imgui::Key>,
 }
 
 impl PracticeTool {
@@ -201,6 +206,8 @@ impl PracticeTool {
             cur_anim_buf: Default::default(),
             gamepad_state: Default::default(),
             gamepad_stick: Default::default(),
+            press_queue: Vec::new(),
+            release_queue: Vec::new(),
         }
     }
 
@@ -233,10 +240,10 @@ impl PracticeTool {
                 }
 
                 if option_env!("CARGO_XTASK_DIST").is_none()
-                    && ui.button_with_size("Eject", [
-                        BUTTON_WIDTH * scaling_factor(ui),
-                        BUTTON_HEIGHT,
-                    ])
+                    && ui.button_with_size(
+                        "Eject",
+                        [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT],
+                    )
                 {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
@@ -591,6 +598,7 @@ impl PracticeTool {
         if self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_LEFT_SHOULDER)
             && self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_RIGHT_SHOULDER)
         {
+            BLOCK_XINPUT.store(true, Ordering::SeqCst);
             let menu = self
                 .radial_menu
                 .iter()
@@ -607,16 +615,27 @@ impl PracticeTool {
 
             if contained_a && !self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A) {
                 if let Some(i) = menu_out {
-                    self.widgets[self.radial_menu[i].index].action();
+                    self.radial_menu[i].key.keys(&mut self.press_queue);
                 }
             }
         } else {
+            BLOCK_XINPUT.store(false, Ordering::SeqCst);
             self.gamepad_stick = ImVec2 { x: 0.0, y: 0.0 }
         }
     }
 }
 
 impl ImguiRenderLoop for PracticeTool {
+    fn before_render(&mut self, ctx: &mut Context, _: &mut dyn RenderContext) {
+        self.release_queue.drain(..).for_each(|key| {
+            ctx.io_mut().add_key_event(key, false);
+        });
+        self.press_queue.drain(..).for_each(|key| {
+            ctx.io_mut().add_key_event(key, true);
+            self.release_queue.push(key);
+        });
+    }
+
     fn render(&mut self, ui: &mut imgui::Ui) {
         let font_token = self.set_font(ui);
 
