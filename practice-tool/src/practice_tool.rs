@@ -607,7 +607,12 @@ impl PracticeTool {
             let x = self.gamepad_state.Gamepad.sThumbLX as f32;
             let y = -(self.gamepad_state.Gamepad.sThumbLY as f32);
 
-            if x.abs() > 50.0 || y.abs() > 50.0 {
+            let norm = (x * x + y * y).sqrt();
+
+            if norm > 28000.0 {
+                let scale = 32767. / norm;
+                let x = x * scale;
+                let y = y * scale;
                 self.gamepad_stick = ImVec2 { x, y };
             }
 
