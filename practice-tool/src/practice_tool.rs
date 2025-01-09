@@ -625,7 +625,6 @@ impl PracticeTool {
             }
         } else {
             BLOCK_XINPUT.store(false, Ordering::SeqCst);
-            self.gamepad_stick = ImVec2 { x: 0.0, y: 0.0 }
         }
     }
 }
