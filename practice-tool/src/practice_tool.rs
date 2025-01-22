@@ -609,8 +609,8 @@ impl PracticeTool {
 
             let norm = (x * x + y * y).sqrt();
 
-            if norm > 28000.0 {
-                let scale = 32767. / norm;
+            if norm > 10000.0 {
+                let scale = 1. / norm;
                 let x = x * scale;
                 let y = y * scale;
                 self.gamepad_stick = ImVec2 { x, y };
