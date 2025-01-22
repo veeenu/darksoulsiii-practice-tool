@@ -293,11 +293,15 @@ impl Widget for Target {
 
     fn interact(&mut self, ui: &imgui::Ui) {
         if self.hotkey.map(|k| k.is_pressed(ui)).unwrap_or(false) {
-            if self.is_enabled {
-                self.disable();
-            } else {
-                self.enable();
-            }
+            self.action();
+        }
+    }
+
+    fn action(&mut self) {
+        if self.is_enabled {
+            self.disable();
+        } else {
+            self.enable();
         }
     }
 }

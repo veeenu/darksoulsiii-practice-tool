@@ -20,6 +20,7 @@ mod util;
 mod widgets;
 
 use std::ffi::c_void;
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use std::{env, mem, ptr, thread};
 
@@ -51,10 +52,13 @@ static DIRECTINPUT8CREATE: Lazy<FDirectInput8Create> = Lazy::new(|| unsafe {
     let count = GetSystemDirectoryW(Some(&mut dinput8_path)) as usize;
 
     // If count == 0, this will be fun
-    std::ptr::copy_nonoverlapping(w!("\\dinput8.dll").0, dinput8_path[count..].as_mut_ptr(), 12);
+    ptr::copy_nonoverlapping(w!("\\dinput8.dll").0, dinput8_path[count..].as_mut_ptr(), 12);
 
     let dinput8 = LoadLibraryW(PCWSTR(dinput8_path.as_ptr())).unwrap();
-    let directinput8create = std::mem::transmute(GetProcAddress(dinput8, s!("DirectInput8Create")));
+    let directinput8create = mem::transmute::<
+        Option<unsafe extern "system" fn() -> isize>,
+        FDirectInput8Create,
+    >(GetProcAddress(dinput8, s!("DirectInput8Create")));
 
     apply_no_logo();
 
@@ -109,22 +113,29 @@ unsafe extern "stdcall" fn xinput_get_state_impl(
 ) -> u32 {
     let r = (XINPUTGETSTATE)(dw_user_index, xinput_state);
 
+    if practice_tool::BLOCK_XINPUT.load(Ordering::SeqCst) {
+        *xinput_state = Default::default();
+        return r;
+    }
+
     if r != ERROR_SUCCESS.0 {
         return r;
     }
 
+    const DEADZONE: i16 = 64;
+
     // Apply deadzone.
     if let Some(state) = xinput_state.as_mut() {
-        if (-10..=10).contains(&state.Gamepad.sThumbLX) {
+        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbLX) {
             state.Gamepad.sThumbLX = 0;
         }
-        if (-10..=10).contains(&state.Gamepad.sThumbLY) {
+        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbLY) {
             state.Gamepad.sThumbLY = 0;
         }
-        if (-10..=10).contains(&state.Gamepad.sThumbRX) {
+        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbRX) {
             state.Gamepad.sThumbRX = 0;
         }
-        if (-10..=10).contains(&state.Gamepad.sThumbRY) {
+        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbRY) {
             state.Gamepad.sThumbRY = 0;
         }
     }

@@ -94,7 +94,7 @@ fn main() {
                     MessageBoxA(
                         HWND(0),
                         PCSTR(update_msg.as_str().as_ptr()),
-                        PCSTR("Update available\0".as_ptr()),
+                        PCSTR(c"Update available".as_ptr() as _),
                         MB_YESNO | MB_ICONINFORMATION,
                     )
                 };
@@ -110,7 +110,7 @@ fn main() {
                 MessageBoxA(
                     HWND(0),
                     PCSTR(error_msg.as_str().as_ptr()),
-                    PCSTR("Error\0".as_ptr()),
+                    PCSTR(c"Error".as_ptr() as _),
                     MB_OK | MB_ICONERROR,
                 );
             }
@@ -123,7 +123,7 @@ fn main() {
             MessageBoxA(
                 HWND(0),
                 PCSTR(error_msg.as_str().as_ptr()),
-                PCSTR("Error\0".as_ptr()),
+                PCSTR(c"Error".as_ptr() as _),
                 MB_OK | MB_ICONERROR,
             );
         }

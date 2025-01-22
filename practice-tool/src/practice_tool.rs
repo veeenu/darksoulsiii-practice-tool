@@ -1,4 +1,5 @@
 use std::fmt::Write;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::Instant;
 
@@ -10,15 +11,22 @@ use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
 use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
+use practice_tool_core::widgets::radial_menu::radial_menu;
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
+use sys::ImVec2;
 use tracing_subscriber::prelude::*;
+use windows::Win32::UI::Input::XboxController::{
+    XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_LEFT_SHOULDER, XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_STATE,
+};
 
-use crate::config::{Config, IndicatorType, Settings};
-use crate::util;
+use crate::config::{Config, IndicatorType, RadialMenu, Settings};
+use crate::{util, XINPUTGETSTATE};
 
 const MAJOR: usize = pkg_version_major!();
 const MINOR: usize = pkg_version_minor!();
 const PATCH: usize = pkg_version_patch!();
+
+pub(crate) static BLOCK_XINPUT: AtomicBool = AtomicBool::new(false);
 
 struct FontIDs {
     small: FontId,
@@ -40,6 +48,7 @@ pub(crate) struct PracticeTool {
     pointers: PointerChains,
     version_label: String,
     widgets: Vec<Box<dyn Widget>>,
+    radial_menu: Vec<RadialMenu>,
 
     log: Vec<(Instant, String)>,
     log_rx: Receiver<String>,
@@ -58,6 +67,11 @@ pub(crate) struct PracticeTool {
     framecount_buf: String,
 
     cur_anim_buf: String,
+
+    gamepad_state: XINPUT_STATE,
+    gamepad_stick: ImVec2,
+    press_queue: Vec<imgui::Key>,
+    release_queue: Vec<imgui::Key>,
 }
 
 impl PracticeTool {
@@ -165,6 +179,7 @@ impl PracticeTool {
             format!("Game Ver {}.{:02}.{}", maj, min, patch)
         };
         let settings = config.settings.clone();
+        let radial_menu = config.radial_menu.clone();
         let widgets = config.make_commands(&pointers);
 
         let (log_tx, log_rx) = crossbeam_channel::unbounded();
@@ -175,6 +190,7 @@ impl PracticeTool {
             pointers,
             version_label,
             widgets,
+            radial_menu,
             log: Vec::new(),
             log_rx,
             log_tx,
@@ -188,6 +204,10 @@ impl PracticeTool {
             framecount: 0,
             framecount_buf: Default::default(),
             cur_anim_buf: Default::default(),
+            gamepad_state: Default::default(),
+            gamepad_stick: Default::default(),
+            press_queue: Vec::new(),
+            release_queue: Vec::new(),
         }
     }
 
@@ -220,10 +240,10 @@ impl PracticeTool {
                 }
 
                 if option_env!("CARGO_XTASK_DIST").is_none()
-                    && ui.button_with_size("Eject", [
-                        BUTTON_WIDTH * scaling_factor(ui),
-                        BUTTON_HEIGHT,
-                    ])
+                    && ui.button_with_size(
+                        "Eject",
+                        [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT],
+                    )
                 {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
@@ -569,9 +589,57 @@ impl PracticeTool {
 
         ui.push_font(font_id)
     }
+
+    fn render_radial(&mut self, ui: &imgui::Ui) {
+        let contained_a = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
+        let [_, h] = ui.io().display_size;
+        unsafe { (XINPUTGETSTATE)(0, &mut self.gamepad_state) };
+
+        if self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_LEFT_SHOULDER)
+            && self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_RIGHT_SHOULDER)
+        {
+            BLOCK_XINPUT.store(true, Ordering::SeqCst);
+            let menu = self
+                .radial_menu
+                .iter()
+                .map(|RadialMenu { label, .. }| label.as_str())
+                .collect::<Vec<_>>();
+            let x = self.gamepad_state.Gamepad.sThumbLX as f32;
+            let y = -(self.gamepad_state.Gamepad.sThumbLY as f32);
+
+            let norm = (x * x + y * y).sqrt();
+
+            if norm > 10000.0 {
+                let scale = 1. / norm;
+                let x = x * scale;
+                let y = y * scale;
+                self.gamepad_stick = ImVec2 { x, y };
+            }
+
+            let menu_out = radial_menu(ui, &menu, self.gamepad_stick, h * 0.1, h * 0.25);
+
+            if contained_a && !self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A) {
+                if let Some(i) = menu_out {
+                    self.radial_menu[i].key.keys(&mut self.press_queue);
+                }
+            }
+        } else {
+            BLOCK_XINPUT.store(false, Ordering::SeqCst);
+        }
+    }
 }
 
 impl ImguiRenderLoop for PracticeTool {
+    fn before_render(&mut self, ctx: &mut Context, _: &mut dyn RenderContext) {
+        self.release_queue.drain(..).for_each(|key| {
+            ctx.io_mut().add_key_event(key, false);
+        });
+        self.press_queue.drain(..).for_each(|key| {
+            ctx.io_mut().add_key_event(key, true);
+            self.release_queue.push(key);
+        });
+    }
+
     fn render(&mut self, ui: &mut imgui::Ui) {
         let font_token = self.set_font(ui);
 
@@ -594,6 +662,8 @@ impl ImguiRenderLoop for PracticeTool {
                 UiState::Hidden => self.pointers.cursor_show.set(false),
             }
         }
+
+        self.render_radial(ui);
 
         match &self.ui_state {
             UiState::MenuOpen => {

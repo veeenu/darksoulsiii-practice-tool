@@ -1,4 +1,5 @@
 use std::ffi::c_void;
+use std::mem;
 
 use libds3::prelude::*;
 use once_cell::sync::Lazy;
@@ -23,9 +24,11 @@ unsafe impl Send for State {}
 unsafe impl Sync for State {}
 
 static STATE: Lazy<State> = Lazy::new(|| unsafe {
-    let dinput8 = LoadLibraryA(PCSTR(b"C:\\Windows\\System32\\dinput8.dll\0".as_ptr())).unwrap();
+    let dinput8 = LoadLibraryA(PCSTR(c"C:\\Windows\\System32\\dinput8.dll".as_ptr() as _)).unwrap();
     let directinput8create =
-        std::mem::transmute(GetProcAddress(dinput8, PCSTR(b"DirectInput8Create\0".as_ptr())));
+        mem::transmute::<Option<unsafe extern "system" fn() -> isize>, FDirectInput8Create>(
+            GetProcAddress(dinput8, PCSTR(c"DirectInput8Create".as_ptr() as _)),
+        );
     println!("Called!");
 
     State { directinput8create }
