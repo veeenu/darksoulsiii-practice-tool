@@ -56,6 +56,6 @@ imgui = { git = "https://github.com/imgui-rs/imgui-rs", rev = "cb8beeb" }
 # [patch.'crates-io']
 # hudhook = { path = "../hudhook" }
 #
-[patch.'https://github.com/veeenu/practice-tool-core']
-practice-tool-core = { path = "../practice-tool-core" }
-practice-tool-tasks = { path = "../practice-tool-core/tasks" }
+# [patch.'https://github.com/veeenu/practice-tool-core']
+# practice-tool-core = { path = "../practice-tool-core" }
+# practice-tool-tasks = { path = "../practice-tool-core/tasks" }
