@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use libds3::prelude::*;
+use practice_tool_core::controller::ControllerCombination;
 use practice_tool_core::key::Key;
 use practice_tool_core::widgets::Widget;
 use serde::Deserialize;
@@ -38,6 +39,7 @@ pub(crate) struct Settings {
     pub(crate) show_console: bool,
     #[serde(default = "Indicator::default_set")]
     pub(crate) indicators: Vec<Indicator>,
+    pub(crate) radial_menu_open: Option<ControllerCombination>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -295,6 +297,7 @@ impl Default for Config {
                 hide: "rshift+0".parse().ok(),
                 show_console: false,
                 indicators: Indicator::default_set(),
+                radial_menu_open: None,
             },
             radial_menu: Vec::new(),
             commands: Vec::new(),

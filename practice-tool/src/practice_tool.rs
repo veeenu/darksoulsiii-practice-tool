@@ -1,7 +1,7 @@
 use std::fmt::Write;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use const_format::formatcp;
 use hudhook::tracing::metadata::LevelFilter;
@@ -15,9 +15,7 @@ use practice_tool_core::widgets::radial_menu::radial_menu;
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use sys::ImVec2;
 use tracing_subscriber::prelude::*;
-use windows::Win32::UI::Input::XboxController::{
-    XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_LEFT_SHOULDER, XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_STATE,
-};
+use windows::Win32::UI::Input::XboxController::{XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_STATE};
 
 use crate::config::{Config, IndicatorType, RadialMenu, Settings};
 use crate::{util, XINPUTGETSTATE};
@@ -70,6 +68,7 @@ pub(crate) struct PracticeTool {
 
     gamepad_state: XINPUT_STATE,
     gamepad_stick: ImVec2,
+    radial_menu_open_time: Instant,
     press_queue: Vec<imgui::Key>,
     release_queue: Vec<imgui::Key>,
 }
@@ -206,6 +205,7 @@ impl PracticeTool {
             cur_anim_buf: Default::default(),
             gamepad_state: Default::default(),
             gamepad_stick: Default::default(),
+            radial_menu_open_time: Instant::now(),
             press_queue: Vec::new(),
             release_queue: Vec::new(),
         }
@@ -591,14 +591,34 @@ impl PracticeTool {
     }
 
     fn render_radial(&mut self, ui: &imgui::Ui) {
-        let contained_a = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
+        // Debounce a handful of frames to avoid accidentally rotating the menu when releasing L3
+        const RADIAL_MENU_DEBOUNCE: Duration = Duration::from_millis(150);
+
+        let Some(combo) = self.settings.radial_menu_open.as_ref() else {
+            return;
+        };
+
+        let pressed_a_before = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
+        let pressed_b_before = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_B);
+
         let [_, h] = ui.io().display_size;
         unsafe { (XINPUTGETSTATE)(0, &mut self.gamepad_state) };
 
-        if self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_LEFT_SHOULDER)
-            && self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_RIGHT_SHOULDER)
-        {
+        let pressed_a_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
+        let pressed_b_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_B);
+        let pressed_combo = combo.is_pressed(&self.gamepad_state);
+
+        let released_a = !pressed_a_after && pressed_a_before;
+        let released_b = !pressed_b_after && pressed_b_before;
+
+        if pressed_combo {
             BLOCK_XINPUT.store(true, Ordering::SeqCst);
+            self.radial_menu_open_time = Instant::now();
+        }
+
+        let debounce_elapsed = self.radial_menu_open_time.elapsed() > RADIAL_MENU_DEBOUNCE;
+
+        if BLOCK_XINPUT.load(Ordering::SeqCst) {
             let menu = self
                 .radial_menu
                 .iter()
@@ -609,7 +629,7 @@ impl PracticeTool {
 
             let norm = (x * x + y * y).sqrt();
 
-            if norm > 10000.0 {
+            if norm > 10000.0 && debounce_elapsed {
                 let scale = 1. / norm;
                 let x = x * scale;
                 let y = y * scale;
@@ -618,13 +638,14 @@ impl PracticeTool {
 
             let menu_out = radial_menu(ui, &menu, self.gamepad_stick, h * 0.1, h * 0.25);
 
-            if contained_a && !self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A) {
+            if released_a {
                 if let Some(i) = menu_out {
                     self.radial_menu[i].key.keys(&mut self.press_queue);
                 }
+                BLOCK_XINPUT.store(false, Ordering::SeqCst);
+            } else if released_b {
+                BLOCK_XINPUT.store(false, Ordering::SeqCst);
             }
-        } else {
-            BLOCK_XINPUT.store(false, Ordering::SeqCst);
         }
     }
 }
