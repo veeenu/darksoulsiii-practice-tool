@@ -122,23 +122,23 @@ unsafe extern "stdcall" fn xinput_get_state_impl(
         return r;
     }
 
-    const DEADZONE: i16 = 64;
+    // const DEADZONE: i16 = 64;
 
     // Apply deadzone.
-    if let Some(state) = xinput_state.as_mut() {
-        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbLX) {
-            state.Gamepad.sThumbLX = 0;
-        }
-        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbLY) {
-            state.Gamepad.sThumbLY = 0;
-        }
-        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbRX) {
-            state.Gamepad.sThumbRX = 0;
-        }
-        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbRY) {
-            state.Gamepad.sThumbRY = 0;
-        }
-    }
+    // if let Some(state) = xinput_state.as_mut() {
+    //     if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbLX) {
+    //         state.Gamepad.sThumbLX = 0;
+    //     }
+    //     if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbLY) {
+    //         state.Gamepad.sThumbLY = 0;
+    //     }
+    //     if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbRX) {
+    //         state.Gamepad.sThumbRX = 0;
+    //     }
+    //     if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbRY) {
+    //         state.Gamepad.sThumbRY = 0;
+    //     }
+    // }
 
     r
 }
