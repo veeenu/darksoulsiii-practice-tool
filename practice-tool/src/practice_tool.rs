@@ -240,10 +240,10 @@ impl PracticeTool {
                 }
 
                 if option_env!("CARGO_XTASK_DIST").is_none()
-                    && ui.button_with_size(
-                        "Eject",
-                        [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT],
-                    )
+                    && ui.button_with_size("Eject", [
+                        BUTTON_WIDTH * scaling_factor(ui),
+                        BUTTON_HEIGHT,
+                    ])
                 {
                     self.ui_state = UiState::Closed;
                     self.pointers.cursor_show.set(false);
@@ -591,7 +591,8 @@ impl PracticeTool {
     }
 
     fn render_radial(&mut self, ui: &imgui::Ui) {
-        // Debounce a handful of frames to avoid accidentally rotating the menu when releasing L3
+        // Debounce a handful of frames to avoid accidentally rotating the menu when
+        // releasing L3
         const RADIAL_MENU_DEBOUNCE: Duration = Duration::from_millis(150);
 
         let Some(combo) = self.settings.radial_menu_open.as_ref() else {
