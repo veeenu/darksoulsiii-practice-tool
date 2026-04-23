@@ -10,7 +10,7 @@ struct CharacterStatsEdit {
 }
 
 impl Stats for CharacterStatsEdit {
-    fn data(&mut self) -> Option<impl Iterator<Item = Datum>> {
+    fn data(&mut self) -> Option<impl Iterator<Item = Datum<'_>>> {
         self.stats.as_mut().map(|s| {
             [
                 Datum::int("Level", &mut s.level, 1, i32::MAX),

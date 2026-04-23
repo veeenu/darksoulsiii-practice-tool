@@ -3,12 +3,12 @@ use std::mem;
 
 use libds3::prelude::*;
 use once_cell::sync::Lazy;
-use windows::core::{GUID, HRESULT, PCSTR};
-use windows::Win32::Foundation::{BOOL, HINSTANCE};
+use windows::core::{BOOL, GUID, HRESULT, PCSTR};
+use windows::Win32::Foundation::HINSTANCE;
 use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryA};
 use windows::Win32::System::SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH};
 
-type FDirectInput8Create = unsafe extern "stdcall" fn(
+type FDirectInput8Create = unsafe extern "system" fn(
     hinst: HINSTANCE,
     dwversion: u32,
     riidltf: *const GUID,
@@ -50,7 +50,7 @@ fn patch() {
 }
 
 #[no_mangle]
-unsafe extern "stdcall" fn DirectInput8Create(
+unsafe extern "system" fn DirectInput8Create(
     hinst: HINSTANCE,
     dwversion: u32,
     riidltf: *const GUID,

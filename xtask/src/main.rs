@@ -18,7 +18,7 @@ fn main() -> Result<()> {
         Some("dist") => dist()?,
         Some("dist-param-mod") => dist_param_mod()?,
         Some("codegen") => codegen::codegen()?,
-        Some("inject") => inject(env::args().skip(1).map(String::from))?,
+        Some("inject") => inject(env::args().skip(1))?,
         Some("run") => run()?,
         Some("run-param-tinkerer") => run_param_tinkerer()?,
         Some("install") => install()?,
@@ -144,7 +144,7 @@ fn uninstall() -> Result<()> {
 fn inject<S: AsRef<OsStr>>(args: impl Iterator<Item = S>) -> Result<()> {
     cargo_command("build").args(["--release", "--bin", "inject"]).status().context("cargo")?;
 
-    steam_command(target_path("release").join("inject"), APPID)?
+    steam_command(target_path("release").join("inject"), APPID, "DarkSoulsIII")?
         .args(args)
         .status()
         .context("inject")?;

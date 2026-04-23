@@ -4,7 +4,6 @@ use pkg_version::*;
 use semver::Version;
 use tracing_subscriber::filter::LevelFilter;
 use windows::core::PCSTR;
-use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     MessageBoxA, IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_OK, MB_YESNO,
 };
@@ -92,7 +91,7 @@ fn main() {
 
                 let msgbox_response = unsafe {
                     MessageBoxA(
-                        HWND(0),
+                        None,
                         PCSTR(update_msg.as_str().as_ptr()),
                         PCSTR(c"Update available".as_ptr() as _),
                         MB_YESNO | MB_ICONINFORMATION,
@@ -108,7 +107,7 @@ fn main() {
             let error_msg = format!("Unexpected error checking for new version: {}\0", e);
             unsafe {
                 MessageBoxA(
-                    HWND(0),
+                    None,
                     PCSTR(error_msg.as_str().as_ptr()),
                     PCSTR(c"Error".as_ptr() as _),
                     MB_OK | MB_ICONERROR,
@@ -121,7 +120,7 @@ fn main() {
         let error_msg = format!("{}\0", e);
         unsafe {
             MessageBoxA(
-                HWND(0),
+                None,
                 PCSTR(error_msg.as_str().as_ptr()),
                 PCSTR(c"Error".as_ptr() as _),
                 MB_OK | MB_ICONERROR,

@@ -89,7 +89,7 @@ impl PracticeTool {
             let config_content = std::fs::read_to_string(config_path)
                 .map_err(|e| format!("Couldn't read config file: {:?}", e))?;
             println!("{}", config_content);
-            Config::parse(&config_content).map_err(String::from)
+            Config::parse(&config_content)
         }
 
         let (config, config_err) = match load_config() {
@@ -607,7 +607,8 @@ impl PracticeTool {
 
         let pressed_a_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
         let pressed_b_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_B);
-        let pressed_combo = combo.is_pressed(&self.gamepad_state);
+        let pressed_combo =
+            combo.is_pressed(unsafe { &*(&self.gamepad_state as *const _ as *const _) });
 
         let released_a = !pressed_a_after && pressed_a_before;
         let released_b = !pressed_b_after && pressed_b_before;

@@ -17,7 +17,7 @@ pub static VERSION: Lazy<Version> = Lazy::new(get_version);
 fn get_version() -> Version {
     let file_path = {
         let mut buf = vec![0u16; MAX_PATH as usize];
-        unsafe { GetModuleFileNameW(GetModuleHandleW(None).unwrap(), &mut buf) };
+        unsafe { GetModuleFileNameW(Some(GetModuleHandleW(None).unwrap()), &mut buf) };
         U16CString::from_vec_truncate(buf)
     };
 
@@ -27,7 +27,7 @@ fn get_version() -> Version {
     unsafe {
         GetFileVersionInfoW(
             PCWSTR(file_path.as_ptr()),
-            0,
+            None,
             version_info_size,
             version_info_buf.as_mut_ptr() as _,
         )
@@ -35,7 +35,7 @@ fn get_version() -> Version {
     };
 
     let mut version_info: *mut VS_FIXEDFILEINFO = null_mut();
-    unsafe {
+    let _ = unsafe {
         VerQueryValueW(
             version_info_buf.as_ptr() as _,
             PCWSTR(widestring::U16CString::from_str("\\\\\0").unwrap().as_ptr()),
