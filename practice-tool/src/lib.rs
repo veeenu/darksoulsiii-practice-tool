@@ -216,7 +216,9 @@ pub unsafe extern "system" fn DllMain(hmodule: HINSTANCE, reason: u32, _: *mut c
         Lazy::force(&DIRECTINPUT8CREATE);
         Lazy::force(&XINPUTGETSTATE);
 
+        let hmodule_ptr = hmodule.0 as usize;
         thread::spawn(move || {
+            let hmodule = HINSTANCE(hmodule_ptr as *mut c_void);
             if util::get_dll_path()
                 .and_then(|path| {
                     path.file_name().map(|s| s.to_string_lossy().to_lowercase() == "dinput8.dll")

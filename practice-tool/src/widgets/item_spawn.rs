@@ -128,10 +128,8 @@ impl ItemIDNode {
                     }
                 },
                 ItemIDNode::Node { node, children } => {
-                    let children: Vec<_> = children
-                        .iter()
-                        .filter_map(|c| c.filter(filter))
-                        .collect();
+                    let children: Vec<_> =
+                        children.iter().filter_map(|c| c.filter(filter)).collect();
                     if children.is_empty() {
                         None
                     } else {

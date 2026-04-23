@@ -152,4 +152,5 @@ macro_rules! bitflag {
     ($b:expr; $($e:expr),+) => { Bitflag::new(PointerChain::new(&[$($e,)*]), $b) }
 }
 
-pub use {bitflag, pointer_chain};
+pub use bitflag;
+pub use pointer_chain;
