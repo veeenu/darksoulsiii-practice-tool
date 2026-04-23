@@ -1,14 +1,14 @@
 [workspace]
 resolver = "2"
 members = [
-  "practice-tool", 
+  "practice-tool",
   "lib/libds3",
   "lib/macro-param",
   "lib/param-tinkerer",
   "lib/no-logo",
   "lib/param-mod",
   "lib/scripts",
-  "xtask", 
+  "xtask",
 ]
 
 [workspace.package]
@@ -46,7 +46,7 @@ features = [
   "Win32_System_SystemInformation",
   "Win32_System_SystemServices",
   "Win32_System_Threading",
-  "Win32_UI_Input_XboxController", 
+  "Win32_UI_Input_XboxController",
 ]
 
 # TODO: remove this once the fix to imgui-rs/imgui-rs#775 gets released.

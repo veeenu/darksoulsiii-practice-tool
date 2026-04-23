@@ -12,7 +12,7 @@ use windows::Win32::System::Console::AllocConsole;
 use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryA};
 use windows::Win32::System::SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH};
 
-type FDirectInput8Create = unsafe extern "stdcall" fn(
+type FDirectInput8Create = unsafe extern "system" fn(
     hinst: HINSTANCE,
     dwversion: u32,
     riidltf: *const GUID,
@@ -206,7 +206,7 @@ unsafe fn patch() {
 }
 
 #[no_mangle]
-unsafe extern "stdcall" fn DirectInput8Create(
+unsafe extern "system" fn DirectInput8Create(
     hinst: HINSTANCE,
     dwversion: u32,
     riidltf: *const GUID,

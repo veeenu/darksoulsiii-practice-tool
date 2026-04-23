@@ -1,3 +1,5 @@
+#![allow(unsupported_calling_conventions)]
+
 use std::fmt::Write;
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;

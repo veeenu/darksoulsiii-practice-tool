@@ -18,7 +18,7 @@ fn main() -> Result<()> {
         Some("dist") => dist()?,
         Some("dist-param-mod") => dist_param_mod()?,
         Some("codegen") => codegen::codegen()?,
-        Some("inject") => inject(env::args().skip(1).map(String::from))?,
+        Some("inject") => inject(env::args().skip(1))?,
         Some("run") => run()?,
         Some("run-param-tinkerer") => run_param_tinkerer()?,
         Some("install") => install()?,

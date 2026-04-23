@@ -89,7 +89,7 @@ impl PracticeTool {
             let config_content = std::fs::read_to_string(config_path)
                 .map_err(|e| format!("Couldn't read config file: {:?}", e))?;
             println!("{}", config_content);
-            Config::parse(&config_content).map_err(String::from)
+            Config::parse(&config_content)
         }
 
         let (config, config_err) = match load_config() {
