@@ -30,7 +30,7 @@ use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::mh::{MH_ApplyQueued, MH_Initialize, MhHook, MH_STATUS};
 use hudhook::tracing::{error, info, trace};
 use hudhook::{eject, Hudhook};
-use libds3::pointers::PointerChains;
+use libds3::pointers::POINTER_CHAINS;
 use once_cell::sync::Lazy;
 use practice_tool::PracticeTool;
 use windows::core::{s, w, GUID, HRESULT, PCWSTR};
@@ -157,20 +157,15 @@ unsafe extern "system" fn xinput_get_state_impl(
 }
 
 fn apply_no_logo() {
-    // This is evaluated twice: here and in [`PracticeTool::new()`]. No big
-    // deal, but might want to refactor that eventually.
-    let pointer_chains = PointerChains::new();
-    pointer_chains.no_logo.write([
+    POINTER_CHAINS.no_logo.write([
         0x48, 0x31, 0xC0, 0x48, 0x89, 0x02, 0x49, 0x89, 0x04, 0x24, 0x90, 0x90, 0x90, 0x90, 0x90,
         0x90, 0x90, 0x90, 0x90, 0x90,
     ]);
 }
 
 fn apply_license_check_patch() {
-    // Like in [`apply_no_logo()`], this evaluates the pointer chains again.
-    let pointer_chains = PointerChains::new();
     // Versions before 1.08 have no DLC code, hence no license checks.
-    let Some(license_check) = pointer_chains.license_check else {
+    let Some(license_check) = &POINTER_CHAINS.license_check else {
         return;
     };
 

@@ -56,7 +56,6 @@ impl UiState {
 
 pub(crate) struct PracticeTool {
     settings: Settings,
-    pointers: PointerChains,
     version_label: String,
     help_text: String,
     widgets: Vec<Box<dyn Widget>>,
@@ -189,7 +188,6 @@ impl PracticeTool {
             }
         }
 
-        let pointers = PointerChains::new();
         let version_label = {
             let (maj, min, patch) = (*VERSION).into();
             format!("Game Ver {}.{:02}.{}", maj, min, patch)
@@ -204,14 +202,13 @@ impl PracticeTool {
         );
         let settings = config.settings.clone();
         let radial_menu = config.radial_menu.clone();
-        let widgets = config.make_commands(&pointers);
+        let widgets = config.make_commands(&POINTER_CHAINS);
 
         let (log_tx, log_rx) = crossbeam_channel::unbounded();
         info!("Initialized");
 
         PracticeTool {
             settings,
-            pointers,
             version_label,
             help_text,
             widgets,
@@ -268,7 +265,7 @@ impl PracticeTool {
                 if ui.button_with_size("Close", [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT])
                 {
                     self.ui_state = UiState::Closed;
-                    self.pointers.cursor_show.set(false);
+                    POINTER_CHAINS.cursor_show.set(false);
                 }
 
                 if option_env!("CARGO_XTASK_DIST").is_none()
@@ -278,7 +275,7 @@ impl PracticeTool {
                     ])
                 {
                     self.ui_state = UiState::Closed;
-                    self.pointers.cursor_show.set(false);
+                    POINTER_CHAINS.cursor_show.set(false);
                     hudhook::eject();
                 }
             });
@@ -322,7 +319,7 @@ impl PracticeTool {
                     .build(|| {
                         let style = ui.clone_style();
 
-                        self.pointers.cursor_show.set(true);
+                        POINTER_CHAINS.cursor_show.set(true);
 
                         ui.text(
                             "You can toggle indicators here, as\nwell as reset the frame \
@@ -374,7 +371,7 @@ impl PracticeTool {
 
                         if ui.button_with_size("Close", [btn_close_width, 0.0]) {
                             ui.close_current_popup();
-                            self.pointers.cursor_show.set(false);
+                            POINTER_CHAINS.cursor_show.set(false);
                         }
                     });
 
@@ -389,7 +386,7 @@ impl PracticeTool {
                     .movable(false)
                     .title_bar(false)
                     .build(|| {
-                        self.pointers.cursor_show.set(true);
+                        POINTER_CHAINS.cursor_show.set(true);
                         ui.text(formatcp!(
                             "Dark Souls III Practice Tool v{}.{}.{}",
                             MAJOR,
@@ -407,7 +404,7 @@ impl PracticeTool {
                         ui.separator();
                         if ui.button("Close") {
                             ui.close_current_popup();
-                            self.pointers.cursor_show.set(false);
+                            POINTER_CHAINS.cursor_show.set(false);
                         }
                         ui.same_line();
                         if ui.button("Submit issue") {
@@ -436,7 +433,7 @@ impl PracticeTool {
                         },
                         IndicatorType::Position => {
                             if let (Some([x, y, z]), Some(a)) =
-                                (self.pointers.position.1.read(), self.pointers.position.0.read())
+                                (POINTER_CHAINS.position.1.read(), POINTER_CHAINS.position.0.read())
                             {
                                 self.position_bufs.iter_mut().for_each(String::clear);
                                 write!(self.position_bufs[0], "{x:.3}").ok();
@@ -463,7 +460,7 @@ impl PracticeTool {
                             }
                         },
                         IndicatorType::PositionChange => {
-                            if let Some([x, y, z]) = self.pointers.position.1.read() {
+                            if let Some([x, y, z]) = POINTER_CHAINS.position.1.read() {
                                 let position_change_xyz = ((x - self.position_prev[0]).powf(2.0)
                                     + (y - self.position_prev[1]).powf(2.0)
                                     + (z - self.position_prev[2]).powf(2.0))
@@ -488,7 +485,7 @@ impl PracticeTool {
                             }
                         },
                         IndicatorType::Igt => {
-                            if let Some(igt) = self.pointers.igt.read() {
+                            if let Some(igt) = POINTER_CHAINS.igt.read() {
                                 let millis = (igt % 1000) / 10;
                                 let total_seconds = igt / 1000;
                                 let seconds = total_seconds % 60;
@@ -504,7 +501,7 @@ impl PracticeTool {
                             }
                         },
                         IndicatorType::Fps => {
-                            if let Some(fps) = self.pointers.fps.read() {
+                            if let Some(fps) = POINTER_CHAINS.fps.read() {
                                 self.fps_buf.clear();
                                 write!(self.fps_buf, "FPS {fps}",).ok();
                                 ui.text(&self.fps_buf);
@@ -512,9 +509,9 @@ impl PracticeTool {
                         },
                         IndicatorType::Animation => {
                             if let (Some(cur_anim), Some(cur_anim_time), Some(cur_anim_length)) = (
-                                self.pointers.cur_anim.read(),
-                                self.pointers.cur_anim_time.read(),
-                                self.pointers.cur_anim_length.read(),
+                                POINTER_CHAINS.cur_anim.read(),
+                                POINTER_CHAINS.cur_anim_time.read(),
+                                POINTER_CHAINS.cur_anim_length.read(),
                             ) {
                                 self.cur_anim_buf.clear();
                                 write!(
@@ -708,8 +705,8 @@ impl ImguiRenderLoop for PracticeTool {
 
             match &self.ui_state {
                 UiState::MenuOpen => {},
-                UiState::Closed => self.pointers.cursor_show.set(false),
-                UiState::Hidden => self.pointers.cursor_show.set(false),
+                UiState::Closed => POINTER_CHAINS.cursor_show.set(false),
+                UiState::Hidden => POINTER_CHAINS.cursor_show.set(false),
             }
         }
 
@@ -721,7 +718,7 @@ impl ImguiRenderLoop for PracticeTool {
 
         match &self.ui_state {
             UiState::MenuOpen => {
-                self.pointers.cursor_show.set(true);
+                POINTER_CHAINS.cursor_show.set(true);
                 self.profiler.mark(Phase::CursorShow);
                 self.render_visible(ui);
             },

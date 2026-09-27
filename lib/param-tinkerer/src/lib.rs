@@ -8,7 +8,6 @@ use imgui::*;
 use libds3::prelude::*;
 
 struct ParamTinkerer {
-    pointers: PointerChains,
     shown: bool,
     selected_param: usize,
     selected_param_id: usize,
@@ -19,12 +18,7 @@ impl ParamTinkerer {
         println!("Initializing");
         hudhook::alloc_console().ok();
 
-        ParamTinkerer {
-            shown: false,
-            selected_param: 0,
-            selected_param_id: 0,
-            pointers: PointerChains::new(),
-        }
+        ParamTinkerer { shown: false, selected_param: 0, selected_param_id: 0 }
     }
 }
 
@@ -33,7 +27,7 @@ impl ImguiRenderLoop for ParamTinkerer {
         if ui.is_key_index_released(0x50) {
             // P key
             self.shown = !self.shown;
-            self.pointers.cursor_show.set(self.shown);
+            POINTER_CHAINS.cursor_show.set(self.shown);
         }
 
         if !self.shown {

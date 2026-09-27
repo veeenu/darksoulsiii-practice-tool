@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::mem::size_of;
 
 use log::debug;
+use once_cell::sync::Lazy;
 use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 
 use crate::memedit::*;
@@ -526,18 +527,12 @@ impl From<BaseAddresses> for PointerChains {
     }
 }
 
-impl Default for PointerChains {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+/// The pointer chains for the running game version. They only hold addresses,
+/// so one instance serves the whole module.
+pub static POINTER_CHAINS: Lazy<PointerChains> = Lazy::new(|| {
+    let base_module_address = unsafe { GetModuleHandleA(None) }.unwrap().0 as usize;
+    let base_addresses =
+        BaseAddresses::from(*crate::version::VERSION).with_module_base_addr(base_module_address);
 
-impl PointerChains {
-    pub fn new() -> Self {
-        let base_module_address = unsafe { GetModuleHandleA(None) }.unwrap().0 as usize;
-        let base_addresses = BaseAddresses::from(*crate::version::VERSION)
-            .with_module_base_addr(base_module_address);
-
-        base_addresses.into()
-    }
-}
+    base_addresses.into()
+});
