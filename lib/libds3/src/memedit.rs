@@ -65,20 +65,38 @@ fn guarded_read<T>(addr: usize) -> Option<T> {
 pub struct PointerChain<T> {
     proc: HANDLE,
     base: *mut T,
-    offsets: Vec<usize>,
+    // Stored inline, so that creating and evaluating a chain never touches
+    // the heap.
+    offsets: [usize; MAX_OFFSETS],
+    len: usize,
 }
 unsafe impl<T> Send for PointerChain<T> {}
 unsafe impl<T> Sync for PointerChain<T> {}
 
+/// Maximum number of offsets in a `PointerChain`, after the base address.
+pub const MAX_OFFSETS: usize = 8;
+
 impl<T> PointerChain<T> {
     /// Creates a new pointer chain given an array of addresses.
+    ///
+    /// Panics if `chain` is empty or has more than `MAX_OFFSETS` offsets after
+    /// the base address.
     pub fn new(chain: &[usize]) -> PointerChain<T> {
-        let mut it = chain.iter();
-        let base = *it.next().unwrap() as *mut T;
+        let (&base, offsets) = chain.split_first().expect("empty pointer chain");
+        assert!(
+            offsets.len() <= MAX_OFFSETS,
+            "pointer chain has {} offsets, more than the maximum of {MAX_OFFSETS}",
+            offsets.len()
+        );
+
+        let mut inline = [0; MAX_OFFSETS];
+        inline[..offsets.len()].copy_from_slice(offsets);
+
         PointerChain {
             proc: unsafe { GetCurrentProcess() },
-            base,
-            offsets: it.copied().collect(), // it.map(|x| *x).collect(),
+            base: base as *mut T,
+            offsets: inline,
+            len: offsets.len(),
         }
     }
 
@@ -86,7 +104,7 @@ impl<T> PointerChain<T> {
     /// Relies on guarded reads instead of plain pointer dereferencing for
     /// crash safety. Returns `None` if the evaluation failed.
     pub fn eval(&self) -> Option<*mut T> {
-        self.offsets
+        self.offsets[..self.len]
             .iter()
             .try_fold(self.base as usize, |addr, &offs| {
                 guarded_read::<usize>(addr).map(|value| value.wrapping_add(offs))
@@ -121,7 +139,12 @@ impl<T> PointerChain<T> {
     }
 
     pub fn cast<S>(&self) -> PointerChain<S> {
-        PointerChain { proc: self.proc, base: self.base as *mut S, offsets: self.offsets.clone() }
+        PointerChain {
+            proc: self.proc,
+            base: self.base as *mut S,
+            offsets: self.offsets,
+            len: self.len,
+        }
     }
 }
 
@@ -231,6 +254,28 @@ mod tests {
         let broken = PointerChain::<u32>::new(&[&outer as *const usize as usize, 0, 0, 8]);
         assert_eq!(broken.eval(), None);
         assert_eq!(broken.read(), None);
+    }
+
+    #[test]
+    fn test_pointer_chain_max_offsets() {
+        // Each deref lands on the next element; the last one points to `value`.
+        let value: u32 = 0xDEAD_BEEF;
+        let mut links = [0usize; MAX_OFFSETS];
+        links[MAX_OFFSETS - 1] = &value as *const u32 as usize;
+        for i in (0..MAX_OFFSETS - 1).rev() {
+            links[i] = &links[i + 1] as *const usize as usize;
+        }
+
+        let mut chain = vec![&links[0] as *const usize as usize];
+        chain.extend([0; MAX_OFFSETS]);
+        assert_eq!(PointerChain::<u32>::new(&chain).read(), Some(value));
+        assert_eq!(PointerChain::<u32>::new(&chain).cast::<u16>().read(), Some(0xBEEF));
+    }
+
+    #[test]
+    #[should_panic(expected = "more than the maximum")]
+    fn test_pointer_chain_too_many_offsets() {
+        PointerChain::<u32>::new(&[0x1000; MAX_OFFSETS + 2]);
     }
 
     #[test]

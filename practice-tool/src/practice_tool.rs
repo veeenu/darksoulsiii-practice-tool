@@ -562,7 +562,7 @@ impl PracticeTool {
         let [dw, dh] = io.display_size;
         let [ww, wh] = [dw * 0.3, 14.0 * 6.];
 
-        let stack_tokens = vec![
+        let stack_tokens = [
             ui.push_style_var(StyleVar::WindowRounding(0.)),
             ui.push_style_var(StyleVar::FrameBorderSize(0.)),
             ui.push_style_var(StyleVar::WindowBorderSize(0.)),
