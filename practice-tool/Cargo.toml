@@ -12,6 +12,10 @@ path = "src/main.rs"
 crate-type = ["cdylib", "rlib"]
 name = "libjdsd_dsiii_practice_tool"
 
+[features]
+# Record per-frame render loop timings to jdsd_dsiii_practice_tool.profile.csv
+profiling = ["windows/Win32_System_Performance"]
+
 [dependencies]
 const_format = "0.2.26"
 hex = "0.4.3"

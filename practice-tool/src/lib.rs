@@ -16,6 +16,7 @@
 
 mod config;
 mod practice_tool;
+mod profiler;
 mod util;
 mod widgets;
 

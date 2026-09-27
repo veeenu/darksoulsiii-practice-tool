@@ -18,6 +18,7 @@ use tracing_subscriber::prelude::*;
 use windows::Win32::UI::Input::XboxController::{XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_STATE};
 
 use crate::config::{Config, IndicatorType, RadialMenu, Settings};
+use crate::profiler::{Phase, Profiler};
 use crate::{util, XINPUTGETSTATE};
 
 const MAJOR: usize = pkg_version_major!();
@@ -39,6 +40,16 @@ enum UiState {
     MenuOpen,
     Closed,
     Hidden,
+}
+
+impl UiState {
+    fn name(&self) -> &'static str {
+        match self {
+            UiState::MenuOpen => "open",
+            UiState::Closed => "closed",
+            UiState::Hidden => "hidden",
+        }
+    }
 }
 
 pub(crate) struct PracticeTool {
@@ -71,6 +82,8 @@ pub(crate) struct PracticeTool {
     radial_menu_open_time: Instant,
     press_queue: Vec<imgui::Key>,
     release_queue: Vec<imgui::Key>,
+
+    profiler: Profiler,
 }
 
 impl PracticeTool {
@@ -208,6 +221,7 @@ impl PracticeTool {
             radial_menu_open_time: Instant::now(),
             press_queue: Vec::new(),
             release_queue: Vec::new(),
+            profiler: Profiler::new(),
         }
     }
 
@@ -664,6 +678,7 @@ impl ImguiRenderLoop for PracticeTool {
     }
 
     fn render(&mut self, ui: &mut imgui::Ui) {
+        self.profiler.begin();
         let font_token = self.set_font(ui);
 
         let display = self.settings.display.is_pressed(ui);
@@ -688,6 +703,9 @@ impl ImguiRenderLoop for PracticeTool {
 
         self.render_radial(ui);
 
+        let ui_state = self.ui_state.name();
+        self.profiler.mark(Phase::Input);
+
         match &self.ui_state {
             UiState::MenuOpen => {
                 self.pointers.cursor_show.set(true);
@@ -701,6 +719,8 @@ impl ImguiRenderLoop for PracticeTool {
             },
         }
 
+        self.profiler.mark(Phase::Ui);
+
         for w in &mut self.widgets {
             w.log(self.log_tx.clone());
         }
@@ -711,6 +731,7 @@ impl ImguiRenderLoop for PracticeTool {
 
         self.render_logs(ui);
         drop(font_token);
+        self.profiler.end(ui_state);
     }
 
     fn initialize(&mut self, ctx: &mut Context, _: &mut dyn RenderContext) {

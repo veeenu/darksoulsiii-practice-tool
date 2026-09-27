@@ -24,6 +24,12 @@ lto = true
 codegen-units = 1
 opt-level = 3
 
+# Release codegen plus full debug info, so profiling builds match what ships
+# but can be symbolized. Outputs to its own directory, separate from release.
+[profile.profiling]
+inherits = "release"
+debug = 2
+
 [workspace.dependencies]
 imgui = "0.12"
 once_cell = "1.19.0"
