@@ -152,7 +152,12 @@ where
 
     pub fn set(&self, flag: bool) {
         if let Some(x) = self.0.read() {
-            self.0.write(if flag { x | self.1 } else { x & !self.1 });
+            let value = if flag { x | self.1 } else { x & !self.1 };
+            // Writes are far more expensive than reads: skip them when the
+            // flag is already in the requested state.
+            if value != x {
+                self.0.write(value);
+            }
         }
     }
 }
@@ -224,5 +229,24 @@ mod tests {
         let broken = PointerChain::<u32>::new(&[&outer as *const usize as usize, 0, 0, 8]);
         assert_eq!(broken.eval(), None);
         assert_eq!(broken.read(), None);
+    }
+
+    #[test]
+    fn test_bitflag_set() {
+        // Written behind the compiler's back, so it must be interior-mutable.
+        let value = std::cell::UnsafeCell::new(0b1010_0000u8);
+        let flag = Bitflag::new(PointerChain::<u8>::new(&[value.get() as usize]), 0b100);
+        let read = || unsafe { std::ptr::read_volatile(value.get()) };
+
+        flag.set(false);
+        assert_eq!(read(), 0b1010_0000);
+        flag.set(true);
+        assert_eq!(read(), 0b1010_0100);
+        assert_eq!(flag.get(), Some(true));
+        flag.set(true);
+        assert_eq!(read(), 0b1010_0100);
+        flag.set(false);
+        assert_eq!(read(), 0b1010_0000);
+        assert_eq!(flag.get(), Some(false));
     }
 }

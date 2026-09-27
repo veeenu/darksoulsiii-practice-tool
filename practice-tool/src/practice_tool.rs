@@ -239,15 +239,19 @@ impl PracticeTool {
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
             .build(|| {
+                self.profiler.mark(Phase::UiSetup);
+
                 if !(ui.io().want_capture_keyboard && ui.is_any_item_active()) {
                     for w in self.widgets.iter_mut() {
                         w.interact(ui);
                     }
                 }
+                self.profiler.mark(Phase::WidgetsInteract);
 
                 for w in self.widgets.iter_mut() {
                     w.render(ui);
                 }
+                self.profiler.mark(Phase::WidgetsRender);
 
                 if ui.button_with_size("Close", [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT])
                 {
@@ -415,6 +419,7 @@ impl PracticeTool {
                     });
 
                 ui.new_line();
+                self.profiler.mark(Phase::UiSetup);
 
                 for indicator in &self.settings.indicators {
                     if !indicator.enabled {
@@ -526,14 +531,17 @@ impl PracticeTool {
                         },
                     }
                 }
+                self.profiler.mark(Phase::Indicators);
 
                 for w in self.widgets.iter_mut() {
                     w.render_closed(ui);
                 }
+                self.profiler.mark(Phase::WidgetsRender);
 
                 for w in self.widgets.iter_mut() {
                     w.interact(ui);
                 }
+                self.profiler.mark(Phase::WidgetsInteract);
             });
 
         for st in stack_tokens.into_iter().rev() {
@@ -545,6 +553,7 @@ impl PracticeTool {
         for w in self.widgets.iter_mut() {
             w.interact(ui);
         }
+        self.profiler.mark(Phase::WidgetsInteract);
     }
 
     fn render_logs(&mut self, ui: &imgui::Ui) {
@@ -713,6 +722,7 @@ impl ImguiRenderLoop for PracticeTool {
         match &self.ui_state {
             UiState::MenuOpen => {
                 self.pointers.cursor_show.set(true);
+                self.profiler.mark(Phase::CursorShow);
                 self.render_visible(ui);
             },
             UiState::Closed => {
@@ -723,7 +733,7 @@ impl ImguiRenderLoop for PracticeTool {
             },
         }
 
-        self.profiler.mark(Phase::Ui);
+        self.profiler.mark(Phase::UiFinish);
 
         for w in &mut self.widgets {
             w.log(self.log_tx.clone());

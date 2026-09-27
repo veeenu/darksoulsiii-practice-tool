@@ -20,16 +20,20 @@ use crate::util;
 
 const BUFFER_LEN: usize = 512;
 const BUFFER_COUNT: usize = 4;
-/// Begin, one per `Phase`, end.
-const TICKS: usize = 6;
+/// Maximum marks per frame; any further marks are dropped.
+const MAX_MARKS: usize = 16;
 
 #[derive(Clone, Copy)]
 struct Sample {
     frame: u32,
     ui_state: &'static str,
-    /// Performance counter ticks, indexed by `Phase`. Zero for marks that
-    /// weren't recorded this frame.
-    ticks: [i64; TICKS],
+    /// Performance counter ticks at the start of the frame.
+    start: i64,
+    /// Number of marks recorded this frame.
+    len: u8,
+    /// Marks in execution order: the phase each one ends, and its ticks.
+    phases: [u8; MAX_MARKS],
+    ticks: [i64; MAX_MARKS],
 }
 
 pub(crate) struct Profiler(Option<Recorder>);
@@ -83,7 +87,14 @@ impl Profiler {
         info!("Profiler enabled");
 
         Profiler(Some(Recorder {
-            current: Sample { frame: 0, ui_state: "", ticks: [0; TICKS] },
+            current: Sample {
+                frame: 0,
+                ui_state: "",
+                start: 0,
+                len: 0,
+                phases: [0; MAX_MARKS],
+                ticks: [0; MAX_MARKS],
+            },
             buf: Vec::with_capacity(BUFFER_LEN),
             full_tx,
             empty_rx,
@@ -93,22 +104,23 @@ impl Profiler {
     #[inline(always)]
     pub(crate) fn begin(&mut self) {
         if let Some(r) = &mut self.0 {
-            r.current.ticks = [0; TICKS];
-            r.current.ticks[0] = qpc();
+            r.current.len = 0;
+            r.current.start = qpc();
         }
     }
 
     #[inline(always)]
     pub(crate) fn mark(&mut self, phase: Phase) {
         if let Some(r) = &mut self.0 {
-            r.current.ticks[phase as usize] = qpc();
+            r.mark(phase);
         }
     }
 
+    /// Marks the end of `Phase::Logs` and records the frame.
     #[inline(always)]
     pub(crate) fn end(&mut self, ui_state: &'static str) {
         if let Some(r) = &mut self.0 {
-            r.current.ticks[TICKS - 1] = qpc();
+            r.mark(Phase::Logs);
             r.current.ui_state = ui_state;
             if !r.commit() {
                 self.0 = None;
@@ -118,6 +130,17 @@ impl Profiler {
 }
 
 impl Recorder {
+    #[inline(always)]
+    fn mark(&mut self, phase: Phase) {
+        let Sample { len, phases, ticks, .. } = &mut self.current;
+        let i = *len as usize;
+        if i < MAX_MARKS {
+            ticks[i] = qpc();
+            phases[i] = phase as u8;
+            *len += 1;
+        }
+    }
+
     /// Returns `false` if the writer thread is gone and recording should stop.
     #[inline(always)]
     fn commit(&mut self) -> bool {
@@ -173,37 +196,41 @@ fn write_samples(
     let to_ns = |ticks: i64| (ticks as i128 * 1_000_000_000 / freq as i128) as i64;
 
     let mut out = BufWriter::new(File::create(path)?);
-    writeln!(
-        out,
-        "frame,ui_state,start_ns,interval_ns,hotkeys_ns,xinput_ns,radial_ns,ui_ns,logs_ns,total_ns"
-    )?;
+    write!(out, "frame,ui_state,start_ns,interval_ns")?;
+    for name in Phase::NAMES {
+        write!(out, ",{name}_ns")?;
+    }
+    writeln!(out, ",total_ns")?;
     out.flush()?;
 
     let mut base = None;
     let mut prev_start = None;
 
     for mut batch in full_rx {
-        for Sample { frame, ui_state, ticks } in batch.iter().copied() {
-            let (t0, tn) = (ticks[0], ticks[TICKS - 1]);
-            let base = *base.get_or_insert(t0);
-            let interval = prev_start.map(|prev| t0 - prev).unwrap_or(0);
-            prev_start = Some(t0);
+        for Sample { frame, ui_state, start, len, phases, ticks } in batch.iter().copied() {
+            let base = *base.get_or_insert(start);
+            let interval = prev_start.map(|prev| start - prev).unwrap_or(0);
+            prev_start = Some(start);
 
-            write!(out, "{frame},{ui_state},{},{}", to_ns(t0 - base), to_ns(interval))?;
-
-            // Each phase runs from the previous recorded mark; unrecorded marks
-            // are left empty.
-            let mut prev = t0;
-            for &t in &ticks[1..] {
-                if t == 0 {
-                    write!(out, ",")?;
-                } else {
-                    write!(out, ",{}", to_ns(t - prev))?;
-                    prev = t;
-                }
+            // Each mark ends its phase at the time elapsed since the previous
+            // mark. Phases marked more than once are summed; unmarked ones are
+            // left empty.
+            let mut durations = [None::<i64>; Phase::COUNT];
+            let mut prev = start;
+            for (&phase, &t) in phases.iter().zip(&ticks).take(len as usize) {
+                let duration = &mut durations[phase as usize];
+                *duration = Some(duration.unwrap_or(0) + t - prev);
+                prev = t;
             }
 
-            writeln!(out, ",{}", to_ns(tn - t0))?;
+            write!(out, "{frame},{ui_state},{},{}", to_ns(start - base), to_ns(interval))?;
+            for duration in durations {
+                match duration {
+                    Some(d) => write!(out, ",{}", to_ns(d))?,
+                    None => write!(out, ",")?,
+                }
+            }
+            writeln!(out, ",{}", to_ns(prev - start))?;
         }
         out.flush()?;
 
