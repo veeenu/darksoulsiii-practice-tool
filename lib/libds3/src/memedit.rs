@@ -37,7 +37,8 @@ fn guarded_read<T>(addr: usize) -> Option<T> {
     // violations on `addr` instead of letting them unwind.
     let ok = unsafe { libds3_guarded_read(addr as _, value.as_mut_ptr() as _, len) };
 
-    // SAFETY: all `len` bytes were written, and `T` is valid for any bit pattern.
+    // SAFETY: all `len` bytes were written, and `T` is valid for any bit
+    // pattern.
     (ok != 0).then(|| unsafe { value.assume_init() })
 }
 
@@ -225,7 +226,8 @@ mod tests {
         let chain = PointerChain::<u32>::new(&[&outer as *const usize as usize, 8, 8]);
         assert_eq!(chain.read(), Some(value));
 
-        // Second deref reads inner[0], a null pointer, and the third reads from it.
+        // Second deref reads inner[0], a null pointer, and the third reads from
+        // it.
         let broken = PointerChain::<u32>::new(&[&outer as *const usize as usize, 0, 0, 8]);
         assert_eq!(broken.eval(), None);
         assert_eq!(broken.read(), None);

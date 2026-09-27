@@ -46,7 +46,6 @@ pub(crate) enum Phase {
 #[allow(dead_code)]
 impl Phase {
     pub(crate) const COUNT: usize = Phase::Logs as usize + 1;
-
     /// CSV column names, indexed by `Phase`.
     pub(crate) const NAMES: [&'static str; Phase::COUNT] = [
         "hotkeys",
