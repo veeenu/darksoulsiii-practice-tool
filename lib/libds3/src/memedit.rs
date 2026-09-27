@@ -186,6 +186,51 @@ where
     }
 }
 
+/// Replaces `original` with `patched` at a fixed address, typically game code.
+///
+/// Refuses to write unless the target holds exactly `original`, so a patch
+/// built for another game build can't corrupt unrelated code.
+#[derive(Clone, Debug)]
+pub struct CodePatch<const N: usize> {
+    target: PointerChain<[u8; N]>,
+    original: [u8; N],
+    patched: [u8; N],
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CodePatchError {
+    /// The target address can't be read.
+    Unreadable,
+    /// The target holds neither the original nor the patched bytes.
+    UnexpectedBytes,
+    /// Writing the patched bytes failed.
+    WriteFailed,
+}
+
+impl<const N: usize> CodePatch<N> {
+    pub fn new(target: PointerChain<[u8; N]>, original: [u8; N], patched: [u8; N]) -> Self {
+        CodePatch { target, original, patched }
+    }
+
+    /// Checks that the patch can be applied. Returns whether it already is.
+    pub fn check(&self) -> Result<bool, CodePatchError> {
+        match self.target.read() {
+            None => Err(CodePatchError::Unreadable),
+            Some(bytes) if bytes == self.patched => Ok(true),
+            Some(bytes) if bytes == self.original => Ok(false),
+            Some(_) => Err(CodePatchError::UnexpectedBytes),
+        }
+    }
+
+    /// Writes the patched bytes, unless they are already in place.
+    pub fn apply(&self) -> Result<(), CodePatchError> {
+        if self.check()? {
+            return Ok(());
+        }
+        self.target.write(self.patched).ok_or(CodePatchError::WriteFailed)
+    }
+}
+
 #[macro_export]
 macro_rules! pointer_chain {
     ($($e:expr),+) => { PointerChain::new(&[$($e,)*]) }
@@ -295,5 +340,26 @@ mod tests {
         flag.set(false);
         assert_eq!(read(), 0b1010_0000);
         assert_eq!(flag.get(), Some(false));
+    }
+
+    #[test]
+    fn test_code_patch() {
+        let code = std::cell::UnsafeCell::new([0x40u8, 0x55, 0xEB]);
+        let read = || unsafe { std::ptr::read_volatile(code.get()) };
+        let target = PointerChain::<[u8; 3]>::new(&[code.get() as usize]);
+
+        let patch = CodePatch::new(target.clone(), [0x40, 0x55, 0xEB], [0x31, 0xC0, 0xC3]);
+        assert_eq!(patch.check(), Ok(false));
+        assert_eq!(patch.apply(), Ok(()));
+        assert_eq!(read(), [0x31, 0xC0, 0xC3]);
+        assert_eq!(patch.check(), Ok(true));
+        assert_eq!(patch.apply(), Ok(()));
+
+        let foreign = CodePatch::new(target, [0xE9, 0x00, 0x00], [0xC3, 0x90, 0x90]);
+        assert_eq!(foreign.apply(), Err(CodePatchError::UnexpectedBytes));
+        assert_eq!(read(), [0x31, 0xC0, 0xC3]);
+
+        let unmapped = CodePatch::new(PointerChain::new(&[0x80]), [0x40], [0xC3]);
+        assert_eq!(unmapped.apply(), Err(CodePatchError::Unreadable));
     }
 }

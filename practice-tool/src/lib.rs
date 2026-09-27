@@ -28,7 +28,7 @@ use std::{env, mem, ptr, thread};
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::mh::{MH_ApplyQueued, MH_Initialize, MhHook, MH_STATUS};
-use hudhook::tracing::{error, trace};
+use hudhook::tracing::{error, info, trace};
 use hudhook::{eject, Hudhook};
 use libds3::pointers::PointerChains;
 use once_cell::sync::Lazy;
@@ -63,6 +63,7 @@ static DIRECTINPUT8CREATE: Lazy<FDirectInput8Create> = Lazy::new(|| unsafe {
     >(GetProcAddress(dinput8, s!("DirectInput8Create")));
 
     apply_no_logo();
+    apply_license_check_patch();
 
     directinput8create
 });
@@ -163,6 +164,20 @@ fn apply_no_logo() {
         0x48, 0x31, 0xC0, 0x48, 0x89, 0x02, 0x49, 0x89, 0x04, 0x24, 0x90, 0x90, 0x90, 0x90, 0x90,
         0x90, 0x90, 0x90, 0x90, 0x90,
     ]);
+}
+
+fn apply_license_check_patch() {
+    // Like in [`apply_no_logo()`], this evaluates the pointer chains again.
+    let pointer_chains = PointerChains::new();
+    // Versions before 1.08 have no DLC code, hence no license checks.
+    let Some(license_check) = pointer_chains.license_check else {
+        return;
+    };
+
+    match license_check.apply() {
+        Ok(()) => info!("License check patch applied"),
+        Err((site, e)) => error!("License check patch not applied: {site}: {e:?}"),
+    }
 }
 
 fn start_practice_tool(hmodule: HINSTANCE) {

@@ -35,6 +35,80 @@ impl Display for CharacterStats {
     }
 }
 
+// DLC license check patch
+//
+
+/// Disables the DLC ownership re-checks that 1.08+ runs during gameplay.
+///
+/// Ownership is decided at boot, then re-queried from Steam by a watchdog
+/// thread (every ~16.7s) and by a main-thread check requested at random
+/// intervals. A single transient `false` from `BIsSubscribedApp` or
+/// `BIsDlcInstalled` is treated as a revoked license: the game shows the DLC
+/// license error and returns to the title screen. The boot-time check and DLC
+/// loading are left untouched.
+#[derive(Clone, Debug)]
+pub struct LicenseCheckPatch {
+    /// Watchdog check comparing ownership against the boot-time state.
+    /// Returning 0 also skips the watchdog's own direct Steam queries.
+    pub check_ownership_change: CodePatch<3>,
+    /// Watchdog check for DLC content in use by the save that Steam now
+    /// reports as not owned.
+    pub check_ownership_in_use: CodePatch<3>,
+    /// `mov byte [rcx+0x42], 1`: requests the main-thread re-check.
+    pub request_recheck: CodePatch<4>,
+    /// Shows the license error and returns to title. Backstop only.
+    pub on_dlc_lost: CodePatch<1>,
+}
+
+impl LicenseCheckPatch {
+    /// `change`/`in_use` are the function RVAs and their first 3 bytes, which
+    /// vary per build.
+    fn new(
+        module_base: usize,
+        change: (usize, [u8; 3]),
+        in_use: (usize, [u8; 3]),
+        request_recheck: usize,
+        on_dlc_lost: usize,
+    ) -> Self {
+        // xor eax, eax; ret
+        const RETURN_ZERO: [u8; 3] = [0x31, 0xC0, 0xC3];
+
+        LicenseCheckPatch {
+            check_ownership_change: CodePatch::new(
+                pointer_chain!(module_base + change.0),
+                change.1,
+                RETURN_ZERO,
+            ),
+            check_ownership_in_use: CodePatch::new(
+                pointer_chain!(module_base + in_use.0),
+                in_use.1,
+                RETURN_ZERO,
+            ),
+            request_recheck: CodePatch::new(
+                pointer_chain!(module_base + request_recheck),
+                [0xC6, 0x41, 0x42, 0x01],
+                [0xC6, 0x41, 0x42, 0x00],
+            ),
+            // push rbx -> ret
+            on_dlc_lost: CodePatch::new(pointer_chain!(module_base + on_dlc_lost), [0x40], [0xC3]),
+        }
+    }
+
+    /// Applies every patch, or none of them if any site holds unexpected
+    /// bytes. On error, returns the offending site.
+    pub fn apply(&self) -> Result<(), (&'static str, CodePatchError)> {
+        self.check_ownership_change.check().map_err(|e| ("check_ownership_change", e))?;
+        self.check_ownership_in_use.check().map_err(|e| ("check_ownership_in_use", e))?;
+        self.request_recheck.check().map_err(|e| ("request_recheck", e))?;
+        self.on_dlc_lost.check().map_err(|e| ("on_dlc_lost", e))?;
+
+        self.check_ownership_change.apply().map_err(|e| ("check_ownership_change", e))?;
+        self.check_ownership_in_use.apply().map_err(|e| ("check_ownership_in_use", e))?;
+        self.request_recheck.apply().map_err(|e| ("request_recheck", e))?;
+        self.on_dlc_lost.apply().map_err(|e| ("on_dlc_lost", e))
+    }
+}
+
 // Pointer chains
 //
 
@@ -78,6 +152,8 @@ pub struct PointerChains {
     pub cur_anim_time: PointerChain<f32>,
     pub cur_anim_length: PointerChain<f32>,
     pub no_logo: PointerChain<[u8; 20]>,
+    /// `None` before 1.08, which has no DLC code.
+    pub license_check: Option<LicenseCheckPatch>,
     pub current_target: PointerChain<u64>,
     pub map_item_man: u64,
     pub spawn_item_func_ptr: u64,
@@ -308,6 +384,92 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_2 => 0x1F90,
         };
 
+        // Hand-derived: the sites live in, or right next to, Arxan-obfuscated
+        // code, which is laid out differently in every build, so no AoB
+        // pattern finds them. Anchors used to locate them:
+        // - on_dlc_lost: references "RegistReturnTitle" and loads message
+        //   0x1069. Called by the main loop and by the watchdog.
+        // - check_ownership_change/in_use: the functions the watchdog calls at
+        //   +0x9b/+0xd5, after testing the CSDlc singleton.
+        // - request_recheck: CSDlc+0x42 = 1, followed by a rand(1, 500) timer.
+        let module_base = unsafe { GetModuleHandleA(None) }.unwrap().0 as usize;
+        let license_check = match *VERSION {
+            Version::V1_01_1
+            | Version::V1_03_1
+            | Version::V1_03_2
+            | Version::V1_04_1
+            | Version::V1_04_2
+            | Version::V1_04_3
+            | Version::V1_05_0
+            | Version::V1_05_1
+            | Version::V1_06_0
+            | Version::V1_07_0 => None,
+
+            Version::V1_08_0 => Some((
+                (0xe72760, [0xE9, 0x1B, 0xAC]),
+                (0xe72610, [0x40, 0x55, 0xEB]),
+                0xec6b26,
+                0x471d20,
+            )),
+            Version::V1_09_0 => Some((
+                (0xe72e00, [0xE9, 0x1A, 0xE9]),
+                (0xe72cb0, [0x40, 0x55, 0xEB]),
+                0xec71c6,
+                0x471d20,
+            )),
+            Version::V1_10_0 => Some((
+                (0xe72e70, [0xE9, 0xAD, 0xE5]),
+                (0xe72d20, [0x40, 0x55, 0xEB]),
+                0xec7236,
+                0x471d20,
+            )),
+            Version::V1_11_0 => Some((
+                (0xe8c5b0, [0xE9, 0x29, 0x4B]),
+                (0xe8c460, [0xE9, 0x6F, 0xAD]),
+                0xee1096,
+                0x4721f0,
+            )),
+            Version::V1_12_0 => Some((
+                (0xe8d7e0, [0xE9, 0xA4, 0x08]),
+                (0xe8d690, [0xE9, 0x68, 0xBF]),
+                0xee22d6,
+                0x472230,
+            )),
+            Version::V1_13_0 => Some((
+                (0xe8fac0, [0xE9, 0xB2, 0x8B]),
+                (0xe8f970, [0xE9, 0xE1, 0xD8]),
+                0xee45b6,
+                0x472300,
+            )),
+            Version::V1_14_0 => Some((
+                (0xe905a0, [0xE9, 0x1B, 0x5D]),
+                (0xe90400, [0xE9, 0xB9, 0x12]),
+                0xee5176,
+                0x472300,
+            )),
+            Version::V1_15_0 => Some((
+                (0xe906b0, [0xE9, 0xAC, 0x29]),
+                (0xe90510, [0xE9, 0xF2, 0x1A]),
+                0xee5286,
+                0x472300,
+            )),
+            Version::V1_15_1 => Some((
+                (0xe9e3d0, [0xE9, 0xEA, 0xA3]),
+                (0xe9e230, [0xE9, 0xA4, 0x44]),
+                0xef3126,
+                0x472440,
+            )),
+            Version::V1_15_2 => Some((
+                (0xe9e500, [0xE9, 0x16, 0x9B]),
+                (0xe9e360, [0xE9, 0x43, 0x13]),
+                0xef3256,
+                0x472440,
+            )),
+        }
+        .map(|(change, in_use, request_recheck, on_dlc_lost)| {
+            LicenseCheckPatch::new(module_base, change, in_use, request_recheck, on_dlc_lost)
+        });
+
         PointerChains {
             all_no_damage: bitflag!(0b1; debug + offs_all_no_damage as usize),
             no_death: bitflag!(0b100; world_chr_man, 0x80, xa as _, 0x18, 0x1c0),
@@ -358,6 +520,7 @@ impl From<BaseAddresses> for PointerChains {
             quitout: pointer_chain!(menu_man as _, 0x250),
             current_target: pointer_chain!(current_target),
             no_logo: pointer_chain!(no_logo as _),
+            license_check,
             xa: xa as u32,
         }
     }
