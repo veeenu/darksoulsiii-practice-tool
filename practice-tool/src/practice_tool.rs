@@ -736,7 +736,7 @@ impl ImguiRenderLoop for PracticeTool {
         self.profiler.mark(Phase::UiFinish);
 
         for w in &mut self.widgets {
-            w.log(self.log_tx.clone());
+            w.log(&self.log_tx);
         }
 
         let now = Instant::now();

@@ -344,7 +344,7 @@ impl Widget for ItemSpawner<'_> {
         }
     }
 
-    fn log(&mut self, tx: Sender<String>) {
+    fn log(&mut self, tx: &Sender<String>) {
         for x in self.logs.drain(..) {
             tx.send(x).ok();
         }
