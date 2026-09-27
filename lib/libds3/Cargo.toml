@@ -14,3 +14,6 @@ serde_json.workspace = true
 parking_lot.workspace = true
 once_cell.workspace = true
 windows.workspace = true
+
+[build-dependencies]
+cc = "1.2"
