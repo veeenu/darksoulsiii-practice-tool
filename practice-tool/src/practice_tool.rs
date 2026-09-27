@@ -18,14 +18,16 @@ use tracing_subscriber::prelude::*;
 use windows::Win32::UI::Input::XboxController::{XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_STATE};
 
 use crate::config::{Config, IndicatorType, RadialMenu, Settings};
+use crate::gamepad::GamepadState;
 use crate::profiler::{Phase, Profiler};
-use crate::{util, XINPUTGETSTATE};
+use crate::util;
 
 const MAJOR: usize = pkg_version_major!();
 const MINOR: usize = pkg_version_minor!();
 const PATCH: usize = pkg_version_patch!();
 
 pub(crate) static BLOCK_XINPUT: AtomicBool = AtomicBool::new(false);
+pub(crate) static GAMEPAD_STATE: GamepadState = GamepadState::new();
 
 struct FontIDs {
     small: FontId,
@@ -605,8 +607,8 @@ impl PracticeTool {
     }
 
     fn render_radial(&mut self, ui: &imgui::Ui) {
-        // Debounce a handful of frames to avoid accidentally rotating the menu when
-        // releasing L3
+        // Debounce a handful of frames to avoid accidentally rotating the menu
+        // when releasing L3
         const RADIAL_MENU_DEBOUNCE: Duration = Duration::from_millis(150);
 
         let Some(combo) = self.settings.radial_menu_open.as_ref() else {
@@ -617,7 +619,8 @@ impl PracticeTool {
         let pressed_b_before = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_B);
 
         let [_, h] = ui.io().display_size;
-        unsafe { (XINPUTGETSTATE)(0, &mut self.gamepad_state) };
+        self.gamepad_state = GAMEPAD_STATE.load();
+        self.profiler.mark(Phase::XInput);
 
         let pressed_a_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
         let pressed_b_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_B);
@@ -701,10 +704,11 @@ impl ImguiRenderLoop for PracticeTool {
             }
         }
 
+        self.profiler.mark(Phase::Hotkeys);
         self.render_radial(ui);
 
         let ui_state = self.ui_state.name();
-        self.profiler.mark(Phase::Input);
+        self.profiler.mark(Phase::Radial);
 
         match &self.ui_state {
             UiState::MenuOpen => {

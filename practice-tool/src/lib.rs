@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod config;
+mod gamepad;
 mod practice_tool;
 mod profiler;
 mod util;
@@ -113,6 +114,13 @@ unsafe extern "system" fn xinput_get_state_impl(
     xinput_state: *mut XINPUT_STATE,
 ) -> u32 {
     let r = (XINPUTGETSTATE)(dw_user_index, xinput_state);
+
+    // Save the unmodified state for the radial menu, before it is blocked or
+    // deadzoned for the game.
+    if dw_user_index == 0 {
+        practice_tool::GAMEPAD_STATE
+            .store(if r == ERROR_SUCCESS.0 { xinput_state.as_ref() } else { None });
+    }
 
     if practice_tool::BLOCK_XINPUT.load(Ordering::SeqCst) {
         *xinput_state = Default::default();

@@ -11,13 +11,19 @@ mod recorder;
 #[cfg(feature = "profiling")]
 pub(crate) use recorder::Profiler;
 
-/// Intermediate timestamps recorded within a frame.
+/// Intermediate timestamps recorded within a frame. Each phase is measured
+/// from the previous recorded mark.
 #[allow(dead_code)]
 pub(crate) enum Phase {
-    /// Font selection, hotkeys and radial menu (includes the XInput poll).
-    Input = 1,
+    /// Font selection and display/hide hotkeys.
+    Hotkeys = 1,
+    /// Reading the controller state for the radial menu. Not recorded when the
+    /// radial menu is disabled.
+    XInput = 2,
+    /// Rest of the radial menu handling.
+    Radial = 3,
     /// Widget/indicator rendering for the current UI state.
-    Ui = 2,
+    Ui = 4,
 }
 
 #[cfg(not(feature = "profiling"))]

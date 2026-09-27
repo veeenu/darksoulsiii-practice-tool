@@ -20,13 +20,16 @@ use crate::util;
 
 const BUFFER_LEN: usize = 512;
 const BUFFER_COUNT: usize = 4;
+/// Begin, one per `Phase`, end.
+const TICKS: usize = 6;
 
 #[derive(Clone, Copy)]
 struct Sample {
     frame: u32,
     ui_state: &'static str,
-    /// Performance counter ticks: begin, `Phase::Input`, `Phase::Ui`, end.
-    ticks: [i64; 4],
+    /// Performance counter ticks, indexed by `Phase`. Zero for marks that
+    /// weren't recorded this frame.
+    ticks: [i64; TICKS],
 }
 
 pub(crate) struct Profiler(Option<Recorder>);
@@ -80,7 +83,7 @@ impl Profiler {
         info!("Profiler enabled");
 
         Profiler(Some(Recorder {
-            current: Sample { frame: 0, ui_state: "", ticks: [0; 4] },
+            current: Sample { frame: 0, ui_state: "", ticks: [0; TICKS] },
             buf: Vec::with_capacity(BUFFER_LEN),
             full_tx,
             empty_rx,
@@ -90,6 +93,7 @@ impl Profiler {
     #[inline(always)]
     pub(crate) fn begin(&mut self) {
         if let Some(r) = &mut self.0 {
+            r.current.ticks = [0; TICKS];
             r.current.ticks[0] = qpc();
         }
     }
@@ -104,7 +108,7 @@ impl Profiler {
     #[inline(always)]
     pub(crate) fn end(&mut self, ui_state: &'static str) {
         if let Some(r) = &mut self.0 {
-            r.current.ticks[3] = qpc();
+            r.current.ticks[TICKS - 1] = qpc();
             r.current.ui_state = ui_state;
             if !r.commit() {
                 self.0 = None;
@@ -169,28 +173,37 @@ fn write_samples(
     let to_ns = |ticks: i64| (ticks as i128 * 1_000_000_000 / freq as i128) as i64;
 
     let mut out = BufWriter::new(File::create(path)?);
-    writeln!(out, "frame,ui_state,start_ns,interval_ns,input_ns,ui_ns,logs_ns,total_ns")?;
+    writeln!(
+        out,
+        "frame,ui_state,start_ns,interval_ns,hotkeys_ns,xinput_ns,radial_ns,ui_ns,logs_ns,total_ns"
+    )?;
     out.flush()?;
 
     let mut base = None;
     let mut prev_start = None;
 
     for mut batch in full_rx {
-        for Sample { frame, ui_state, ticks: [t0, t1, t2, t3] } in batch.iter().copied() {
+        for Sample { frame, ui_state, ticks } in batch.iter().copied() {
+            let (t0, tn) = (ticks[0], ticks[TICKS - 1]);
             let base = *base.get_or_insert(t0);
             let interval = prev_start.map(|prev| t0 - prev).unwrap_or(0);
             prev_start = Some(t0);
 
-            writeln!(
-                out,
-                "{frame},{ui_state},{},{},{},{},{},{}",
-                to_ns(t0 - base),
-                to_ns(interval),
-                to_ns(t1 - t0),
-                to_ns(t2 - t1),
-                to_ns(t3 - t2),
-                to_ns(t3 - t0),
-            )?;
+            write!(out, "{frame},{ui_state},{},{}", to_ns(t0 - base), to_ns(interval))?;
+
+            // Each phase runs from the previous recorded mark; unrecorded marks
+            // are left empty.
+            let mut prev = t0;
+            for &t in &ticks[1..] {
+                if t == 0 {
+                    write!(out, ",")?;
+                } else {
+                    write!(out, ",{}", to_ns(t - prev))?;
+                    prev = t;
+                }
+            }
+
+            writeln!(out, ",{}", to_ns(tn - t0))?;
         }
         out.flush()?;
 
