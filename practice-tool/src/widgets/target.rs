@@ -71,7 +71,7 @@ unsafe impl Send for Target {}
 unsafe impl Sync for Target {}
 
 impl Target {
-    pub(crate) fn new(detour_addr: PointerChain<u64>, xa: u32, hotkey: Option<Key>) -> Self {
+    pub(crate) fn new(detour_addr: &PointerChain<u64>, xa: u32, hotkey: Option<Key>) -> Self {
         let detour_addr = detour_addr.cast();
         let mut allocate_near = detour_addr.eval().unwrap() as usize;
 

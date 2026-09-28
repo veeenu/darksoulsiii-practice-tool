@@ -8,14 +8,14 @@ use practice_tool_core::widgets::Widget;
 
 #[derive(Debug)]
 struct CycleSpeed {
-    ptr: PointerChain<f32>,
+    ptr: &'static PointerChain<f32>,
     values: Vec<f32>,
     current: Option<f32>,
     label: String,
 }
 
 impl CycleSpeed {
-    fn new(values: &[f32], ptr: PointerChain<f32>) -> Self {
+    fn new(values: &[f32], ptr: &'static PointerChain<f32>) -> Self {
         let mut values = values.to_vec();
         values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
         CycleSpeed { ptr, values, current: None, label: String::new() }
@@ -52,7 +52,7 @@ impl ReadWrite for CycleSpeed {
 
 pub(crate) fn cycle_speed(
     values: &[f32],
-    ptr: PointerChain<f32>,
+    ptr: &'static PointerChain<f32>,
     key: Option<Key>,
 ) -> Box<dyn Widget> {
     Box::new(StoreValue::new(CycleSpeed::new(values, ptr), key))

@@ -4,14 +4,14 @@ use practice_tool_core::widgets::store_value::{ReadWrite, StoreValue};
 use practice_tool_core::widgets::Widget;
 
 struct Souls {
-    ptr: PointerChain<u32>,
+    ptr: &'static PointerChain<u32>,
     current: u32,
     amount: u32,
     label: String,
 }
 
 impl Souls {
-    fn new(amount: u32, ptr: PointerChain<u32>) -> Self {
+    fn new(amount: u32, ptr: &'static PointerChain<u32>) -> Self {
         Self { ptr, current: 0, amount, label: format!("Add {amount} souls") }
     }
 }
@@ -35,6 +35,10 @@ impl ReadWrite for Souls {
     }
 }
 
-pub(crate) fn souls(amount: u32, ptr: PointerChain<u32>, key: Option<Key>) -> Box<dyn Widget> {
+pub(crate) fn souls(
+    amount: u32,
+    ptr: &'static PointerChain<u32>,
+    key: Option<Key>,
+) -> Box<dyn Widget> {
     Box::new(StoreValue::new(Souls::new(amount, ptr), key))
 }
