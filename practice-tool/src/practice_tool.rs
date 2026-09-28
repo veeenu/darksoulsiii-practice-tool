@@ -58,6 +58,7 @@ pub(crate) struct PracticeTool {
     settings: Settings,
     pointers: PointerChains,
     version_label: String,
+    help_text: String,
     widgets: Vec<Box<dyn Widget>>,
     radial_menu: Vec<RadialMenu>,
 
@@ -78,6 +79,7 @@ pub(crate) struct PracticeTool {
     framecount_buf: String,
 
     cur_anim_buf: String,
+    imgui_debug_buf: String,
 
     gamepad_state: XINPUT_STATE,
     gamepad_stick: ImVec2,
@@ -192,6 +194,14 @@ impl PracticeTool {
             let (maj, min, patch) = (*VERSION).into();
             format!("Game Ver {}.{:02}.{}", maj, min, patch)
         };
+        let help_text = format!(
+            "Press the {} key to open/close the tool's\ninterface.\n\nYou can toggle \
+             flags/launch commands by\nclicking in the UI or by pressing\nthe hotkeys (in the \
+             parentheses).\n\nYou can configure your tool by editing\nthe \
+             jdsd_dsiii_practice_tool.toml file with\na text editor. If you break \
+             something,\njust download a fresh file!\n\nThank you for using my tool! <3\n",
+            config.settings.display
+        );
         let settings = config.settings.clone();
         let radial_menu = config.radial_menu.clone();
         let widgets = config.make_commands(&pointers);
@@ -203,6 +213,7 @@ impl PracticeTool {
             settings,
             pointers,
             version_label,
+            help_text,
             widgets,
             radial_menu,
             log: Vec::new(),
@@ -218,6 +229,7 @@ impl PracticeTool {
             framecount: 0,
             framecount_buf: Default::default(),
             cur_anim_buf: Default::default(),
+            imgui_debug_buf: Default::default(),
             gamepad_state: Default::default(),
             gamepad_stick: Default::default(),
             radial_menu_open_time: Instant::now(),
@@ -385,15 +397,7 @@ impl PracticeTool {
                             PATCH
                         ));
                         ui.separator();
-                        ui.text(format!(
-                            "Press the {} key to open/close the tool's\ninterface.\n\nYou can \
-                             toggle flags/launch commands by\nclicking in the UI or by \
-                             pressing\nthe hotkeys (in the parentheses).\n\nYou can configure \
-                             your tool by editing\nthe jdsd_dsiii_practice_tool.toml file with\na \
-                             text editor. If you break something,\njust download a fresh \
-                             file!\n\nThank you for using my tool! <3\n",
-                            self.settings.display
-                        ));
+                        ui.text(&self.help_text);
                         ui.separator();
                         ui.text("-- johndisandonato");
                         ui.text("   https://twitch.tv/johndisandonato");
@@ -527,7 +531,7 @@ impl PracticeTool {
                             ui.text(&self.framecount_buf);
                         },
                         IndicatorType::ImguiDebug => {
-                            imgui_debug(ui);
+                            imgui_debug(ui, &mut self.imgui_debug_buf);
                         },
                     }
                 }
@@ -767,16 +771,18 @@ impl ImguiRenderLoop for PracticeTool {
 }
 
 // Display some imgui debug information. Very expensive.
-fn imgui_debug(ui: &Ui) {
+fn imgui_debug(ui: &Ui, buf: &mut String) {
     let io = ui.io();
-    ui.text(format!("Mouse position     {:?}", io.mouse_pos));
-    ui.text(format!("Mouse down         {:?}", io.mouse_down));
-    ui.text(format!("Want capture mouse {:?}", io.want_capture_mouse));
-    ui.text(format!("Want capture kbd   {:?}", io.want_capture_keyboard));
-    ui.text(format!("Want text input    {:?}", io.want_text_input));
-    ui.text(format!("Want set mouse pos {:?}", io.want_set_mouse_pos));
-    ui.text(format!("Any item active    {:?}", ui.is_any_item_active()));
-    ui.text(format!("Any item hovered   {:?}", ui.is_any_item_hovered()));
-    ui.text(format!("Any item focused   {:?}", ui.is_any_item_focused()));
-    ui.text(format!("Any mouse down     {:?}", ui.is_any_mouse_down()));
+    buf.clear();
+    writeln!(buf, "Mouse position     {:?}", io.mouse_pos).ok();
+    writeln!(buf, "Mouse down         {:?}", io.mouse_down).ok();
+    writeln!(buf, "Want capture mouse {:?}", io.want_capture_mouse).ok();
+    writeln!(buf, "Want capture kbd   {:?}", io.want_capture_keyboard).ok();
+    writeln!(buf, "Want text input    {:?}", io.want_text_input).ok();
+    writeln!(buf, "Want set mouse pos {:?}", io.want_set_mouse_pos).ok();
+    writeln!(buf, "Any item active    {:?}", ui.is_any_item_active()).ok();
+    writeln!(buf, "Any item hovered   {:?}", ui.is_any_item_hovered()).ok();
+    writeln!(buf, "Any item focused   {:?}", ui.is_any_item_focused()).ok();
+    write!(buf, "Any mouse down     {:?}", ui.is_any_mouse_down()).ok();
+    ui.text(&*buf);
 }
