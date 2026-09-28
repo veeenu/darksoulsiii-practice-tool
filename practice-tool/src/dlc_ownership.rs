@@ -11,10 +11,10 @@
 //! reported an app as owned, later `false`s for it are ignored for the rest
 //! of the session. DLC that is not owned is still reported as such.
 
-use std::collections::BTreeSet;
 use std::ffi::c_void;
 use std::mem;
-use std::sync::{Mutex, Once, OnceLock, PoisonError};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Once, OnceLock};
 
 use hudhook::mh::{MH_ApplyQueued, MH_Initialize, MhHook, MH_STATUS};
 use hudhook::tracing::{error, info, warn};
@@ -33,8 +33,32 @@ static STEAM_API_INIT: OnceLock<FSteamApiInit> = OnceLock::new();
 static IS_SUBSCRIBED_APP: OnceLock<FOwnershipCheck> = OnceLock::new();
 static IS_DLC_INSTALLED: OnceLock<FOwnershipCheck> = OnceLock::new();
 
-static OWNED_SUBSCRIBED: Mutex<BTreeSet<u32>> = Mutex::new(BTreeSet::new());
-static OWNED_INSTALLED: Mutex<BTreeSet<u32>> = Mutex::new(BTreeSet::new());
+// Steam app ids of the DLCs, the only apps the game checks ownership of.
+const ASHES_OF_ARIANDEL: u32 = 507994;
+const THE_RINGED_CITY: u32 = 507995;
+
+/// Whether Steam has reported a DLC as owned at any point this session.
+struct KnownOwned {
+    subscribed: AtomicBool,
+    installed: AtomicBool,
+}
+
+impl KnownOwned {
+    const fn new() -> Self {
+        Self { subscribed: AtomicBool::new(false), installed: AtomicBool::new(false) }
+    }
+}
+
+static ASHES_OF_ARIANDEL_OWNED: KnownOwned = KnownOwned::new();
+static THE_RINGED_CITY_OWNED: KnownOwned = KnownOwned::new();
+
+fn known_owned(app_id: u32) -> Option<&'static KnownOwned> {
+    match app_id {
+        ASHES_OF_ARIANDEL => Some(&ASHES_OF_ARIANDEL_OWNED),
+        THE_RINGED_CITY => Some(&THE_RINGED_CITY_OWNED),
+        _ => None,
+    }
+}
 
 /// Hooks `SteamAPI_Init`, which in turn hooks the ownership checks as soon as
 /// the `ISteamApps` interface exists. Must run before the game initializes
@@ -103,27 +127,31 @@ unsafe fn hook_ownership_checks() -> Result<(), String> {
 
 unsafe extern "system" fn is_subscribed_app_impl(this: *mut c_void, app_id: u32) -> bool {
     let owned = (IS_SUBSCRIBED_APP.get().unwrap())(this, app_id);
-    sticky_ownership(&OWNED_SUBSCRIBED, "BIsSubscribedApp", app_id, owned)
+    sticky_ownership("BIsSubscribedApp", app_id, owned, |known| &known.subscribed)
 }
 
 unsafe extern "system" fn is_dlc_installed_impl(this: *mut c_void, app_id: u32) -> bool {
     let owned = (IS_DLC_INSTALLED.get().unwrap())(this, app_id);
-    sticky_ownership(&OWNED_INSTALLED, "BIsDlcInstalled", app_id, owned)
+    sticky_ownership("BIsDlcInstalled", app_id, owned, |known| &known.installed)
 }
 
-/// Records apps reported as owned, and keeps reporting them as owned.
+/// Records DLCs reported as owned, and keeps reporting them as owned. Other
+/// apps are passed through.
 fn sticky_ownership(
-    known_owned: &Mutex<BTreeSet<u32>>,
     check: &str,
     app_id: u32,
     owned: bool,
+    flag: fn(&KnownOwned) -> &AtomicBool,
 ) -> bool {
-    let mut known_owned = known_owned.lock().unwrap_or_else(PoisonError::into_inner);
+    let Some(known_owned) = known_owned(app_id).map(flag) else {
+        return owned;
+    };
 
+    // The flags only ever go from false to true, so no ordering is needed.
     if owned {
-        known_owned.insert(app_id);
+        known_owned.store(true, Ordering::Relaxed);
         true
-    } else if known_owned.contains(&app_id) {
+    } else if known_owned.load(Ordering::Relaxed) {
         warn!("{check}({app_id}) returned false after returning true; ignoring");
         true
     } else {
