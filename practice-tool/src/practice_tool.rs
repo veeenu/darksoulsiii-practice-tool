@@ -647,11 +647,6 @@ impl PracticeTool {
         let debounce_elapsed = self.radial_menu_open_time.elapsed() > RADIAL_MENU_DEBOUNCE;
 
         if BLOCK_XINPUT.load(Ordering::SeqCst) {
-            let menu = self
-                .radial_menu
-                .iter()
-                .map(|RadialMenu { label, .. }| label.as_str())
-                .collect::<Vec<_>>();
             let x = self.gamepad_state.Gamepad.sThumbLX as f32;
             let y = -(self.gamepad_state.Gamepad.sThumbLY as f32);
 
@@ -664,7 +659,8 @@ impl PracticeTool {
                 self.gamepad_stick = ImVec2 { x, y };
             }
 
-            let menu_out = radial_menu(ui, &menu, self.gamepad_stick, h * 0.1, h * 0.25);
+            let menu_out =
+                radial_menu(ui, &self.radial_menu, self.gamepad_stick, h * 0.1, h * 0.25);
 
             if released_a {
                 if let Some(i) = menu_out {

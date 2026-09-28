@@ -49,6 +49,12 @@ pub(crate) struct RadialMenu {
     pub label: String,
 }
 
+impl AsRef<str> for RadialMenu {
+    fn as_ref(&self) -> &str {
+        &self.label
+    }
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) enum IndicatorType {
     Igt,
