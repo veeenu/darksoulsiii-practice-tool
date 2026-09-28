@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod config;
+mod dlc_ownership;
 mod gamepad;
 mod practice_tool;
 mod profiler;
@@ -28,7 +29,7 @@ use std::{env, mem, ptr, thread};
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::mh::{MH_ApplyQueued, MH_Initialize, MhHook, MH_STATUS};
-use hudhook::tracing::{error, info, trace};
+use hudhook::tracing::{error, trace};
 use hudhook::{eject, Hudhook};
 use libds3::pointers::POINTER_CHAINS;
 use once_cell::sync::Lazy;
@@ -164,14 +165,8 @@ fn apply_no_logo() {
 }
 
 fn apply_license_check_patch() {
-    // Versions before 1.08 have no DLC code, hence no license checks.
-    let Some(license_check) = &POINTER_CHAINS.license_check else {
-        return;
-    };
-
-    match license_check.apply() {
-        Ok(()) => info!("License check patch applied"),
-        Err((site, e)) => error!("License check patch not applied: {site}: {e:?}"),
+    if let Err(e) = dlc_ownership::hook() {
+        error!("License check patch not applied: {e}");
     }
 }
 
