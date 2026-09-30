@@ -39,6 +39,7 @@ commands = [
   { flag = "one_shot", hotkey = "7" },
   { flag = "ember", hotkey = "o" },
   { target = "ctrl+n" },
+  { input_viewer = false, seconds = 5 },
   { flag = "ai_disable", hotkey = "f1" },
   { flag = "gravity", hotkey = "f2" },
   { flag = "collision", hotkey = "f3" },
