@@ -195,8 +195,8 @@ impl PracticeTool {
             format!("Game Ver {}.{:02}.{}", maj, min, patch)
         };
         let help_text = format!(
-            "Press the {} key to open/close the tool's\ninterface.\n\nYou can toggle \
-             flags/launch commands by\nclicking in the UI or by pressing\nthe hotkeys (in the \
+            "Press the {} key to open/close the tool's\ninterface.\n\nYou can toggle flags/launch \
+             commands by\nclicking in the UI or by pressing\nthe hotkeys (in the \
              parentheses).\n\nYou can configure your tool by editing\nthe \
              jdsd_dsiii_practice_tool.toml file with\na text editor. If you break \
              something,\njust download a fresh file!\n\nThank you for using my tool! <3\n",
