@@ -17,8 +17,10 @@ use sys::ImVec2;
 use tracing_subscriber::prelude::*;
 use windows::Win32::UI::Input::XboxController::{XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_STATE};
 
-use crate::config::{Config, IndicatorType, RadialMenu, Settings};
+use crate::config::{config_path, Config, IndicatorType, RadialMenu, Settings};
+use crate::config_editor::ConfigEditor;
 use crate::gamepad::GamepadState;
+use crate::icons::{Icon, Icons};
 use crate::profiler::{Phase, Profiler};
 use crate::util;
 
@@ -66,6 +68,8 @@ pub(crate) struct PracticeTool {
     log_tx: Sender<String>,
     ui_state: UiState,
     fonts: Option<FontIDs>,
+    icons: Icons,
+    config_editor: ConfigEditor,
 
     position_bufs: [String; 4],
     position_prev: [f32; 3],
@@ -95,13 +99,8 @@ impl PracticeTool {
         log_panics::init();
 
         fn load_config() -> Result<Config, String> {
-            let config_path = util::get_dll_path()
-                .map(|mut path| {
-                    path.pop();
-                    path.push("jdsd_dsiii_practice_tool.toml");
-                    path
-                })
-                .ok_or_else(|| "Couldn't find config file".to_string())?;
+            let config_path =
+                config_path().ok_or_else(|| "Couldn't find config file".to_string())?;
             let config_content = std::fs::read_to_string(config_path)
                 .map_err(|e| format!("Couldn't read config file: {:?}", e))?;
             println!("{}", config_content);
@@ -192,31 +191,20 @@ impl PracticeTool {
             let (maj, min, patch) = (*VERSION).into();
             format!("Game Ver {}.{:02}.{}", maj, min, patch)
         };
-        let help_text = format!(
-            "Press the {} key to open/close the tool's\ninterface.\n\nYou can toggle flags/launch \
-             commands by\nclicking in the UI or by pressing\nthe hotkeys (in the \
-             parentheses).\n\nYou can configure your tool by editing\nthe \
-             jdsd_dsiii_practice_tool.toml file with\na text editor. If you break \
-             something,\njust download a fresh file!\n\nThank you for using my tool! <3\n",
-            config.settings.display
-        );
-        let settings = config.settings.clone();
-        let radial_menu = config.radial_menu.clone();
-        let widgets = config.make_commands(&POINTER_CHAINS);
-
         let (log_tx, log_rx) = crossbeam_channel::unbounded();
-        info!("Initialized");
 
-        PracticeTool {
-            settings,
+        let mut tool = PracticeTool {
+            settings: config.settings.clone(),
             version_label,
-            help_text,
-            widgets,
-            radial_menu,
+            help_text: String::new(),
+            widgets: Vec::new(),
+            radial_menu: Vec::new(),
             log: Vec::new(),
             log_rx,
             log_tx,
             fonts: None,
+            icons: Icons::default(),
+            config_editor: ConfigEditor::default(),
             ui_state: UiState::Closed,
             position_prev: Default::default(),
             position_bufs: Default::default(),
@@ -233,7 +221,18 @@ impl PracticeTool {
             press_queue: Vec::new(),
             release_queue: Vec::new(),
             profiler: Profiler::new(),
-        }
+        };
+        tool.apply_config(config);
+        info!("Initialized");
+
+        tool
+    }
+
+    fn apply_config(&mut self, config: Config) {
+        self.help_text = help_text(&config.settings);
+        self.settings = config.settings.clone();
+        self.radial_menu = config.radial_menu.clone();
+        self.widgets = config.make_commands(&POINTER_CHAINS);
     }
 
     fn render_visible(&mut self, ui: &imgui::Ui) {
@@ -377,7 +376,7 @@ impl PracticeTool {
 
                 ui.same_line();
 
-                if ui.small_button("Help") {
+                if self.icons.small_button(ui, "##help", Icon::Help) {
                     ui.open_popup("##help_window");
                 }
 
@@ -418,6 +417,12 @@ impl PracticeTool {
                             open::that("https://patreon.com/johndisandonato").ok();
                         }
                     });
+
+                ui.same_line();
+
+                if let Some(config) = self.config_editor.render(ui, &self.icons) {
+                    self.apply_config(config);
+                }
 
                 ui.new_line();
                 self.profiler.mark(Phase::UiSetup);
@@ -539,8 +544,14 @@ impl PracticeTool {
                 }
                 self.profiler.mark(Phase::WidgetsRender);
 
-                for w in self.widgets.iter_mut() {
-                    w.interact(ui);
+                // Not while typing or editing the configuration, e.g. while
+                // capturing hotkeys.
+                if !(ui.io().want_capture_keyboard
+                    && (ui.is_any_item_active() || self.config_editor.is_open()))
+                {
+                    for w in self.widgets.iter_mut() {
+                        w.interact(ui);
+                    }
                 }
                 self.profiler.mark(Phase::WidgetsInteract);
             });
@@ -745,7 +756,9 @@ impl ImguiRenderLoop for PracticeTool {
         self.profiler.end(ui_state);
     }
 
-    fn initialize(&mut self, ctx: &mut Context, _: &mut dyn RenderContext) {
+    fn initialize(&mut self, ctx: &mut Context, render_context: &mut dyn RenderContext) {
+        self.icons = Icons::load(render_context);
+
         let fonts = ctx.fonts();
         self.fonts = Some(FontIDs {
             small: fonts.add_font(&[FontSource::TtfData {
@@ -765,6 +778,17 @@ impl ImguiRenderLoop for PracticeTool {
             }]),
         });
     }
+}
+
+fn help_text(settings: &Settings) -> String {
+    format!(
+        "Press the {} key to open/close the tool's\ninterface.\n\nYou can toggle flags/launch \
+         commands by\nclicking in the UI or by pressing\nthe hotkeys (in the parentheses).\n\nYou \
+         can configure your tool with the\ncogwheel button next to the help one,\nor by editing \
+         the\njdsd_dsiii_practice_tool.toml file with\na text editor. If you break \
+         something,\njust download a fresh file!\n\nThank you for using my tool! <3\n",
+        settings.display
+    )
 }
 
 // Display some imgui debug information. Very expensive.

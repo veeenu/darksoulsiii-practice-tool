@@ -15,8 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod config;
+mod config_editor;
 mod dlc_ownership;
 mod gamepad;
+mod icons;
 mod practice_tool;
 mod profiler;
 mod util;
