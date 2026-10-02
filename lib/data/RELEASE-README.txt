@@ -6,16 +6,19 @@ You can run the practice tool in two ways.
 By double-clicking `jdsd_dsiii_practice_tool.exe`:
   - Double-click `jdsd_dsiii_practice_tool.exe` while the game is running.
 
-By installing the DLL:
-  - Rename `jdsd_dsiii_practice_tool.dll` to `dinput8.dll`. Make sure your file extensions are 
-    visible to ensure you are naming the file correctly.
-  - Copy `dinput8.dll` and `jdsd_dsiii_practice_tool.toml` to you Dark Souls III Game folder. The
-    files must be in the same folder as `DarkSoulsIII.exe`.
+By installing it:
+  - Copy all the files to your Dark Souls III Game folder, the one that contains
+    `DarkSoulsIII.exe`. Repeat this for every patch of the game you play on.
   - Start Dark Souls III normally.
   - While it is starting, press and hold right shift for a few seconds, until the tool appears.
+    If you miss it, double-click `jdsd_dsiii_practice_tool.exe` in the Game folder.
+  - To update, copy the new files over the old ones. To uninstall, delete `dinput8.dll`.
 
-Please note that if you want to use both methods, you need to keep two separate copies: the exe
-will not start the tool if the DLL has been renamed to dinput8.dll.
+The tool always loads the `dinput8.dll` next to the `jdsd_dsiii_practice_tool.exe` you
+double-click: to try a new version, start the game without holding right shift, then run the
+new version's exe.
+
+On Linux, set the game's launch options in Steam to `WINEDLLOVERRIDES="dinput8=n,b" %command%`.
 ----------------------------------------------------------------------------------------------------
 
 If you have issues or questions, thoroughly check the FAQ.

@@ -99,7 +99,7 @@ fn run_param_tinkerer() -> Result<()> {
 
 fn dist() -> Result<()> {
     Distribution::new("jdsd_dsiii_practice_tool.zip")
-        .with_artifact("libjdsd_dsiii_practice_tool.dll", "jdsd_dsiii_practice_tool.dll")
+        .with_artifact("libjdsd_dsiii_practice_tool.dll", "dinput8.dll")
         .with_artifact("jdsd_dsiii_practice_tool.exe", "jdsd_dsiii_practice_tool.exe")
         // .with_artifact("dinput8nologo.dll", "dinput8.dll")
         .with_file("lib/data/RELEASE-README.txt", "README.txt")

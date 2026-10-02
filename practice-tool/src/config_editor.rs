@@ -28,7 +28,7 @@ use crate::icons::{Icon, Icons};
 const POPUP: &str = "##config_editor";
 const CONFIRM_SAVE: &str = "##config_editor_save";
 const CONFIRM_CLOSE: &str = "##config_editor_close";
-const ERROR_COLOR: [f32; 4] = [1., 0.3, 0.3, 1.];
+pub(crate) const ERROR_COLOR: [f32; 4] = [1., 0.3, 0.3, 1.];
 const INT_FORMAT: &str = "%lld";
 const FLOAT_FORMAT: &str = "%g";
 
@@ -993,7 +993,7 @@ fn confirm(ui: &Ui, id: &str, question: impl fmt::Display) -> bool {
 mod tests {
     use super::*;
 
-    const CONFIG: &str = include_str!("../../jdsd_dsiii_practice_tool.toml");
+    const CONFIG: &str = crate::config::DEFAULT_CONFIG;
 
     fn inline_table(array: &mut Array, i: usize) -> &mut InlineTable {
         array.get_mut(i).unwrap().as_inline_table_mut().unwrap()
