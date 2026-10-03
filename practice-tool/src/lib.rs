@@ -21,6 +21,7 @@ mod gamepad;
 mod icons;
 mod practice_tool;
 mod profiler;
+pub mod update;
 mod util;
 mod widgets;
 
@@ -37,12 +38,21 @@ use libds3::pointers::POINTER_CHAINS;
 use once_cell::sync::Lazy;
 use practice_tool::PracticeTool;
 use windows::core::{s, w, GUID, HRESULT, PCWSTR};
-use windows::Win32::Foundation::{ERROR_SUCCESS, HINSTANCE, MAX_PATH};
+use windows::Win32::Foundation::{
+    GetLastError, ERROR_ALREADY_EXISTS, ERROR_SUCCESS, HANDLE, HINSTANCE, MAX_PATH, WAIT_OBJECT_0,
+};
 use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
 use windows::Win32::System::SystemInformation::GetSystemDirectoryW;
 use windows::Win32::System::SystemServices::DLL_PROCESS_ATTACH;
+use windows::Win32::System::Threading::{CreateEventW, WaitForSingleObject, INFINITE};
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_RSHIFT};
 use windows::Win32::UI::Input::XboxController::XINPUT_STATE;
+
+/// Created by the copy of the tool that starts: while it exists, the tool is
+/// running.
+pub const RUNNING_EVENT: PCWSTR = w!("Local\\jdsd_dsiii_practice_tool_running");
+/// Set by the exe to start the copy that the game loaded at startup.
+pub const START_EVENT: PCWSTR = w!("Local\\jdsd_dsiii_practice_tool_start");
 
 type FDirectInput8Create = unsafe extern "system" fn(
     hinst: HINSTANCE,
@@ -186,10 +196,13 @@ fn start_practice_tool(hmodule: HINSTANCE) {
     }
 }
 
-fn await_rshift() -> bool {
+/// Waits until right shift is held for 2 seconds within the first 10 seconds,
+/// or until the exe sets the start event. Returns `false` if waiting on the
+/// event fails.
+fn await_start(start_event: HANDLE) -> bool {
     let duration_threshold = Duration::from_secs(2);
     let check_window = Duration::from_secs(10);
-    let poll_interval = Duration::from_millis(100);
+    let poll_interval_ms = 100;
 
     let start_time = Instant::now();
     let mut key_down_start: Option<Instant> = None;
@@ -212,10 +225,12 @@ fn await_rshift() -> bool {
             },
         }
 
-        thread::sleep(poll_interval);
+        if unsafe { WaitForSingleObject(start_event, poll_interval_ms) } == WAIT_OBJECT_0 {
+            return true;
+        }
     }
 
-    false
+    unsafe { WaitForSingleObject(start_event, INFINITE) == WAIT_OBJECT_0 }
 }
 
 fn env_start_requested() -> bool {
@@ -227,28 +242,57 @@ fn env_start_requested() -> bool {
     }
 }
 
+/// Marks the tool as running in this process. Returns `false` if another copy
+/// already did.
+fn claim_running() -> bool {
+    // The handle is never closed: the event must exist for as long as the
+    // process.
+    match unsafe { CreateEventW(None, true, false, RUNNING_EVENT) } {
+        Ok(_) => unsafe { GetLastError() != ERROR_ALREADY_EXISTS },
+        Err(e) => {
+            error!("Couldn't create running event: {e:?}");
+            false
+        },
+    }
+}
+
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe extern "system" fn DllMain(hmodule: HINSTANCE, reason: u32, _: *mut c_void) {
+pub unsafe extern "system" fn DllMain(hmodule: HINSTANCE, reason: u32, reserved: *mut c_void) {
     if reason == DLL_PROCESS_ATTACH {
         trace!("DllMain()");
         Lazy::force(&DIRECTINPUT8CREATE);
         Lazy::force(&XINPUTGETSTATE);
 
         let hmodule_ptr = hmodule.0 as usize;
+
+        // `reserved` is null when the DLL is loaded dynamically, i.e. injected
+        // by the exe: start right away. The running event must be
+        // claimed before returning, as the exe checks for it as soon as
+        // the injection completes.
+        if reserved.is_null() {
+            if claim_running() {
+                thread::spawn(move || start_practice_tool(HINSTANCE(hmodule_ptr as *mut c_void)));
+            }
+            return;
+        }
+
+        // Otherwise the game loaded it at startup as its `dinput8.dll`: wait to
+        // be asked to start. The handle is never closed: the event must
+        // exist for as long as the process.
+        let start_event = match CreateEventW(None, true, false, START_EVENT) {
+            Ok(start_event) => start_event.0 as usize,
+            Err(e) => {
+                error!("Couldn't create start event: {e:?}");
+                return;
+            },
+        };
+
         thread::spawn(move || {
-            let hmodule = HINSTANCE(hmodule_ptr as *mut c_void);
-            if util::get_dll_path()
-                .and_then(|path| {
-                    path.file_name().map(|s| s.to_string_lossy().to_lowercase() == "dinput8.dll")
-                })
-                .unwrap_or(false)
+            if (env_start_requested() || await_start(HANDLE(start_event as *mut c_void)))
+                && claim_running()
             {
-                if env_start_requested() || await_rshift() {
-                    start_practice_tool(hmodule)
-                }
-            } else {
-                start_practice_tool(hmodule)
+                start_practice_tool(HINSTANCE(hmodule_ptr as *mut c_void))
             }
         });
     }

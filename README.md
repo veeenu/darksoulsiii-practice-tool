@@ -2,14 +2,14 @@
 
 [![build](https://github.com/veeenu/darksoulsiii-practice-tool/actions/workflows/build.yml/badge.svg)](https://github.com/veeenu/darksoulsiii-practice-tool/actions)
 [![GitHub all releases](https://img.shields.io/github/downloads/veeenu/darksoulsiii-practice-tool/total)](https://github.com/veeenu/darksoulsiii-practice-tool/releases/latest)
-[![GitHub](https://img.shields.io/github/license/veeenu/darksoulsiii-practice-tool)](https://github.com/veeenu/darksoulsiii-practice-tool/blob/main/LICENSE) 
+[![GitHub](https://img.shields.io/github/license/veeenu/darksoulsiii-practice-tool)](https://github.com/veeenu/darksoulsiii-practice-tool/blob/main/LICENSE)
 [![Discord](https://img.shields.io/discord/267623298647457802)](https://discord.gg/jhF3jTTCUs)
 [![Twitch](https://img.shields.io/twitch/status/johndisandonato?style=social)](https://twitch.tv/johndisandonato)
 [![Patreon](https://img.shields.io/badge/Support_me-Patreon-orange)](https://www.patreon.com/johndisandonato)
 
 A tool for practicing speedruns. Made with ❤️ by [johndisandonato](https://twitch.tv/johndisandonato).
 
-The tool is free, and will always be free for everyone. If you enjoy it, please consider 
+The tool is free, and will always be free for everyone. If you enjoy it, please consider
 [supporting me](https://www.patreon.com/johndisandonato)!
 
 ![Screenshot](lib/data/screenshot.jpg)
@@ -37,20 +37,36 @@ The tool will automatically appear over the game. Press `0` to open and close it
 ### Installed
 
 - Extract all files from the zip archive.
-- Rename `jdsd_dsiii_practice_tool.dll` to `dinput8.dll`. Make sure your [file extensions are visible](https://www.howtogeek.com/205086/beginner-how-to-make-windows-show-file-extensions/)
-  to ensure you are naming the file correctly.
-- Copy `dinput8.dll` and `jdsd_dsiii_practice_tool.toml` to you Dark Souls III `Game` folder.
-  The files must be in the same folder as `DarkSoulsIII.exe`.
+- Copy all of them to your Dark Souls III `Game` folder, the one that contains `DarkSoulsIII.exe`.
 - Start Dark Souls III normally.
 
-The tool is now installed. To load it, start the game, press the right shift button and 
+The tool is now installed. To load it, start the game, press the right shift button and
 keep it pressed for a few seconds until the tool appears on screen.
 
-If you don't do that, the tool won't load and the game will start normally.
+If you don't do that, the tool won't load and the game will start normally. You can still load
+the tool later by double-clicking `jdsd_dsiii_practice_tool.exe` in the `Game` folder.
+
+If you play on multiple patches of the game, repeat this for each of their `Game` folders.
+
+To **update** the tool, copy the files of the new version over the old ones.
+To **uninstall** it, delete `dinput8.dll` from the `Game` folder.
+
+### Trying a new version
+
+The tool always loads the `dinput8.dll` that sits next to the `jdsd_dsiii_practice_tool.exe` you
+double-click. To try a new version without touching your installed one, start the game without
+pressing right shift, then double-click the new version's `jdsd_dsiii_practice_tool.exe`.
 
 ## Running the tool on Linux
 
 The tool fully supports Linux and should run on Steam Deck seamlessly.
+
+For both ways of running the tool, you **must** set the launch options of the game in Steam as
+follows:
+
+```sh
+WINEDLLOVERRIDES="dinput8=n,b" %command%
+```
 
 ### Standalone
 
@@ -62,11 +78,7 @@ protontricks-launch --appid 374320 jdsd_dsiii_practice_tool.exe
 
 ### Installed
 
-Follow the same instructions as above. Additionally, you have to set the launch options in Steam as follows:
-
-```sh
-WINEDLLOVERRIDES="dinput8=n,b" %command%
-```
+Follow the same instructions from the "Installed" section above.
 
 ## Help
 

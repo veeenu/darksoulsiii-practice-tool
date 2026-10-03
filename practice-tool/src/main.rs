@@ -1,65 +1,71 @@
+use std::ffi::CStr;
+
 use hudhook::inject::Process;
-use hudhook::tracing::trace;
-use pkg_version::*;
-use semver::Version;
+use hudhook::tracing::{error, trace};
+use libjdsd_dsiii_practice_tool::update::Update;
+use libjdsd_dsiii_practice_tool::{RUNNING_EVENT, START_EVENT};
 use tracing_subscriber::filter::LevelFilter;
 use windows::core::PCSTR;
+use windows::Win32::System::Threading::{
+    OpenEventW, SetEvent, EVENT_MODIFY_STATE, SYNCHRONIZATION_SYNCHRONIZE,
+};
 use windows::Win32::UI::WindowsAndMessaging::{
-    MessageBoxA, IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_OK, MB_YESNO,
+    MessageBoxA, IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_OK, MB_YESNO, MESSAGEBOX_RESULT,
+    MESSAGEBOX_STYLE,
 };
 
-fn err_to_string<T: std::fmt::Display>(e: T) -> String {
-    format!("Error: {}", e)
+fn message_box(caption: &CStr, text: &str, style: MESSAGEBOX_STYLE) -> MESSAGEBOX_RESULT {
+    let text = format!("{text}\0");
+    unsafe { MessageBoxA(None, PCSTR(text.as_ptr()), PCSTR(caption.as_ptr() as _), style) }
 }
 
-fn get_current_version() -> Version {
-    Version {
-        major: pkg_version_major!(),
-        minor: pkg_version_minor!(),
-        patch: pkg_version_patch!(),
-        pre: vec![],
-        build: vec![],
-    }
+fn is_running() -> bool {
+    unsafe { OpenEventW(SYNCHRONIZATION_SYNCHRONIZE, false, RUNNING_EVENT) }.is_ok()
 }
 
-fn get_latest_version() -> Result<(Version, String, String), String> {
-    #[derive(serde::Deserialize)]
-    struct GithubRelease {
-        tag_name: String,
-        html_url: String,
-        body: String,
-    }
-
-    let release =
-        ureq::get("https://api.github.com/repos/veeenu/darksoulsiii-practice-tool/releases/latest")
-            .call()
-            .map_err(|e| format!("Couldn't check version: {:?}", e))?
-            .into_json::<GithubRelease>()
-            .map_err(|e| format!("Couldn't check version: {:?}", e))?;
-
-    let version = Version::parse(&release.tag_name).map_err(err_to_string)?;
-
-    Ok((version, release.html_url, release.body))
+fn load_error(e: impl std::fmt::Display) -> String {
+    format!(
+        "Could not load the practice tool into Dark Souls III: {e}\n\nMake sure your antivirus \
+         isn't blocking it."
+    )
 }
 
 fn perform_injection() -> Result<(), String> {
-    let mut dll_path = std::env::current_exe().unwrap();
-    dll_path.pop();
-    dll_path.push("jdsd_dsiii_practice_tool.dll");
+    let process = Process::by_name("DarkSoulsIII.exe").map_err(|e| {
+        error!("Could not find process: {e:?}");
+        "Dark Souls III is not running. Start the game first, then run the practice tool \
+         again.\n\nIf the game is running as administrator, run the practice tool as administrator \
+         too."
+            .to_string()
+    })?;
 
-    if !dll_path.exists() {
-        dll_path.pop();
-        dll_path.push("libjdsd_dsiii_practice_tool");
-        dll_path.set_extension("dll");
+    if is_running() {
+        return Err("The practice tool is already running.\n\nTo start a different copy, restart \
+                    the game first."
+            .to_string());
     }
 
-    let dll_path = dll_path.canonicalize().map_err(err_to_string)?;
-    trace!("Injecting {:?}", dll_path);
+    let mut dll_path = std::env::current_exe().map_err(load_error)?;
+    dll_path.set_file_name("dinput8.dll");
 
-    Process::by_name("DarkSoulsIII.exe")
-        .map_err(|e| format!("Could not find process: {e:?}"))?
-        .inject(dll_path)
-        .map_err(|e| format!("Could not inject DLL: {e:?}"))?;
+    if !dll_path.exists() {
+        return Err(format!(
+            "Could not find {}.\n\nExtract all the files from the zip archive before running the \
+             practice tool, and make sure your antivirus didn't delete it.",
+            dll_path.display()
+        ));
+    }
+
+    trace!("Injecting {:?}", dll_path);
+    process.inject(dll_path).map_err(load_error)?;
+
+    // A freshly loaded DLL is running by now. If it isn't, the game had already
+    // loaded this very file at startup, so injecting it did nothing: ask
+    // that copy to start instead.
+    if !is_running() {
+        unsafe { OpenEventW(EVENT_MODIFY_STATE, false, START_EVENT).and_then(|e| SetEvent(e)) }
+            .map_err(|_| load_error("the practice tool did not start."))?;
+    }
 
     Ok(())
 }
@@ -73,58 +79,21 @@ fn main() {
         .with_thread_names(true)
         .init();
 
-    let current_version = get_current_version();
-
-    match get_latest_version() {
-        Ok((latest_version, download_url, release_notes)) => {
-            if latest_version > current_version {
-                let release_notes = match release_notes.find("## What's Changed") {
-                    Some(i) => release_notes[..i].trim(),
-                    None => &release_notes,
-                };
-                let update_msg = format!(
-                    "A new version of the practice tool is available!\n\nLatest version: \
-                     {}\nInstalled version: {}\n\nRelease notes:\n{}\n\nDo you want to download \
-                     the update?\0",
-                    latest_version, current_version, release_notes
-                );
-
-                let msgbox_response = unsafe {
-                    MessageBoxA(
-                        None,
-                        PCSTR(update_msg.as_str().as_ptr()),
-                        PCSTR(c"Update available".as_ptr() as _),
-                        MB_YESNO | MB_ICONINFORMATION,
-                    )
-                };
-
-                if IDYES == msgbox_response {
-                    open::that(download_url).ok();
-                }
+    match Update::check() {
+        Update::Available { url, notes } => {
+            let text =
+                format!("{notes}\nDo you want to download it? The practice tool will not start.");
+            if message_box(c"Update available", &text, MB_YESNO | MB_ICONINFORMATION) == IDYES {
+                open::that(url).ok();
+                return;
             }
         },
-        Err(e) => {
-            let error_msg = format!("Unexpected error checking for new version: {}\0", e);
-            unsafe {
-                MessageBoxA(
-                    None,
-                    PCSTR(error_msg.as_str().as_ptr()),
-                    PCSTR(c"Error".as_ptr() as _),
-                    MB_OK | MB_ICONERROR,
-                );
-            }
-        },
+        // Shown in the overlay.
+        Update::Error(e) => error!("Could not check for updates: {e}"),
+        Update::UpToDate => {},
     }
 
     if let Err(e) = perform_injection() {
-        let error_msg = format!("{}\0", e);
-        unsafe {
-            MessageBoxA(
-                None,
-                PCSTR(error_msg.as_str().as_ptr()),
-                PCSTR(c"Error".as_ptr() as _),
-                MB_OK | MB_ICONERROR,
-            );
-        }
+        message_box(c"Error", &e, MB_OK | MB_ICONERROR);
     }
 }

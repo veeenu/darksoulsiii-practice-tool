@@ -290,23 +290,6 @@ impl Config {
     }
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            settings: Settings {
-                log_level: LevelFilterSerde(LevelFilter::DEBUG),
-                display: "0".parse().unwrap(),
-                hide: "rshift+0".parse().ok(),
-                show_console: false,
-                indicators: Indicator::default_set(),
-                radial_menu_open: None,
-            },
-            radial_menu: Vec::new(),
-            commands: Vec::new(),
-        }
-    }
-}
-
 type FlagGetter = fn(&PointerChains) -> &Bitflag<u8>;
 
 #[derive(Deserialize)]
@@ -371,6 +354,9 @@ impl TryFrom<String> for FlagSpec {
     }
 }
 
+/// The bundled configuration, written next to the DLL when the file is missing.
+pub(crate) const DEFAULT_CONFIG: &str = include_str!("../../jdsd_dsiii_practice_tool.toml");
+
 /// Path of the configuration file, next to the DLL.
 pub(crate) fn config_path() -> Option<PathBuf> {
     util::get_dll_path().map(|mut path| {
@@ -382,15 +368,12 @@ pub(crate) fn config_path() -> Option<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::Config;
+    use super::{Config, DEFAULT_CONFIG};
 
     #[test]
     fn test_parse_ok() {
-        println!(
-            "{:#?}",
-            toml::from_str::<toml::Value>(include_str!("../../jdsd_dsiii_practice_tool.toml"))
-        );
-        println!("{:#?}", Config::parse(include_str!("../../jdsd_dsiii_practice_tool.toml")));
+        println!("{:#?}", toml::from_str::<toml::Value>(DEFAULT_CONFIG));
+        println!("{:#?}", Config::parse(DEFAULT_CONFIG));
     }
 
     #[test]

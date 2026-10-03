@@ -15,6 +15,25 @@ consider [supporting the project](https://www.patreon.com/johndisandonato).
 If you don't want to trust the published binaries, you can [compile the tool from sources](CONTRIBUTING.md)
 yourself.
 
+## The tool doesn't appear
+
+- If you installed the tool, make sure `dinput8.dll` is in the folder that contains
+  `DarkSoulsIII.exe`, and hold right shift for a few seconds while the game is starting.
+  If you missed it, double-click `jdsd_dsiii_practice_tool.exe` in the same folder.
+- If you are on Linux, make sure the game's launch options in Steam are
+  `WINEDLLOVERRIDES="dinput8=n,b" %command%`.
+- Check that your antivirus didn't delete or block any of the tool's files.
+
+## How do I uninstall the tool?
+
+Delete `dinput8.dll` from the folder that contains `DarkSoulsIII.exe`.
+
+## How do I try a new version without uninstalling the old one?
+
+Start the game without holding right shift, then double-click the new version's
+`jdsd_dsiii_practice_tool.exe`. The tool always loads the `dinput8.dll` next to the exe you
+double-click.
+
 ## I found a bug. What do I do?
 
 - Set the `log_level = "DEBUG"` option in `jdsd_dsiii_practice_tool.toml`.

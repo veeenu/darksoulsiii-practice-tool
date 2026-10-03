@@ -1,11 +1,12 @@
 use std::fmt::Write;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
+use std::thread;
 use std::time::{Duration, Instant};
 
 use const_format::formatcp;
 use hudhook::tracing::metadata::LevelFilter;
-use hudhook::tracing::{debug, error, info};
+use hudhook::tracing::{error, info};
 use hudhook::{ImguiRenderLoop, RenderContext};
 use imgui::*;
 use libds3::prelude::*;
@@ -17,11 +18,12 @@ use sys::ImVec2;
 use tracing_subscriber::prelude::*;
 use windows::Win32::UI::Input::XboxController::{XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_STATE};
 
-use crate::config::{config_path, Config, IndicatorType, RadialMenu, Settings};
-use crate::config_editor::ConfigEditor;
+use crate::config::{config_path, Config, IndicatorType, RadialMenu, Settings, DEFAULT_CONFIG};
+use crate::config_editor::{ConfigEditor, ERROR_COLOR};
 use crate::gamepad::GamepadState;
 use crate::icons::{Icon, Icons};
 use crate::profiler::{Phase, Profiler};
+use crate::update::Update;
 use crate::util;
 
 const MAJOR: usize = pkg_version_major!();
@@ -30,6 +32,7 @@ const PATCH: usize = pkg_version_patch!();
 
 pub(crate) static BLOCK_XINPUT: AtomicBool = AtomicBool::new(false);
 pub(crate) static GAMEPAD_STATE: GamepadState = GamepadState::new();
+static UPDATE: OnceLock<Update> = OnceLock::new();
 
 struct FontIDs {
     small: FontId,
@@ -60,6 +63,7 @@ pub(crate) struct PracticeTool {
     settings: Settings,
     version_label: String,
     help_text: String,
+    config_msg: Option<String>,
     widgets: Vec<Box<dyn Widget>>,
     radial_menu: Vec<RadialMenu>,
 
@@ -98,19 +102,49 @@ impl PracticeTool {
         hudhook::alloc_console().ok();
         log_panics::init();
 
-        fn load_config() -> Result<Config, String> {
-            let config_path =
-                config_path().ok_or_else(|| "Couldn't find config file".to_string())?;
-            let config_content = std::fs::read_to_string(config_path)
-                .map_err(|e| format!("Couldn't read config file: {:?}", e))?;
-            println!("{}", config_content);
-            Config::parse(&config_content)
+        /// Loads the config file, creating it if missing. Returns a message for
+        /// the user when something about it needs their attention.
+        fn load_config() -> (Config, Option<String>) {
+            let default = || Config::parse(DEFAULT_CONFIG).expect("Bundled config is valid");
+
+            let Some(path) = config_path() else {
+                let msg =
+                    "Couldn't locate the configuration file. Using the default configuration.";
+                return (default(), Some(msg.to_string()));
+            };
+
+            if !path.exists() {
+                let msg = match std::fs::write(&path, DEFAULT_CONFIG) {
+                    Ok(()) => format!(
+                        "Configuration file not found. A default one has been created at {}.",
+                        path.display()
+                    ),
+                    Err(e) => format!(
+                        "Configuration file not found, and a default one couldn't be created at \
+                         {}: {e}. Using the default configuration.",
+                        path.display()
+                    ),
+                };
+                return (default(), Some(msg));
+            }
+
+            match std::fs::read_to_string(&path)
+                .map_err(|e| format!("Couldn't read config file: {e}"))
+                .and_then(|content| Config::parse(&content))
+            {
+                Ok(config) => (config, None),
+                Err(e) => (
+                    default(),
+                    Some(format!(
+                        "{e}\nFix the configuration file at {}, or delete it to have a default \
+                         one created, then restart the game.",
+                        path.display()
+                    )),
+                ),
+            }
         }
 
-        let (config, config_err) = match load_config() {
-            Ok(config) => (config, None),
-            Err(e) => (Config::default(), Some(e)),
-        };
+        let (config, config_msg) = load_config();
 
         let log_file = util::get_dll_path()
             .map(|mut path| {
@@ -162,9 +196,13 @@ impl PracticeTool {
             },
         }
 
-        if let Some(err) = config_err {
-            debug!("{:?}", err);
+        if let Some(msg) = &config_msg {
+            info!("{msg}");
         }
+
+        // Checked in the background, so that an unreachable network doesn't
+        // delay the overlay.
+        thread::spawn(|| UPDATE.get_or_init(Update::check));
 
         if config.settings.log_level.inner() < LevelFilter::DEBUG || !config.settings.show_console {
             hudhook::free_console().ok();
@@ -197,6 +235,7 @@ impl PracticeTool {
             settings: config.settings.clone(),
             version_label,
             help_text: String::new(),
+            config_msg,
             widgets: Vec::new(),
             radial_menu: Vec::new(),
             log: Vec::new(),
@@ -422,9 +461,58 @@ impl PracticeTool {
 
                 if let Some(config) = self.config_editor.render(ui, &self.icons) {
                     self.apply_config(config);
+                    self.config_msg = None;
                 }
 
+                let update_color = match UPDATE.get() {
+                    Some(Update::Available { .. }) => Some([0.1, 0.7, 0.1, 1.0]),
+                    Some(Update::Error(_)) => Some([1.0, 0.0, 0.0, 1.0]),
+                    Some(Update::UpToDate) | None => None,
+                };
+
+                if let Some(color) = update_color {
+                    ui.same_line();
+                    let _token = ui.push_style_color(StyleColor::Button, color);
+                    if ui.small_button("Update") {
+                        ui.open_popup("##update");
+                    }
+                }
+
+                ui.modal_popup_config("##update")
+                    .resizable(false)
+                    .movable(false)
+                    .title_bar(false)
+                    .build(|| {
+                        POINTER_CHAINS.cursor_show.set(true);
+
+                        match UPDATE.get() {
+                            Some(Update::Available { url, notes }) => {
+                                ui.text(notes);
+                                if ui.button("Download") {
+                                    open::that(url).ok();
+                                }
+                                ui.same_line();
+                            },
+                            Some(Update::Error(e)) => {
+                                ui.text("Could not check for updates.");
+                                ui.separator();
+                                ui.text(e);
+                            },
+                            Some(Update::UpToDate) | None => ui.close_current_popup(),
+                        }
+
+                        if ui.button("Close") {
+                            ui.close_current_popup();
+                            POINTER_CHAINS.cursor_show.set(false);
+                        }
+                    });
+
                 ui.new_line();
+
+                if let Some(msg) = &self.config_msg {
+                    ui.text_colored(ERROR_COLOR, msg);
+                }
+
                 self.profiler.mark(Phase::UiSetup);
 
                 for indicator in &self.settings.indicators {
