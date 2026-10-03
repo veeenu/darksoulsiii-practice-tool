@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 use const_format::formatcp;
 use hudhook::tracing::metadata::LevelFilter;
 use hudhook::tracing::{error, info};
+use hudhook::util::get_dll_path;
 use hudhook::{ImguiRenderLoop, RenderContext};
 use imgui::*;
 use libds3::prelude::*;
@@ -17,6 +18,7 @@ use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
 use practice_tool_core::gamepad::{BLOCK_XINPUT, GAMEPAD_STATE};
 use practice_tool_core::icons::{Icon, Icons};
 use practice_tool_core::profiler::{Phase, Profiler};
+use practice_tool_core::update::Update;
 use practice_tool_core::widgets::radial_menu::radial_menu;
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use sys::ImVec2;
@@ -24,8 +26,6 @@ use tracing_subscriber::prelude::*;
 use windows::Win32::UI::Input::XboxController::{XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_STATE};
 
 use crate::config::{config_path, Config, IndicatorType, Settings, DEFAULT_CONFIG};
-use crate::update::Update;
-use crate::util;
 
 const MAJOR: usize = pkg_version_major!();
 const MINOR: usize = pkg_version_minor!();
@@ -145,7 +145,7 @@ impl PracticeTool {
 
         let (config, config_msg) = load_config();
 
-        let log_file = util::get_dll_path()
+        let log_file = get_dll_path()
             .map(|mut path| {
                 path.pop();
                 path.push("jdsd_dsiii_practice_tool.log");
@@ -201,7 +201,7 @@ impl PracticeTool {
 
         // Checked in the background, so that an unreachable network doesn't
         // delay the overlay.
-        thread::spawn(|| UPDATE.get_or_init(Update::check));
+        thread::spawn(|| UPDATE.get_or_init(crate::check_update));
 
         if config.settings.log_level.inner() < LevelFilter::DEBUG || !config.settings.show_console {
             hudhook::free_console().ok();
@@ -225,7 +225,7 @@ impl PracticeTool {
         }
 
         let version_label = {
-            let (maj, min, patch) = (*VERSION).into();
+            let (maj, min, patch) = get_version().into();
             format!("Game Ver {}.{:02}.{}", maj, min, patch)
         };
         let (log_tx, log_rx) = crossbeam_channel::unbounded();
@@ -259,7 +259,7 @@ impl PracticeTool {
             press_queue: Vec::new(),
             release_queue: Vec::new(),
             profiler: Profiler::new(
-                util::get_dll_path()
+                get_dll_path()
                     .unwrap_or_default()
                     .with_file_name("jdsd_dsiii_practice_tool.profile.csv"),
             ),

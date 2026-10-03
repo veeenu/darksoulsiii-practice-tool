@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use hudhook::util::get_dll_path;
 use libds3::prelude::*;
 use practice_tool_core::config::{parse_toml, LevelFilterSerde, PlaceholderOption, RadialMenu};
 use practice_tool_core::config_editor::{ConfigSchema, Field, Kind};
@@ -10,7 +11,6 @@ use practice_tool_core::widgets::Widget;
 use practice_tool_memedit::widgets::flag_widget;
 use serde::Deserialize;
 
-use crate::util;
 use crate::widgets::character_stats::character_stats_edit;
 use crate::widgets::cycle_color::cycle_color;
 use crate::widgets::cycle_speed::cycle_speed;
@@ -358,7 +358,7 @@ pub(crate) const DEFAULT_CONFIG: &str = include_str!("../../jdsd_dsiii_practice_
 
 /// Path of the configuration file, next to the DLL.
 pub(crate) fn config_path() -> Option<PathBuf> {
-    util::get_dll_path().map(|mut path| {
+    get_dll_path().map(|mut path| {
         path.pop();
         path.push("jdsd_dsiii_practice_tool.toml");
         path

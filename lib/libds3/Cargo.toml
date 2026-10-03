@@ -14,4 +14,5 @@ serde_json.workspace = true
 parking_lot.workspace = true
 once_cell.workspace = true
 windows.workspace = true
+practice-tool-core-windows.workspace = true
 practice-tool-memedit.workspace = true

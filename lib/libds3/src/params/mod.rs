@@ -13,7 +13,7 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 use windows::Win32::System::Memory::{VirtualQuery, MEMORY_BASIC_INFORMATION, PAGE_READWRITE};
 
 use crate::prelude::base_addresses::*;
-use crate::version::VERSION;
+use crate::version::get_version;
 use crate::{wait_option, ParamVisitor};
 
 pub static PARAMS: Lazy<RwLock<Params>> = Lazy::new(|| unsafe {
@@ -81,7 +81,7 @@ impl Params {
     /// Accesses raw pointers. Should never crash as the param pointers are
     /// static.
     pub unsafe fn refresh(&mut self) -> Result<(), String> {
-        let addresses: BaseAddresses = (*VERSION).into();
+        let addresses: BaseAddresses = get_version().into();
         let module_base_addr = GetModuleHandleA(None).map_err(|e| e.to_string())?.0 as usize;
         let base_ptr = addresses.param + module_base_addr;
         let base_ptr = loop {

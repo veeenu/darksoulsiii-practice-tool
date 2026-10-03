@@ -184,6 +184,10 @@ impl ParamVisitor for ParamValues {
 }
 
 unsafe fn patch() {
+    if check_version().is_err() {
+        return;
+    }
+
     no_logo();
     std::thread::spawn(|| {
         let mut params = PARAMS.write();
