@@ -263,7 +263,6 @@ dependencies = [
  "serde",
  "serde_json",
  "toml 0.5.11",
- "toml_edit",
  "tracing-subscriber",
  "ureq",
  "widestring",

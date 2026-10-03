@@ -11,8 +11,11 @@ use hudhook::{ImguiRenderLoop, RenderContext};
 use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
+use practice_tool_core::config::RadialMenu;
+use practice_tool_core::config_editor::{ConfigEditor, ERROR_COLOR};
 use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
 use practice_tool_core::gamepad::{BLOCK_XINPUT, GAMEPAD_STATE};
+use practice_tool_core::icons::{Icon, Icons};
 use practice_tool_core::profiler::{Phase, Profiler};
 use practice_tool_core::widgets::radial_menu::radial_menu;
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
@@ -20,9 +23,7 @@ use sys::ImVec2;
 use tracing_subscriber::prelude::*;
 use windows::Win32::UI::Input::XboxController::{XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_STATE};
 
-use crate::config::{config_path, Config, IndicatorType, RadialMenu, Settings, DEFAULT_CONFIG};
-use crate::config_editor::{ConfigEditor, ERROR_COLOR};
-use crate::icons::{Icon, Icons};
+use crate::config::{config_path, Config, IndicatorType, Settings, DEFAULT_CONFIG};
 use crate::update::Update;
 use crate::util;
 
@@ -71,7 +72,7 @@ pub(crate) struct PracticeTool {
     ui_state: UiState,
     fonts: Option<FontIDs>,
     icons: Icons,
-    config_editor: ConfigEditor,
+    config_editor: ConfigEditor<Config>,
 
     position_bufs: [String; 4],
     position_prev: [f32; 3],
@@ -241,7 +242,7 @@ impl PracticeTool {
             log_tx,
             fonts: None,
             icons: Icons::default(),
-            config_editor: ConfigEditor::default(),
+            config_editor: ConfigEditor::new(config_path()),
             ui_state: UiState::Closed,
             position_prev: Default::default(),
             position_bufs: Default::default(),
@@ -846,7 +847,13 @@ impl ImguiRenderLoop for PracticeTool {
     }
 
     fn initialize(&mut self, ctx: &mut Context, render_context: &mut dyn RenderContext) {
-        self.icons = Icons::load(render_context);
+        let (data, width, height) = Icons::atlas();
+        self.icons = Icons::new(
+            render_context
+                .load_texture(&data, width, height)
+                .map_err(|e| error!("Couldn't load icons: {e:?}"))
+                .ok(),
+        );
 
         let fonts = ctx.fonts();
         self.fonts = Some(FontIDs {
