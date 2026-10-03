@@ -1,8 +1,7 @@
 use std::fmt::Write;
 
 use imgui::{ProgressBar, StyleColor};
-use libds3::memedit::PointerChain;
-use libds3::pointer_chain;
+use libds3::memedit::{pointer_chain, PointerChain};
 use practice_tool_core::key::Key;
 use practice_tool_core::widgets::Widget;
 use windows::Win32::System::Memory::{

@@ -17,29 +17,26 @@
 mod config;
 mod config_editor;
 mod dlc_ownership;
-mod gamepad;
 mod icons;
 mod practice_tool;
-mod profiler;
 pub mod update;
 mod util;
 mod widgets;
 
 use std::ffi::c_void;
-use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use std::{env, mem, ptr, thread};
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;
-use hudhook::mh::{MH_ApplyQueued, MH_Initialize, MhHook, MH_STATUS};
 use hudhook::tracing::{error, trace};
 use hudhook::{eject, Hudhook};
 use libds3::pointers::POINTER_CHAINS;
 use once_cell::sync::Lazy;
 use practice_tool::PracticeTool;
+use practice_tool_core_windows::xinput::hook_xinput;
 use windows::core::{s, w, GUID, HRESULT, PCWSTR};
 use windows::Win32::Foundation::{
-    GetLastError, ERROR_ALREADY_EXISTS, ERROR_SUCCESS, HANDLE, HINSTANCE, MAX_PATH, WAIT_OBJECT_0,
+    GetLastError, ERROR_ALREADY_EXISTS, HANDLE, HINSTANCE, MAX_PATH, WAIT_OBJECT_0,
 };
 use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
 use windows::Win32::System::SystemInformation::GetSystemDirectoryW;
@@ -92,81 +89,22 @@ unsafe extern "system" fn DirectInput8Create(
     (DIRECTINPUT8CREATE)(hinst, dwversion, riidltf, ppvout, punkouter)
 }
 
-type FXInputGetState =
-    unsafe extern "system" fn(dw_user_index: u32, xinput_state: *mut XINPUT_STATE) -> u32;
-
-static XINPUTGETSTATE: Lazy<FXInputGetState> = Lazy::new(|| unsafe {
-    let mut path = [0u16; MAX_PATH as usize];
-    let count = GetSystemDirectoryW(Some(&mut path)) as usize;
-
-    ptr::copy_nonoverlapping(w!("\\xinput1_3.dll").0, path[count..].as_mut_ptr(), 14);
-
-    let lib = LoadLibraryW(PCWSTR(path.as_ptr())).unwrap();
-
-    let xinput_get_state_addr = GetProcAddress(lib, s!("XInputGetState")).unwrap();
-
-    match MH_Initialize() {
-        MH_STATUS::MH_ERROR_ALREADY_INITIALIZED | MH_STATUS::MH_OK => {},
-        status @ MH_STATUS::MH_ERROR_MEMORY_ALLOC => {
-            panic!("XInputCreate hook: initialize: {status:?}");
-        },
-        _ => unreachable!(),
-    }
-
-    let hook =
-        MhHook::new(xinput_get_state_addr as *mut c_void, xinput_get_state_impl as *mut c_void)
-            .expect("XInputCreate hook: create");
-
-    hook.queue_enable().expect("XInputCreate hook: queue enable");
-    MH_ApplyQueued().ok().expect("XInputCreate hook: apply queued");
-
-    mem::transmute(hook.trampoline())
-});
-
-unsafe extern "system" fn xinput_get_state_impl(
-    dw_user_index: u32,
-    xinput_state: *mut XINPUT_STATE,
-) -> u32 {
-    let r = (XINPUTGETSTATE)(dw_user_index, xinput_state);
-
-    // Save the unmodified state for the radial menu, before it is blocked or
-    // deadzoned for the game.
-    if dw_user_index == 0 {
-        practice_tool::GAMEPAD_STATE.store(if r == ERROR_SUCCESS.0 {
-            xinput_state.as_ref()
-        } else {
-            None
-        });
-    }
-
-    if practice_tool::BLOCK_XINPUT.load(Ordering::SeqCst) {
-        *xinput_state = Default::default();
-        return r;
-    }
-
-    if r != ERROR_SUCCESS.0 {
-        return r;
-    }
-
+/// Zeroes the stick axes within the deadzone, before the game sees them.
+fn apply_deadzone(state: &mut XINPUT_STATE) {
     const DEADZONE: i16 = 64;
 
-    // Apply deadzone.
-    if let Some(state) = xinput_state.as_mut() {
-        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbLX) {
-            state.Gamepad.sThumbLX = 0;
-        }
-        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbLY) {
-            state.Gamepad.sThumbLY = 0;
-        }
-        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbRX) {
-            state.Gamepad.sThumbRX = 0;
-        }
-        if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbRY) {
-            state.Gamepad.sThumbRY = 0;
-        }
+    if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbLX) {
+        state.Gamepad.sThumbLX = 0;
     }
-
-    r
+    if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbLY) {
+        state.Gamepad.sThumbLY = 0;
+    }
+    if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbRX) {
+        state.Gamepad.sThumbRX = 0;
+    }
+    if (-DEADZONE..=DEADZONE).contains(&state.Gamepad.sThumbRY) {
+        state.Gamepad.sThumbRY = 0;
+    }
 }
 
 fn apply_no_logo() {
@@ -262,7 +200,9 @@ pub unsafe extern "system" fn DllMain(hmodule: HINSTANCE, reason: u32, reserved:
     if reason == DLL_PROCESS_ATTACH {
         trace!("DllMain()");
         Lazy::force(&DIRECTINPUT8CREATE);
-        Lazy::force(&XINPUTGETSTATE);
+        if let Err(e) = hook_xinput("xinput1_3.dll", Some(apply_deadzone)) {
+            error!("{e}");
+        }
 
         let hmodule_ptr = hmodule.0 as usize;
 

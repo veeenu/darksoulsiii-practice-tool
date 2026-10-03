@@ -1,5 +1,5 @@
 use std::fmt::Write;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::{Mutex, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -12,6 +12,8 @@ use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
 use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
+use practice_tool_core::gamepad::{BLOCK_XINPUT, GAMEPAD_STATE};
+use practice_tool_core::profiler::{Phase, Profiler};
 use practice_tool_core::widgets::radial_menu::radial_menu;
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use sys::ImVec2;
@@ -20,9 +22,7 @@ use windows::Win32::UI::Input::XboxController::{XINPUT_GAMEPAD_A, XINPUT_GAMEPAD
 
 use crate::config::{config_path, Config, IndicatorType, RadialMenu, Settings, DEFAULT_CONFIG};
 use crate::config_editor::{ConfigEditor, ERROR_COLOR};
-use crate::gamepad::GamepadState;
 use crate::icons::{Icon, Icons};
-use crate::profiler::{Phase, Profiler};
 use crate::update::Update;
 use crate::util;
 
@@ -30,8 +30,6 @@ const MAJOR: usize = pkg_version_major!();
 const MINOR: usize = pkg_version_minor!();
 const PATCH: usize = pkg_version_patch!();
 
-pub(crate) static BLOCK_XINPUT: AtomicBool = AtomicBool::new(false);
-pub(crate) static GAMEPAD_STATE: GamepadState = GamepadState::new();
 static UPDATE: OnceLock<Update> = OnceLock::new();
 
 struct FontIDs {
@@ -259,7 +257,11 @@ impl PracticeTool {
             radial_menu_open_time: Instant::now(),
             press_queue: Vec::new(),
             release_queue: Vec::new(),
-            profiler: Profiler::new(),
+            profiler: Profiler::new(
+                util::get_dll_path()
+                    .unwrap_or_default()
+                    .with_file_name("jdsd_dsiii_practice_tool.profile.csv"),
+            ),
         };
         tool.apply_config(config);
         info!("Initialized");
@@ -733,8 +735,7 @@ impl PracticeTool {
 
         let pressed_a_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
         let pressed_b_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_B);
-        let pressed_combo =
-            combo.is_pressed(unsafe { &*(&self.gamepad_state as *const _ as *const _) });
+        let pressed_combo = combo.is_pressed(&self.gamepad_state);
 
         let released_a = !pressed_a_after && pressed_a_before;
         let released_b = !pressed_b_after && pressed_b_before;

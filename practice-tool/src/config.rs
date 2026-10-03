@@ -5,6 +5,7 @@ use libds3::prelude::*;
 use practice_tool_core::controller::ControllerCombination;
 use practice_tool_core::key::Key;
 use practice_tool_core::widgets::Widget;
+use practice_tool_memedit::widgets::flag_widget;
 use serde::Deserialize;
 use tracing_subscriber::filter::LevelFilter;
 
@@ -12,7 +13,6 @@ use crate::util;
 use crate::widgets::character_stats::character_stats_edit;
 use crate::widgets::cycle_color::cycle_color;
 use crate::widgets::cycle_speed::cycle_speed;
-use crate::widgets::flag::flag_widget;
 use crate::widgets::group::group;
 use crate::widgets::input_viewer::InputViewer;
 use crate::widgets::item_spawn::ItemSpawner;

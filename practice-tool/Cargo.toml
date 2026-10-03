@@ -14,7 +14,7 @@ name = "libjdsd_dsiii_practice_tool"
 
 [features]
 # Record per-frame render loop timings to jdsd_dsiii_practice_tool.profile.csv
-profiling = ["windows/Win32_System_Performance"]
+profiling = ["practice-tool-core/profiling"]
 
 [dependencies]
 const_format = "0.2.26"
@@ -40,6 +40,8 @@ imgui = { workspace = true, features = ["tables-api"] }
 once_cell.workspace = true
 windows.workspace = true
 practice-tool-core.workspace = true
+practice-tool-core-windows.workspace = true
+practice-tool-memedit.workspace = true
 
 [build-dependencies]
 embed-resource = "2.4.3"

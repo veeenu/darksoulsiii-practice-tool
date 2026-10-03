@@ -1,10 +1,9 @@
 use std::ffi::CStr;
 
+use practice_tool_core::gamepad::GAMEPAD_STATE;
 use practice_tool_core::key::Key;
 use practice_tool_core::widgets::Widget;
 use windows::Win32::UI::Input::XboxController::*;
-
-use crate::practice_tool::GAMEPAD_STATE;
 
 const LT: u32 = 1 << 16;
 const RT: u32 = 1 << 17;
