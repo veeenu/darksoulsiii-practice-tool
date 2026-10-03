@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod config;
+mod dlc_ownership;
 mod gamepad;
 mod practice_tool;
 mod profiler;
@@ -30,7 +31,7 @@ use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::mh::{MH_ApplyQueued, MH_Initialize, MhHook, MH_STATUS};
 use hudhook::tracing::{error, trace};
 use hudhook::{eject, Hudhook};
-use libds3::pointers::PointerChains;
+use libds3::pointers::POINTER_CHAINS;
 use once_cell::sync::Lazy;
 use practice_tool::PracticeTool;
 use windows::core::{s, w, GUID, HRESULT, PCWSTR};
@@ -63,6 +64,7 @@ static DIRECTINPUT8CREATE: Lazy<FDirectInput8Create> = Lazy::new(|| unsafe {
     >(GetProcAddress(dinput8, s!("DirectInput8Create")));
 
     apply_no_logo();
+    apply_license_check_patch();
 
     directinput8create
 });
@@ -156,13 +158,16 @@ unsafe extern "system" fn xinput_get_state_impl(
 }
 
 fn apply_no_logo() {
-    // This is evaluated twice: here and in [`PracticeTool::new()`]. No big
-    // deal, but might want to refactor that eventually.
-    let pointer_chains = PointerChains::new();
-    pointer_chains.no_logo.write([
+    POINTER_CHAINS.no_logo.write([
         0x48, 0x31, 0xC0, 0x48, 0x89, 0x02, 0x49, 0x89, 0x04, 0x24, 0x90, 0x90, 0x90, 0x90, 0x90,
         0x90, 0x90, 0x90, 0x90, 0x90,
     ]);
+}
+
+fn apply_license_check_patch() {
+    if let Err(e) = dlc_ownership::hook() {
+        error!("License check patch not applied: {e}");
+    }
 }
 
 fn start_practice_tool(hmodule: HINSTANCE) {

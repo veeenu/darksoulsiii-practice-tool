@@ -6,7 +6,7 @@ use practice_tool_core::widgets::Widget;
 use crate::widgets::position::SavePosition;
 
 pub(crate) fn nudge_position(
-    ptr: (PointerChain<f32>, PointerChain<[f32; 3]>),
+    ptr: &'static (PointerChain<f32>, PointerChain<[f32; 3]>),
     nudge: f32,
     key_nudge_up: Option<Key>,
     key_nudge_down: Option<Key>,

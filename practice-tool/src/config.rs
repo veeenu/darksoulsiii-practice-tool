@@ -211,10 +211,10 @@ enum CfgCommand {
 }
 
 impl CfgCommand {
-    fn into_widget(self, settings: &Settings, chains: &PointerChains) -> Box<dyn Widget> {
+    fn into_widget(self, settings: &Settings, chains: &'static PointerChains) -> Box<dyn Widget> {
         match self {
             CfgCommand::Flag { flag, hotkey: key } => {
-                flag_widget(&flag.label, (flag.getter)(chains).clone(), key)
+                flag_widget(&flag.label, (flag.getter)(chains), key)
             },
             CfgCommand::Label { label } => label_widget(label.as_str()),
             CfgCommand::SavefileManager { hotkey_load: key_load } => {
@@ -223,37 +223,33 @@ impl CfgCommand {
             CfgCommand::ItemSpawner { hotkey_load: key_load } => Box::new(ItemSpawner::new(
                 chains.spawn_item_func_ptr as usize,
                 chains.map_item_man as usize,
-                chains.gravity.clone(),
+                &chains.gravity,
                 key_load.into_option(),
                 settings.display,
             )),
             CfgCommand::Position { position, save } => {
-                save_position(chains.position.clone(), position.into_option(), save)
+                save_position(&chains.position, position.into_option(), save)
             },
             CfgCommand::NudgePosition { nudge, nudge_up, nudge_down } => {
-                nudge_position(chains.position.clone(), nudge, nudge_up, nudge_down)
+                nudge_position(&chains.position, nudge, nudge_up, nudge_down)
             },
-            CfgCommand::CharacterStats { value } => character_stats_edit(
-                chains.character_stats.clone(),
-                value.into_option(),
-                settings.display,
-            ),
+            CfgCommand::CharacterStats { value } => {
+                character_stats_edit(&chains.character_stats, value.into_option(), settings.display)
+            },
             CfgCommand::CycleSpeed { values, hotkey } => {
-                cycle_speed(values.as_slice(), chains.speed.clone(), hotkey)
+                cycle_speed(values.as_slice(), &chains.speed, hotkey)
             },
             CfgCommand::CycleColor { values, hotkey } => {
-                cycle_color(values.as_slice(), chains.mesh_color.clone(), hotkey)
+                cycle_color(values.as_slice(), &chains.mesh_color, hotkey)
             },
-            CfgCommand::Souls { amount, hotkey } => souls(amount, chains.souls.clone(), hotkey),
-            CfgCommand::Quitout { hotkey } => quitout(chains.quitout.clone(), hotkey.into_option()),
+            CfgCommand::Souls { amount, hotkey } => souls(amount, &chains.souls, hotkey),
+            CfgCommand::Quitout { hotkey } => quitout(&chains.quitout, hotkey.into_option()),
             CfgCommand::OpenMenu { hotkey, kind } => {
                 open_menu(kind, chains.travel_ptr, chains.attune_ptr, hotkey)
             },
-            CfgCommand::Target { hotkey } => Box::new(Target::new(
-                chains.current_target.clone(),
-                chains.xa,
-                hotkey.into_option(),
-            )),
+            CfgCommand::Target { hotkey } => {
+                Box::new(Target::new(&chains.current_target, chains.xa, hotkey.into_option()))
+            },
             CfgCommand::Group { label, commands } => group(
                 label.as_str(),
                 commands.into_iter().map(|c| c.into_widget(settings, chains)).collect(),
@@ -289,7 +285,7 @@ impl Config {
         toml::from_str::<Config>(cfg).map_err(|e| format!("TOML configuration parse error: {}", e))
     }
 
-    pub(crate) fn make_commands(self, chains: &PointerChains) -> Vec<Box<dyn Widget>> {
+    pub(crate) fn make_commands(self, chains: &'static PointerChains) -> Vec<Box<dyn Widget>> {
         self.commands.into_iter().map(|c| c.into_widget(&self.settings, chains)).collect()
     }
 }

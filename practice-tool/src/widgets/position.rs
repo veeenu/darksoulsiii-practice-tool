@@ -7,8 +7,8 @@ use practice_tool_core::widgets::position::{Position, PositionStorage};
 use practice_tool_core::widgets::Widget;
 
 pub(super) struct SavePosition {
-    ptr_angle: PointerChain<f32>,
-    ptr_pos: PointerChain<[f32; 3]>,
+    ptr_angle: &'static PointerChain<f32>,
+    ptr_pos: &'static PointerChain<[f32; 3]>,
     saved_position: [f32; 4],
     label_current: String,
     label_stored: String,
@@ -17,10 +17,13 @@ pub(super) struct SavePosition {
 }
 
 impl SavePosition {
-    pub(super) fn new(ptr: (PointerChain<f32>, PointerChain<[f32; 3]>), nudge: f32) -> Self {
+    pub(super) fn new(
+        ptr: &'static (PointerChain<f32>, PointerChain<[f32; 3]>),
+        nudge: f32,
+    ) -> Self {
         Self {
-            ptr_angle: ptr.0,
-            ptr_pos: ptr.1,
+            ptr_angle: &ptr.0,
+            ptr_pos: &ptr.1,
             saved_position: [0.0; 4],
             label_current: String::new(),
             label_stored: String::new(),
@@ -103,7 +106,7 @@ impl NudgePositionStorage for SavePosition {
 }
 
 pub(crate) fn save_position(
-    ptr: (PointerChain<f32>, PointerChain<[f32; 3]>),
+    ptr: &'static (PointerChain<f32>, PointerChain<[f32; 3]>),
     key_load: Option<Key>,
     key_save: Option<Key>,
 ) -> Box<dyn Widget> {
