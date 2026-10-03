@@ -77,6 +77,8 @@ pub(crate) struct PracticeTool {
     position_bufs: [String; 4],
     position_prev: [f32; 3],
     position_change_buf: String,
+    position_dist_ref: [f32; 3],
+    position_dist_buf: String,
 
     igt_buf: String,
     fps_buf: String,
@@ -201,7 +203,9 @@ impl PracticeTool {
 
         // Checked in the background, so that an unreachable network doesn't
         // delay the overlay.
-        thread::spawn(|| UPDATE.get_or_init(crate::check_update));
+        if !config.settings.disable_update_prompt {
+            thread::spawn(|| UPDATE.get_or_init(crate::check_update));
+        }
 
         if config.settings.log_level.inner() < LevelFilter::DEBUG || !config.settings.show_console {
             hudhook::free_console().ok();
@@ -247,6 +251,8 @@ impl PracticeTool {
             position_prev: Default::default(),
             position_bufs: Default::default(),
             position_change_buf: Default::default(),
+            position_dist_ref: Default::default(),
+            position_dist_buf: Default::default(),
             igt_buf: Default::default(),
             fps_buf: Default::default(),
             framecount: 0,
@@ -278,14 +284,15 @@ impl PracticeTool {
     }
 
     fn render_visible(&mut self, ui: &imgui::Ui) {
+        let [dw, dh] = { ui.io().display_size };
         ui.window("##tool_window")
             .position([16., 16.], Condition::Always)
+            .size_constraints([240., 0.], [dw - 70., dh - 70.])
             .bg_alpha(0.8)
             .flags({
                 WindowFlags::NO_TITLE_BAR
                     | WindowFlags::NO_RESIZE
                     | WindowFlags::NO_MOVE
-                    | WindowFlags::NO_SCROLLBAR
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
             .build(|| {
@@ -374,6 +381,7 @@ impl PracticeTool {
                                 IndicatorType::GameVersion => "Game Version",
                                 IndicatorType::Position => "Player Position",
                                 IndicatorType::PositionChange => "Player Velocity",
+                                IndicatorType::PositionDistance => "Player Distance",
                                 IndicatorType::Igt => "IGT Timer",
                                 IndicatorType::Fps => "FPS",
                                 IndicatorType::FrameCount => "Frame Counter",
@@ -401,6 +409,25 @@ impl PracticeTool {
 
                                 if ui.button("Reset") {
                                     self.framecount = 0;
+                                }
+                            }
+
+                            if let IndicatorType::PositionDistance = indicator.indicator {
+                                ui.same_line();
+
+                                let btn_xyz_label = "Start XYZ";
+                                let btn_xyz_width = ui.calc_text_size(btn_xyz_label)[0]
+                                    + style.frame_padding[0] * 2.0;
+
+                                ui.set_cursor_pos([
+                                    ui.content_region_max()[0] - btn_xyz_width,
+                                    ui.cursor_pos()[1],
+                                ]);
+
+                                if ui.button(btn_xyz_label) {
+                                    if let Some(position) = POINTER_CHAINS.position.1.read() {
+                                        self.position_dist_ref = position;
+                                    }
                                 }
                             }
                         }
@@ -578,6 +605,29 @@ impl PracticeTool {
                                 ui.text(&self.position_change_buf);
 
                                 self.position_prev = [x, y, z];
+                            }
+                        },
+                        IndicatorType::PositionDistance => {
+                            if let Some([x, y, z]) = POINTER_CHAINS.position.1.read() {
+                                let position_dist_xyz = ((x - self.position_dist_ref[0]).powf(2.0)
+                                    + (y - self.position_dist_ref[1]).powf(2.0)
+                                    + (z - self.position_dist_ref[2]).powf(2.0))
+                                .sqrt();
+
+                                let position_dist_xz = ((x - self.position_dist_ref[0]).powf(2.0)
+                                    + (z - self.position_dist_ref[2]).powf(2.0))
+                                .sqrt();
+
+                                let position_dist_y = y - self.position_dist_ref[1];
+
+                                self.position_dist_buf.clear();
+                                write!(
+                                    self.position_dist_buf,
+                                    "Distance: [XYZ] {position_dist_xyz:.4} | [XZ] \
+                                     {position_dist_xz:.4} | [Y] {position_dist_y:.4}"
+                                )
+                                .ok();
+                                ui.text(&self.position_dist_buf);
                             }
                         },
                         IndicatorType::Igt => {

@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use hudhook::inject::Process;
 use hudhook::tracing::{error, trace};
 use libjdsd_dsiii_practice_tool::{check_update, events};
