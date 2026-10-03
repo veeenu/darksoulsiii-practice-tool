@@ -12,6 +12,7 @@ use crate::widgets::cycle_color::cycle_color;
 use crate::widgets::cycle_speed::cycle_speed;
 use crate::widgets::flag::flag_widget;
 use crate::widgets::group::group;
+use crate::widgets::input_viewer::InputViewer;
 use crate::widgets::item_spawn::ItemSpawner;
 use crate::widgets::label::label_widget;
 use crate::widgets::nudge_pos::nudge_position;
@@ -198,6 +199,12 @@ enum CfgCommand {
         #[serde(rename = "target")]
         hotkey: PlaceholderOption<Key>,
     },
+    InputViewer {
+        #[serde(rename = "input_viewer")]
+        hotkey: PlaceholderOption<Key>,
+        #[serde(default = "default_input_viewer_seconds")]
+        seconds: usize,
+    },
     NudgePosition {
         nudge: f32,
         nudge_up: Option<Key>,
@@ -250,6 +257,9 @@ impl CfgCommand {
             CfgCommand::Target { hotkey } => {
                 Box::new(Target::new(&chains.current_target, chains.xa, hotkey.into_option()))
             },
+            CfgCommand::InputViewer { hotkey, seconds } => {
+                Box::new(InputViewer::new(seconds, hotkey.into_option()))
+            },
             CfgCommand::Group { label, commands } => group(
                 label.as_str(),
                 commands.into_iter().map(|c| c.into_widget(settings, chains)).collect(),
@@ -257,6 +267,10 @@ impl CfgCommand {
             ),
         }
     }
+}
+
+fn default_input_viewer_seconds() -> usize {
+    5
 }
 
 #[derive(Deserialize, Debug, Clone)]
