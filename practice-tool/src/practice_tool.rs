@@ -18,13 +18,16 @@ use tracing_subscriber::prelude::*;
 use windows::Win32::UI::Input::XboxController::{XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_STATE};
 
 use crate::config::{Config, IndicatorType, RadialMenu, Settings};
-use crate::{util, XINPUTGETSTATE};
+use crate::gamepad::GamepadState;
+use crate::profiler::{Phase, Profiler};
+use crate::util;
 
 const MAJOR: usize = pkg_version_major!();
 const MINOR: usize = pkg_version_minor!();
 const PATCH: usize = pkg_version_patch!();
 
 pub(crate) static BLOCK_XINPUT: AtomicBool = AtomicBool::new(false);
+pub(crate) static GAMEPAD_STATE: GamepadState = GamepadState::new();
 
 struct FontIDs {
     small: FontId,
@@ -41,10 +44,21 @@ enum UiState {
     Hidden,
 }
 
+impl UiState {
+    fn name(&self) -> &'static str {
+        match self {
+            UiState::MenuOpen => "open",
+            UiState::Closed => "closed",
+            UiState::Hidden => "hidden",
+        }
+    }
+}
+
 pub(crate) struct PracticeTool {
     settings: Settings,
     pointers: PointerChains,
     version_label: String,
+    help_text: String,
     widgets: Vec<Box<dyn Widget>>,
     radial_menu: Vec<RadialMenu>,
 
@@ -65,12 +79,15 @@ pub(crate) struct PracticeTool {
     framecount_buf: String,
 
     cur_anim_buf: String,
+    imgui_debug_buf: String,
 
     gamepad_state: XINPUT_STATE,
     gamepad_stick: ImVec2,
     radial_menu_open_time: Instant,
     press_queue: Vec<imgui::Key>,
     release_queue: Vec<imgui::Key>,
+
+    profiler: Profiler,
 }
 
 impl PracticeTool {
@@ -177,6 +194,14 @@ impl PracticeTool {
             let (maj, min, patch) = (*VERSION).into();
             format!("Game Ver {}.{:02}.{}", maj, min, patch)
         };
+        let help_text = format!(
+            "Press the {} key to open/close the tool's\ninterface.\n\nYou can toggle flags/launch \
+             commands by\nclicking in the UI or by pressing\nthe hotkeys (in the \
+             parentheses).\n\nYou can configure your tool by editing\nthe \
+             jdsd_dsiii_practice_tool.toml file with\na text editor. If you break \
+             something,\njust download a fresh file!\n\nThank you for using my tool! <3\n",
+            config.settings.display
+        );
         let settings = config.settings.clone();
         let radial_menu = config.radial_menu.clone();
         let widgets = config.make_commands(&pointers);
@@ -188,6 +213,7 @@ impl PracticeTool {
             settings,
             pointers,
             version_label,
+            help_text,
             widgets,
             radial_menu,
             log: Vec::new(),
@@ -203,11 +229,13 @@ impl PracticeTool {
             framecount: 0,
             framecount_buf: Default::default(),
             cur_anim_buf: Default::default(),
+            imgui_debug_buf: Default::default(),
             gamepad_state: Default::default(),
             gamepad_stick: Default::default(),
             radial_menu_open_time: Instant::now(),
             press_queue: Vec::new(),
             release_queue: Vec::new(),
+            profiler: Profiler::new(),
         }
     }
 
@@ -223,15 +251,19 @@ impl PracticeTool {
                     | WindowFlags::ALWAYS_AUTO_RESIZE
             })
             .build(|| {
+                self.profiler.mark(Phase::UiSetup);
+
                 if !(ui.io().want_capture_keyboard && ui.is_any_item_active()) {
                     for w in self.widgets.iter_mut() {
                         w.interact(ui);
                     }
                 }
+                self.profiler.mark(Phase::WidgetsInteract);
 
                 for w in self.widgets.iter_mut() {
                     w.render(ui);
                 }
+                self.profiler.mark(Phase::WidgetsRender);
 
                 if ui.button_with_size("Close", [BUTTON_WIDTH * scaling_factor(ui), BUTTON_HEIGHT])
                 {
@@ -365,15 +397,7 @@ impl PracticeTool {
                             PATCH
                         ));
                         ui.separator();
-                        ui.text(format!(
-                            "Press the {} key to open/close the tool's\ninterface.\n\nYou can \
-                             toggle flags/launch commands by\nclicking in the UI or by \
-                             pressing\nthe hotkeys (in the parentheses).\n\nYou can configure \
-                             your tool by editing\nthe jdsd_dsiii_practice_tool.toml file with\na \
-                             text editor. If you break something,\njust download a fresh \
-                             file!\n\nThank you for using my tool! <3\n",
-                            self.settings.display
-                        ));
+                        ui.text(&self.help_text);
                         ui.separator();
                         ui.text("-- johndisandonato");
                         ui.text("   https://twitch.tv/johndisandonato");
@@ -399,6 +423,7 @@ impl PracticeTool {
                     });
 
                 ui.new_line();
+                self.profiler.mark(Phase::UiSetup);
 
                 for indicator in &self.settings.indicators {
                     if !indicator.enabled {
@@ -506,18 +531,21 @@ impl PracticeTool {
                             ui.text(&self.framecount_buf);
                         },
                         IndicatorType::ImguiDebug => {
-                            imgui_debug(ui);
+                            imgui_debug(ui, &mut self.imgui_debug_buf);
                         },
                     }
                 }
+                self.profiler.mark(Phase::Indicators);
 
                 for w in self.widgets.iter_mut() {
                     w.render_closed(ui);
                 }
+                self.profiler.mark(Phase::WidgetsRender);
 
                 for w in self.widgets.iter_mut() {
                     w.interact(ui);
                 }
+                self.profiler.mark(Phase::WidgetsInteract);
             });
 
         for st in stack_tokens.into_iter().rev() {
@@ -529,6 +557,7 @@ impl PracticeTool {
         for w in self.widgets.iter_mut() {
             w.interact(ui);
         }
+        self.profiler.mark(Phase::WidgetsInteract);
     }
 
     fn render_logs(&mut self, ui: &imgui::Ui) {
@@ -537,7 +566,7 @@ impl PracticeTool {
         let [dw, dh] = io.display_size;
         let [ww, wh] = [dw * 0.3, 14.0 * 6.];
 
-        let stack_tokens = vec![
+        let stack_tokens = [
             ui.push_style_var(StyleVar::WindowRounding(0.)),
             ui.push_style_var(StyleVar::FrameBorderSize(0.)),
             ui.push_style_var(StyleVar::WindowBorderSize(0.)),
@@ -591,8 +620,8 @@ impl PracticeTool {
     }
 
     fn render_radial(&mut self, ui: &imgui::Ui) {
-        // Debounce a handful of frames to avoid accidentally rotating the menu when
-        // releasing L3
+        // Debounce a handful of frames to avoid accidentally rotating the menu
+        // when releasing L3
         const RADIAL_MENU_DEBOUNCE: Duration = Duration::from_millis(150);
 
         let Some(combo) = self.settings.radial_menu_open.as_ref() else {
@@ -603,7 +632,8 @@ impl PracticeTool {
         let pressed_b_before = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_B);
 
         let [_, h] = ui.io().display_size;
-        unsafe { (XINPUTGETSTATE)(0, &mut self.gamepad_state) };
+        self.gamepad_state = GAMEPAD_STATE.load();
+        self.profiler.mark(Phase::XInput);
 
         let pressed_a_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
         let pressed_b_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_B);
@@ -621,11 +651,6 @@ impl PracticeTool {
         let debounce_elapsed = self.radial_menu_open_time.elapsed() > RADIAL_MENU_DEBOUNCE;
 
         if BLOCK_XINPUT.load(Ordering::SeqCst) {
-            let menu = self
-                .radial_menu
-                .iter()
-                .map(|RadialMenu { label, .. }| label.as_str())
-                .collect::<Vec<_>>();
             let x = self.gamepad_state.Gamepad.sThumbLX as f32;
             let y = -(self.gamepad_state.Gamepad.sThumbLY as f32);
 
@@ -638,7 +663,8 @@ impl PracticeTool {
                 self.gamepad_stick = ImVec2 { x, y };
             }
 
-            let menu_out = radial_menu(ui, &menu, self.gamepad_stick, h * 0.1, h * 0.25);
+            let menu_out =
+                radial_menu(ui, &self.radial_menu, self.gamepad_stick, h * 0.1, h * 0.25);
 
             if released_a {
                 if let Some(i) = menu_out {
@@ -664,6 +690,7 @@ impl ImguiRenderLoop for PracticeTool {
     }
 
     fn render(&mut self, ui: &mut imgui::Ui) {
+        self.profiler.begin();
         let font_token = self.set_font(ui);
 
         let display = self.settings.display.is_pressed(ui);
@@ -686,11 +713,16 @@ impl ImguiRenderLoop for PracticeTool {
             }
         }
 
+        self.profiler.mark(Phase::Hotkeys);
         self.render_radial(ui);
+
+        let ui_state = self.ui_state.name();
+        self.profiler.mark(Phase::Radial);
 
         match &self.ui_state {
             UiState::MenuOpen => {
                 self.pointers.cursor_show.set(true);
+                self.profiler.mark(Phase::CursorShow);
                 self.render_visible(ui);
             },
             UiState::Closed => {
@@ -701,8 +733,10 @@ impl ImguiRenderLoop for PracticeTool {
             },
         }
 
+        self.profiler.mark(Phase::UiFinish);
+
         for w in &mut self.widgets {
-            w.log(self.log_tx.clone());
+            w.log(&self.log_tx);
         }
 
         let now = Instant::now();
@@ -711,6 +745,7 @@ impl ImguiRenderLoop for PracticeTool {
 
         self.render_logs(ui);
         drop(font_token);
+        self.profiler.end(ui_state);
     }
 
     fn initialize(&mut self, ctx: &mut Context, _: &mut dyn RenderContext) {
@@ -736,16 +771,18 @@ impl ImguiRenderLoop for PracticeTool {
 }
 
 // Display some imgui debug information. Very expensive.
-fn imgui_debug(ui: &Ui) {
+fn imgui_debug(ui: &Ui, buf: &mut String) {
     let io = ui.io();
-    ui.text(format!("Mouse position     {:?}", io.mouse_pos));
-    ui.text(format!("Mouse down         {:?}", io.mouse_down));
-    ui.text(format!("Want capture mouse {:?}", io.want_capture_mouse));
-    ui.text(format!("Want capture kbd   {:?}", io.want_capture_keyboard));
-    ui.text(format!("Want text input    {:?}", io.want_text_input));
-    ui.text(format!("Want set mouse pos {:?}", io.want_set_mouse_pos));
-    ui.text(format!("Any item active    {:?}", ui.is_any_item_active()));
-    ui.text(format!("Any item hovered   {:?}", ui.is_any_item_hovered()));
-    ui.text(format!("Any item focused   {:?}", ui.is_any_item_focused()));
-    ui.text(format!("Any mouse down     {:?}", ui.is_any_mouse_down()));
+    buf.clear();
+    writeln!(buf, "Mouse position     {:?}", io.mouse_pos).ok();
+    writeln!(buf, "Mouse down         {:?}", io.mouse_down).ok();
+    writeln!(buf, "Want capture mouse {:?}", io.want_capture_mouse).ok();
+    writeln!(buf, "Want capture kbd   {:?}", io.want_capture_keyboard).ok();
+    writeln!(buf, "Want text input    {:?}", io.want_text_input).ok();
+    writeln!(buf, "Want set mouse pos {:?}", io.want_set_mouse_pos).ok();
+    writeln!(buf, "Any item active    {:?}", ui.is_any_item_active()).ok();
+    writeln!(buf, "Any item hovered   {:?}", ui.is_any_item_hovered()).ok();
+    writeln!(buf, "Any item focused   {:?}", ui.is_any_item_focused()).ok();
+    write!(buf, "Any mouse down     {:?}", ui.is_any_mouse_down()).ok();
+    ui.text(&*buf);
 }

@@ -656,6 +656,7 @@ checksum = "52ff2c0fe9bc6cb6b14a0592c2ff4fa9ceb83eea9db979b0487cd054946a2b8f"
 name = "libds3"
 version = "1.7.1"
 dependencies = [
+ "cc",
  "log",
  "macro-param",
  "once_cell",
@@ -1001,7 +1002,6 @@ checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 [[package]]
 name = "practice-tool-core"
 version = "0.1.0"
-source = "git+https://github.com/veeenu/practice-tool-core#d65dbc442e99b44dc1a7b5b10eb97a6d13022ed7"
 dependencies = [
  "crossbeam-channel",
  "imgui",
@@ -1014,7 +1014,6 @@ dependencies = [
 [[package]]
 name = "practice-tool-tasks"
 version = "0.1.0"
-source = "git+https://github.com/veeenu/practice-tool-core#d65dbc442e99b44dc1a7b5b10eb97a6d13022ed7"
 dependencies = [
  "anyhow",
  "dotenv",

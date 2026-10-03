@@ -15,7 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod config;
+mod gamepad;
 mod practice_tool;
+mod profiler;
 mod util;
 mod widgets;
 
@@ -113,6 +115,16 @@ unsafe extern "system" fn xinput_get_state_impl(
 ) -> u32 {
     let r = (XINPUTGETSTATE)(dw_user_index, xinput_state);
 
+    // Save the unmodified state for the radial menu, before it is blocked or
+    // deadzoned for the game.
+    if dw_user_index == 0 {
+        practice_tool::GAMEPAD_STATE.store(if r == ERROR_SUCCESS.0 {
+            xinput_state.as_ref()
+        } else {
+            None
+        });
+    }
+
     if practice_tool::BLOCK_XINPUT.load(Ordering::SeqCst) {
         *xinput_state = Default::default();
         return r;
@@ -144,8 +156,8 @@ unsafe extern "system" fn xinput_get_state_impl(
 }
 
 fn apply_no_logo() {
-    // This is evaluated twice: here and in [`PracticeTool::new()`]. No big deal,
-    // but might want to refactor that eventually.
+    // This is evaluated twice: here and in [`PracticeTool::new()`]. No big
+    // deal, but might want to refactor that eventually.
     let pointer_chains = PointerChains::new();
     pointer_chains.no_logo.write([
         0x48, 0x31, 0xC0, 0x48, 0x89, 0x02, 0x49, 0x89, 0x04, 0x24, 0x90, 0x90, 0x90, 0x90, 0x90,

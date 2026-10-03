@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use imgui::{ProgressBar, StyleColor};
 use libds3::memedit::PointerChain;
 use libds3::pointer_chain;
@@ -55,6 +57,7 @@ struct EntityPointerChains {
 #[derive(Debug)]
 pub(crate) struct Target {
     label: String,
+    text: String,
     alloc_addr: PointerChain<[u8; 22]>,
     detour_addr: PointerChain<[u8; 7]>,
     detour_orig_data: [u8; 7],
@@ -93,6 +96,7 @@ impl Target {
                 .as_ref()
                 .map(|k| format!("Target entity info ({})", k))
                 .unwrap_or_else(|| "Target entity info".to_string()),
+            text: String::new(),
             alloc_addr,
             detour_addr,
             detour_orig_data: Default::default(),
@@ -247,8 +251,8 @@ impl Widget for Target {
         //     let g = ((rgba >> 16) & 0xff) as u8;
         //     let b = ((rgba >> 8) & 0xff) as u8;
         //     let a = (rgba & 0xff) as u8;
-        //     [(r as f32 / 255.), (g as f32 / 255.), (b as f32 / 255.), (a as f32 /
-        // 255.)] }
+        //     [(r as f32 / 255.), (g as f32 / 255.), (b as f32 / 255.), (a as
+        // f32 / 255.)] }
 
         const COLOR_BASE: [f32; 4] = [1.0, 0.7529412, 0.4392157, 1.0];
         const COLOR_HP: [f32; 4] = [0.60784316, 0.28627452, 0.28627452, 1.0];
@@ -260,18 +264,25 @@ impl Widget for Target {
         const COLOR_CURSE: [f32; 4] = [0.68235296, 0.6745098, 0.5372549, 1.0];
         const COLOR_FROST: [f32; 4] = [0.627451, 0.70980394, 0.7764706, 1.0];
 
-        let pbar = |label, cur, max, c| {
-            ui.text(format!("{label:8} {cur:>5} / {max:>5}"));
+        // Formats into a reused buffer instead of allocating every frame.
+        let text = &mut self.text;
+
+        let pbar = |text: &mut String, label: &str, cur: u32, max: u32, c: [f32; 4]| {
+            text.clear();
+            write!(text, "{label:8} {cur:>5} / {max:>5}").ok();
+            ui.text(&*text);
             let pct = div(cur, max);
             let _tok = ui.push_style_color(StyleColor::PlotHistogram, c);
             ProgressBar::new(pct).size(pbar_size).overlay_text("").build(ui);
         };
 
-        pbar("HP", hp, max_hp, COLOR_HP);
-        pbar("SP", sp, max_sp, COLOR_SP);
-        pbar("MP", mp, max_mp, COLOR_MP);
+        pbar(text, "HP", hp, max_hp, COLOR_HP);
+        pbar(text, "SP", sp, max_sp, COLOR_SP);
+        pbar(text, "MP", mp, max_mp, COLOR_MP);
 
-        ui.text(format!("Poise    {:>5.0}/{:>5.0} {:.2}s", poise, poise_max, poise_time));
+        text.clear();
+        write!(text, "Poise    {:>5.0}/{:>5.0} {:.2}s", poise, poise_max, poise_time).ok();
+        ui.text(&*text);
         let pct = if poise_max.abs() < 0.0001 { 0.0 } else { poise / poise_max };
         let tok = ui.push_style_color(StyleColor::PlotHistogram, COLOR_BASE);
         ProgressBar::new(pct).size(pbar_size).overlay_text("").build(ui);
@@ -284,11 +295,11 @@ impl Widget for Target {
         // 0xaeac89ff
         // 0xa0b5c6ff
 
-        pbar("Poison", poison, poison_max, COLOR_POISON);
-        pbar("Toxic", toxic, toxic_max, COLOR_TOXIC);
-        pbar("Bleed", bleed, bleed_max, COLOR_BLEED);
-        pbar("Curse", curse, curse_max, COLOR_CURSE);
-        pbar("Frost", frost, frost_max, COLOR_FROST);
+        pbar(text, "Poison", poison, poison_max, COLOR_POISON);
+        pbar(text, "Toxic", toxic, toxic_max, COLOR_TOXIC);
+        pbar(text, "Bleed", bleed, bleed_max, COLOR_BLEED);
+        pbar(text, "Curse", curse, curse_max, COLOR_CURSE);
+        pbar(text, "Frost", frost, frost_max, COLOR_FROST);
     }
 
     fn interact(&mut self, ui: &imgui::Ui) {
