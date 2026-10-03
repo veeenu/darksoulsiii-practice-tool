@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use libds3::prelude::*;
@@ -7,6 +8,7 @@ use practice_tool_core::widgets::Widget;
 use serde::Deserialize;
 use tracing_subscriber::filter::LevelFilter;
 
+use crate::util;
 use crate::widgets::character_stats::character_stats_edit;
 use crate::widgets::cycle_color::cycle_color;
 use crate::widgets::cycle_speed::cycle_speed;
@@ -56,7 +58,7 @@ impl AsRef<str> for RadialMenu {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Copy)]
 pub(crate) enum IndicatorType {
     Igt,
     Position,
@@ -75,18 +77,21 @@ pub(crate) struct Indicator {
     pub(crate) enabled: bool,
 }
 
+/// Indicator specifiers, their types, and whether they're enabled by default.
+pub(crate) const INDICATORS: &[(&str, IndicatorType, bool)] = &[
+    ("game_version", IndicatorType::GameVersion, true),
+    ("igt", IndicatorType::Igt, true),
+    ("position", IndicatorType::Position, false),
+    ("position_change", IndicatorType::PositionChange, false),
+    ("animation", IndicatorType::Animation, false),
+    ("fps", IndicatorType::Fps, false),
+    ("framecount", IndicatorType::FrameCount, false),
+    ("imgui_debug", IndicatorType::ImguiDebug, false),
+];
+
 impl Indicator {
     fn default_set() -> Vec<Indicator> {
-        vec![
-            Indicator { indicator: IndicatorType::GameVersion, enabled: true },
-            Indicator { indicator: IndicatorType::Igt, enabled: true },
-            Indicator { indicator: IndicatorType::Position, enabled: false },
-            Indicator { indicator: IndicatorType::PositionChange, enabled: false },
-            Indicator { indicator: IndicatorType::Animation, enabled: false },
-            Indicator { indicator: IndicatorType::Fps, enabled: false },
-            Indicator { indicator: IndicatorType::FrameCount, enabled: false },
-            Indicator { indicator: IndicatorType::ImguiDebug, enabled: false },
-        ]
+        INDICATORS.iter().map(|&(_, indicator, enabled)| Indicator { indicator, enabled }).collect()
     }
 }
 
@@ -100,30 +105,11 @@ impl TryFrom<IndicatorConfig> for Indicator {
     type Error = String;
 
     fn try_from(indicator: IndicatorConfig) -> Result<Self, Self::Error> {
-        match indicator.indicator.as_str() {
-            "igt" => Ok(Indicator { indicator: IndicatorType::Igt, enabled: indicator.enabled }),
-            "position" => {
-                Ok(Indicator { indicator: IndicatorType::Position, enabled: indicator.enabled })
-            },
-            "position_change" => Ok(Indicator {
-                indicator: IndicatorType::PositionChange,
-                enabled: indicator.enabled,
-            }),
-            "game_version" => {
-                Ok(Indicator { indicator: IndicatorType::GameVersion, enabled: indicator.enabled })
-            },
-            "imgui_debug" => {
-                Ok(Indicator { indicator: IndicatorType::ImguiDebug, enabled: indicator.enabled })
-            },
-            "fps" => Ok(Indicator { indicator: IndicatorType::Fps, enabled: indicator.enabled }),
-            "framecount" => {
-                Ok(Indicator { indicator: IndicatorType::FrameCount, enabled: indicator.enabled })
-            },
-            "animation" => {
-                Ok(Indicator { indicator: IndicatorType::Animation, enabled: indicator.enabled })
-            },
-            value => Err(format!("Unrecognized indicator: {value}")),
-        }
+        INDICATORS
+            .iter()
+            .find(|(id, ..)| *id == indicator.indicator)
+            .map(|&(_, kind, _)| Indicator { indicator: kind, enabled: indicator.enabled })
+            .ok_or_else(|| format!("Unrecognized indicator: {}", indicator.indicator))
     }
 }
 
@@ -321,11 +307,13 @@ impl Default for Config {
     }
 }
 
+type FlagGetter = fn(&PointerChains) -> &Bitflag<u8>;
+
 #[derive(Deserialize)]
 #[serde(try_from = "String")]
 struct FlagSpec {
     label: String,
-    getter: fn(&PointerChains) -> &Bitflag<u8>,
+    getter: FlagGetter,
 }
 
 impl std::fmt::Debug for FlagSpec {
@@ -335,47 +323,61 @@ impl std::fmt::Debug for FlagSpec {
 }
 
 impl FlagSpec {
-    fn new(label: &str, getter: fn(&PointerChains) -> &Bitflag<u8>) -> FlagSpec {
+    fn new(label: &str, getter: FlagGetter) -> FlagSpec {
         FlagSpec { label: label.to_string(), getter }
     }
 }
+
+/// Valid flag specifiers, their labels, and the pointer chains they toggle.
+#[rustfmt::skip]
+pub(crate) const FLAGS: &[(&str, &str, FlagGetter)] = &[
+    ("all_no_damage", "All no damage", |c| &c.all_no_damage),
+    ("inf_stamina", "Inf Stamina", |c| &c.inf_stamina),
+    ("inf_focus", "Inf Focus", |c| &c.inf_focus),
+    ("inf_consumables", "Inf Consumables", |c| &c.inf_consumables),
+    ("deathcam", "Deathcam", |c| &c.deathcam),
+    ("no_death", "No death", |c| &c.no_death),
+    ("one_shot", "One shot", |c| &c.one_shot),
+    ("evt_draw", "Event draw", |c| &c.evt_draw),
+    ("bloodstain_draw", "Stable/Bloodstain draw", |c| &c.bloodstain_draw),
+    ("evt_disable", "Event disable", |c| &c.evt_disable),
+    ("ai_disable", "AI disable", |c| &c.ai_disable),
+    ("ember", "Ember", |c| &c.ember),
+    ("rend_chr", "Render characters", |c| &c.rend_chr),
+    ("rend_obj", "Render objects", |c| &c.rend_obj),
+    ("rend_map", "Render map", |c| &c.rend_map),
+    ("rend_mesh_hi", "Collision mesh hi", |c| &c.rend_mesh_hi),
+    ("rend_mesh_lo", "Collision mesh lo", |c| &c.rend_mesh_lo),
+    ("rend_mesh_hit", "Collision mesh hit", |c| &c.rend_mesh_hit),
+    ("debug_draw", "Debug draw", |c| &c.debug_draw),
+    ("hurtbox", "Hurtbox", |c| &c.rend_hurtbox),
+    ("all_draw_hit", "All draw hit", |c| &c.all_draw_hit),
+    ("ik_foot_ray", "IK foot ray", |c| &c.ik_foot_ray),
+    ("debug_sphere_1", "Debug sphere 1", |c| &c.debug_sphere_1),
+    ("debug_sphere_2", "Debug sphere 2", |c| &c.debug_sphere_2),
+    ("gravity", "No Gravity", |c| &c.gravity),
+    ("collision", "No Collision", |c| &c.collision),
+];
 
 impl TryFrom<String> for FlagSpec {
     type Error = String;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.as_str() {
-            "all_no_damage" => Ok(FlagSpec::new("All no damage", |c| &c.all_no_damage)),
-            "inf_stamina" => Ok(FlagSpec::new("Inf Stamina", |c| &c.inf_stamina)),
-            "inf_focus" => Ok(FlagSpec::new("Inf Focus", |c| &c.inf_focus)),
-            "inf_consumables" => Ok(FlagSpec::new("Inf Consumables", |c| &c.inf_consumables)),
-            "deathcam" => Ok(FlagSpec::new("Deathcam", |c| &c.deathcam)),
-            "no_death" => Ok(FlagSpec::new("No death", |c| &c.no_death)),
-            "one_shot" => Ok(FlagSpec::new("One shot", |c| &c.one_shot)),
-            "evt_draw" => Ok(FlagSpec::new("Event draw", |c| &c.evt_draw)),
-            "bloodstain_draw" => {
-                Ok(FlagSpec::new("Stable/Bloodstain draw", |c| &c.bloodstain_draw))
-            },
-            "evt_disable" => Ok(FlagSpec::new("Event disable", |c| &c.evt_disable)),
-            "ai_disable" => Ok(FlagSpec::new("AI disable", |c| &c.ai_disable)),
-            "ember" => Ok(FlagSpec::new("Ember", |c| &c.ember)),
-            "rend_chr" => Ok(FlagSpec::new("Render characters", |c| &c.rend_chr)),
-            "rend_obj" => Ok(FlagSpec::new("Render objects", |c| &c.rend_obj)),
-            "rend_map" => Ok(FlagSpec::new("Render map", |c| &c.rend_map)),
-            "rend_mesh_hi" => Ok(FlagSpec::new("Collision mesh hi", |c| &c.rend_mesh_hi)),
-            "rend_mesh_lo" => Ok(FlagSpec::new("Collision mesh lo", |c| &c.rend_mesh_lo)),
-            "rend_mesh_hit" => Ok(FlagSpec::new("Collision mesh hit", |c| &c.rend_mesh_hit)),
-            "debug_draw" => Ok(FlagSpec::new("Debug draw", |c| &c.debug_draw)),
-            "hurtbox" => Ok(FlagSpec::new("Hurtbox", |c| &c.rend_hurtbox)),
-            "all_draw_hit" => Ok(FlagSpec::new("All draw hit", |c| &c.all_draw_hit)),
-            "ik_foot_ray" => Ok(FlagSpec::new("IK foot ray", |c| &c.ik_foot_ray)),
-            "debug_sphere_1" => Ok(FlagSpec::new("Debug sphere 1", |c| &c.debug_sphere_1)),
-            "debug_sphere_2" => Ok(FlagSpec::new("Debug sphere 2", |c| &c.debug_sphere_2)),
-            "gravity" => Ok(FlagSpec::new("No Gravity", |c| &c.gravity)),
-            "collision" => Ok(FlagSpec::new("No Collision", |c| &c.collision)),
-            e => Err(format!("\"{}\" is not a valid flag specifier", e)),
-        }
+        FLAGS
+            .iter()
+            .find(|(id, ..)| *id == value)
+            .map(|&(_, label, getter)| FlagSpec::new(label, getter))
+            .ok_or_else(|| format!("\"{}\" is not a valid flag specifier", value))
     }
+}
+
+/// Path of the configuration file, next to the DLL.
+pub(crate) fn config_path() -> Option<PathBuf> {
+    util::get_dll_path().map(|mut path| {
+        path.pop();
+        path.push("jdsd_dsiii_practice_tool.toml");
+        path
+    })
 }
 
 #[cfg(test)]
