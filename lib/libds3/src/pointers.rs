@@ -7,7 +7,7 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleA;
 
 use crate::memedit::*;
 use crate::prelude::base_addresses::BaseAddresses;
-use crate::prelude::{Version, VERSION};
+use crate::prelude::{get_version, Version};
 
 // Character stats
 //
@@ -116,7 +116,7 @@ impl From<BaseAddresses> for PointerChains {
 
         let offs_all_no_damage = 9;
         let offs_player_exterminate = 1;
-        let offs_no_goods_consume = match *VERSION {
+        let offs_no_goods_consume = match get_version() {
             Version::V1_01_1
             | Version::V1_03_1
             | Version::V1_03_2
@@ -137,7 +137,7 @@ impl From<BaseAddresses> for PointerChains {
 
             Version::V1_15_0 | Version::V1_15_1 | Version::V1_15_2 => 0x1EEA,
         };
-        let offs_deathcam = match *VERSION {
+        let offs_deathcam = match get_version() {
             Version::V1_01_1
             | Version::V1_03_1
             | Version::V1_03_2
@@ -160,7 +160,7 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1
             | Version::V1_15_2 => 0x90,
         };
-        let offs_bloodstain_draw = match *VERSION {
+        let offs_bloodstain_draw = match get_version() {
             Version::V1_01_1
             | Version::V1_03_1
             | Version::V1_03_2
@@ -182,7 +182,7 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1
             | Version::V1_15_2 => 0x2195,
         };
-        let offs_speed = match *VERSION {
+        let offs_speed = match get_version() {
             Version::V1_01_1
             | Version::V1_03_1
             | Version::V1_03_2
@@ -205,7 +205,7 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_1
             | Version::V1_15_2 => 0xa58,
         };
-        let offs_igt = match *VERSION {
+        let offs_igt = match get_version() {
             Version::V1_01_1
             | Version::V1_03_1
             | Version::V1_03_2
@@ -229,7 +229,7 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_2 => 0xa4,
         };
         let offs_fps = 0x08;
-        let offs_debug_draw = match *VERSION {
+        let offs_debug_draw = match get_version() {
             Version::V1_01_1
             | Version::V1_03_1
             | Version::V1_03_2
@@ -253,7 +253,7 @@ impl From<BaseAddresses> for PointerChains {
             | Version::V1_15_2 => 0x65,
         };
 
-        let offs_ik_foot_ray = match *VERSION {
+        let offs_ik_foot_ray = match get_version() {
             Version::V1_01_1
             | Version::V1_03_1
             | Version::V1_03_2
@@ -284,7 +284,7 @@ impl From<BaseAddresses> for PointerChains {
         let mesh_hit = 0xF1;
         let mouse_enable_offs = 0x54;
 
-        let offs_anim = match *VERSION {
+        let offs_anim = match get_version() {
             Version::V1_01_1
             | Version::V1_03_1
             | Version::V1_03_2
@@ -369,7 +369,7 @@ impl From<BaseAddresses> for PointerChains {
 pub static POINTER_CHAINS: Lazy<PointerChains> = Lazy::new(|| {
     let base_module_address = unsafe { GetModuleHandleA(None) }.unwrap().0 as usize;
     let base_addresses =
-        BaseAddresses::from(*crate::version::VERSION).with_module_base_addr(base_module_address);
+        BaseAddresses::from(get_version()).with_module_base_addr(base_module_address);
 
     base_addresses.into()
 });

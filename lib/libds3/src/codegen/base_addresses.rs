@@ -74,32 +74,34 @@ pub enum Version {
     V1_15_2,
 }
 
-impl From<(u32, u32, u32)> for Version {
-    fn from(v: (u32, u32, u32)) -> Self {
+impl TryFrom<(u32, u32, u32)> for Version {
+    type Error = ();
+
+    fn try_from(v: (u32, u32, u32)) -> Result<Self, ()> {
         match v {
-            (1, 1, 1) => Version::V1_01_1,
-            (1, 3, 1) => Version::V1_03_1,
-            (1, 3, 2) => Version::V1_03_2,
-            (1, 4, 1) => Version::V1_04_1,
-            (1, 4, 2) => Version::V1_04_2,
-            (1, 4, 3) => Version::V1_04_3,
-            (1, 5, 0) => Version::V1_05_0,
-            (1, 5, 1) => Version::V1_05_1,
-            (1, 6, 0) => Version::V1_06_0,
-            (1, 7, 0) => Version::V1_07_0,
-            (1, 8, 0) => Version::V1_08_0,
-            (1, 9, 0) => Version::V1_09_0,
-            (1, 10, 0) => Version::V1_10_0,
-            (1, 11, 0) => Version::V1_11_0,
-            (1, 12, 0) => Version::V1_12_0,
-            (1, 13, 0) => Version::V1_13_0,
-            (1, 14, 0) => Version::V1_14_0,
-            (1, 15, 0) => Version::V1_15_0,
-            (1, 15, 1) => Version::V1_15_1,
-            (1, 15, 2) => Version::V1_15_2,
+            (1, 1, 1) => Ok(Version::V1_01_1),
+            (1, 3, 1) => Ok(Version::V1_03_1),
+            (1, 3, 2) => Ok(Version::V1_03_2),
+            (1, 4, 1) => Ok(Version::V1_04_1),
+            (1, 4, 2) => Ok(Version::V1_04_2),
+            (1, 4, 3) => Ok(Version::V1_04_3),
+            (1, 5, 0) => Ok(Version::V1_05_0),
+            (1, 5, 1) => Ok(Version::V1_05_1),
+            (1, 6, 0) => Ok(Version::V1_06_0),
+            (1, 7, 0) => Ok(Version::V1_07_0),
+            (1, 8, 0) => Ok(Version::V1_08_0),
+            (1, 9, 0) => Ok(Version::V1_09_0),
+            (1, 10, 0) => Ok(Version::V1_10_0),
+            (1, 11, 0) => Ok(Version::V1_11_0),
+            (1, 12, 0) => Ok(Version::V1_12_0),
+            (1, 13, 0) => Ok(Version::V1_13_0),
+            (1, 14, 0) => Ok(Version::V1_14_0),
+            (1, 15, 0) => Ok(Version::V1_15_0),
+            (1, 15, 1) => Ok(Version::V1_15_1),
+            (1, 15, 2) => Ok(Version::V1_15_2),
             (maj, min, patch) => {
                 log::error!("Unrecognized version {maj}.{min:02}.{patch}");
-                panic!()
+                Err(())
             },
         }
     }

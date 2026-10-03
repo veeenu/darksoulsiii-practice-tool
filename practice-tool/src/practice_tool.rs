@@ -1,5 +1,5 @@
 use std::fmt::Write;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::{Mutex, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -7,31 +7,30 @@ use std::time::{Duration, Instant};
 use const_format::formatcp;
 use hudhook::tracing::metadata::LevelFilter;
 use hudhook::tracing::{error, info};
+use hudhook::util::get_dll_path;
 use hudhook::{ImguiRenderLoop, RenderContext};
 use imgui::*;
 use libds3::prelude::*;
 use pkg_version::*;
+use practice_tool_core::config::RadialMenu;
+use practice_tool_core::config_editor::{ConfigEditor, ERROR_COLOR};
 use practice_tool_core::crossbeam_channel::{self, Receiver, Sender};
+use practice_tool_core::gamepad::{BLOCK_XINPUT, GAMEPAD_STATE};
+use practice_tool_core::icons::{Icon, Icons};
+use practice_tool_core::profiler::{Phase, Profiler};
+use practice_tool_core::update::Update;
 use practice_tool_core::widgets::radial_menu::radial_menu;
 use practice_tool_core::widgets::{scaling_factor, Widget, BUTTON_HEIGHT, BUTTON_WIDTH};
 use sys::ImVec2;
 use tracing_subscriber::prelude::*;
 use windows::Win32::UI::Input::XboxController::{XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_STATE};
 
-use crate::config::{config_path, Config, IndicatorType, RadialMenu, Settings, DEFAULT_CONFIG};
-use crate::config_editor::{ConfigEditor, ERROR_COLOR};
-use crate::gamepad::GamepadState;
-use crate::icons::{Icon, Icons};
-use crate::profiler::{Phase, Profiler};
-use crate::update::Update;
-use crate::util;
+use crate::config::{config_path, Config, IndicatorType, Settings, DEFAULT_CONFIG};
 
 const MAJOR: usize = pkg_version_major!();
 const MINOR: usize = pkg_version_minor!();
 const PATCH: usize = pkg_version_patch!();
 
-pub(crate) static BLOCK_XINPUT: AtomicBool = AtomicBool::new(false);
-pub(crate) static GAMEPAD_STATE: GamepadState = GamepadState::new();
 static UPDATE: OnceLock<Update> = OnceLock::new();
 
 struct FontIDs {
@@ -73,7 +72,7 @@ pub(crate) struct PracticeTool {
     ui_state: UiState,
     fonts: Option<FontIDs>,
     icons: Icons,
-    config_editor: ConfigEditor,
+    config_editor: ConfigEditor<Config>,
 
     position_bufs: [String; 4],
     position_prev: [f32; 3],
@@ -146,7 +145,7 @@ impl PracticeTool {
 
         let (config, config_msg) = load_config();
 
-        let log_file = util::get_dll_path()
+        let log_file = get_dll_path()
             .map(|mut path| {
                 path.pop();
                 path.push("jdsd_dsiii_practice_tool.log");
@@ -202,7 +201,7 @@ impl PracticeTool {
 
         // Checked in the background, so that an unreachable network doesn't
         // delay the overlay.
-        thread::spawn(|| UPDATE.get_or_init(Update::check));
+        thread::spawn(|| UPDATE.get_or_init(crate::check_update));
 
         if config.settings.log_level.inner() < LevelFilter::DEBUG || !config.settings.show_console {
             hudhook::free_console().ok();
@@ -226,7 +225,7 @@ impl PracticeTool {
         }
 
         let version_label = {
-            let (maj, min, patch) = (*VERSION).into();
+            let (maj, min, patch) = get_version().into();
             format!("Game Ver {}.{:02}.{}", maj, min, patch)
         };
         let (log_tx, log_rx) = crossbeam_channel::unbounded();
@@ -243,7 +242,7 @@ impl PracticeTool {
             log_tx,
             fonts: None,
             icons: Icons::default(),
-            config_editor: ConfigEditor::default(),
+            config_editor: ConfigEditor::new(config_path()),
             ui_state: UiState::Closed,
             position_prev: Default::default(),
             position_bufs: Default::default(),
@@ -259,7 +258,11 @@ impl PracticeTool {
             radial_menu_open_time: Instant::now(),
             press_queue: Vec::new(),
             release_queue: Vec::new(),
-            profiler: Profiler::new(),
+            profiler: Profiler::new(
+                get_dll_path()
+                    .unwrap_or_default()
+                    .with_file_name("jdsd_dsiii_practice_tool.profile.csv"),
+            ),
         };
         tool.apply_config(config);
         info!("Initialized");
@@ -733,8 +736,7 @@ impl PracticeTool {
 
         let pressed_a_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_A);
         let pressed_b_after = self.gamepad_state.Gamepad.wButtons.contains(XINPUT_GAMEPAD_B);
-        let pressed_combo =
-            combo.is_pressed(unsafe { &*(&self.gamepad_state as *const _ as *const _) });
+        let pressed_combo = combo.is_pressed(&self.gamepad_state);
 
         let released_a = !pressed_a_after && pressed_a_before;
         let released_b = !pressed_b_after && pressed_b_before;
@@ -845,7 +847,13 @@ impl ImguiRenderLoop for PracticeTool {
     }
 
     fn initialize(&mut self, ctx: &mut Context, render_context: &mut dyn RenderContext) {
-        self.icons = Icons::load(render_context);
+        let (data, width, height) = Icons::atlas();
+        self.icons = Icons::new(
+            render_context
+                .load_texture(&data, width, height)
+                .map_err(|e| error!("Couldn't load icons: {e:?}"))
+                .ok(),
+        );
 
         let fonts = ctx.fonts();
         self.fonts = Some(FontIDs {

@@ -1,27 +1,13 @@
-use std::ffi::CStr;
-
 use hudhook::inject::Process;
 use hudhook::tracing::{error, trace};
-use libjdsd_dsiii_practice_tool::update::Update;
-use libjdsd_dsiii_practice_tool::{RUNNING_EVENT, START_EVENT};
+use libjdsd_dsiii_practice_tool::{check_update, events};
+use practice_tool_core::update::Update;
+use practice_tool_core_windows::message_box;
+use practice_tool_core_windows::startup::{is_running, request_start};
 use tracing_subscriber::filter::LevelFilter;
-use windows::core::PCSTR;
-use windows::Win32::System::Threading::{
-    OpenEventW, SetEvent, EVENT_MODIFY_STATE, SYNCHRONIZATION_SYNCHRONIZE,
-};
 use windows::Win32::UI::WindowsAndMessaging::{
-    MessageBoxA, IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_OK, MB_YESNO, MESSAGEBOX_RESULT,
-    MESSAGEBOX_STYLE,
+    IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_OK, MB_YESNO,
 };
-
-fn message_box(caption: &CStr, text: &str, style: MESSAGEBOX_STYLE) -> MESSAGEBOX_RESULT {
-    let text = format!("{text}\0");
-    unsafe { MessageBoxA(None, PCSTR(text.as_ptr()), PCSTR(caption.as_ptr() as _), style) }
-}
-
-fn is_running() -> bool {
-    unsafe { OpenEventW(SYNCHRONIZATION_SYNCHRONIZE, false, RUNNING_EVENT) }.is_ok()
-}
 
 fn load_error(e: impl std::fmt::Display) -> String {
     format!(
@@ -39,7 +25,8 @@ fn perform_injection() -> Result<(), String> {
             .to_string()
     })?;
 
-    if is_running() {
+    let events = events();
+    if is_running(&events) {
         return Err("The practice tool is already running.\n\nTo start a different copy, restart \
                     the game first."
             .to_string());
@@ -62,9 +49,8 @@ fn perform_injection() -> Result<(), String> {
     // A freshly loaded DLL is running by now. If it isn't, the game had already
     // loaded this very file at startup, so injecting it did nothing: ask
     // that copy to start instead.
-    if !is_running() {
-        unsafe { OpenEventW(EVENT_MODIFY_STATE, false, START_EVENT).and_then(|e| SetEvent(e)) }
-            .map_err(|_| load_error("the practice tool did not start."))?;
+    if !is_running(&events) {
+        request_start(&events).map_err(|_| load_error("the practice tool did not start."))?;
     }
 
     Ok(())
@@ -79,11 +65,11 @@ fn main() {
         .with_thread_names(true)
         .init();
 
-    match Update::check() {
+    match check_update() {
         Update::Available { url, notes } => {
             let text =
                 format!("{notes}\nDo you want to download it? The practice tool will not start.");
-            if message_box(c"Update available", &text, MB_YESNO | MB_ICONINFORMATION) == IDYES {
+            if message_box("Update available", &text, MB_YESNO | MB_ICONINFORMATION) == IDYES {
                 open::that(url).ok();
                 return;
             }
@@ -94,6 +80,6 @@ fn main() {
     }
 
     if let Err(e) = perform_injection() {
-        message_box(c"Error", &e, MB_OK | MB_ICONERROR);
+        message_box("Error", &e, MB_OK | MB_ICONERROR);
     }
 }

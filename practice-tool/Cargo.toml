@@ -14,7 +14,7 @@ name = "libjdsd_dsiii_practice_tool"
 
 [features]
 # Record per-frame render loop timings to jdsd_dsiii_practice_tool.profile.csv
-profiling = ["windows/Win32_System_Performance"]
+profiling = ["practice-tool-core/profiling"]
 
 [dependencies]
 const_format = "0.2.26"
@@ -24,11 +24,7 @@ open = "1.4.0"
 parking_lot = "0.11.2"
 pkg-version = "1.0.0"
 regex = "1"
-semver = "0.11.0"
-toml = "0.5.6"
-toml_edit = "0.22"
 tracing-subscriber = "0.3.17"
-ureq = { version = "2.8.0", features = ["json"] }
 widestring = "0.5.1"
 
 libds3 = { path = "../lib/libds3" }
@@ -36,10 +32,15 @@ libds3 = { path = "../lib/libds3" }
 serde.workspace = true
 serde_json.workspace = true
 hudhook.workspace = true
-imgui = { workspace = true, features = ["tables-api"] }
+imgui.workspace = true
 once_cell.workspace = true
 windows.workspace = true
 practice-tool-core.workspace = true
+practice-tool-core-windows.workspace = true
+practice-tool-memedit.workspace = true
+
+[dev-dependencies]
+toml = "0.5.6"
 
 [build-dependencies]
 embed-resource = "2.4.3"

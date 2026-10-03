@@ -9,11 +9,10 @@ edition = "2021"
 [dependencies]
 log = "0.4.14"
 widestring = "0.5.1"
-macro-param = { path = "../macro-param" }
+macro-param.workspace = true
 serde_json.workspace = true
 parking_lot.workspace = true
 once_cell.workspace = true
 windows.workspace = true
-
-[build-dependencies]
-cc = "1.2"
+practice-tool-core-windows.workspace = true
+practice-tool-memedit.workspace = true

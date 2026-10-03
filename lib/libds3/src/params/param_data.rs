@@ -1275,6 +1275,12 @@ pub struct EquipMtrlSetParam {
     pub item_num03: i8,
     pub item_num04: i8,
     pub item_num05: i8,
+    #[bitflag(isDisableDispNum01, 0)]
+    #[bitflag(isDisableDispNum02, 1)]
+    #[bitflag(isDisableDispNum03, 2)]
+    #[bitflag(isDisableDispNum04, 3)]
+    #[bitflag(isDisableDispNum05, 4)]
+    pub bitfield0: u8,
     pub pad1: [u8; 6],
 }
 
@@ -1839,15 +1845,18 @@ pub struct EquipParamWeapon {
     #[bitflag(ubyteLanternWep, 6)]
     #[bitflag(isVersusGhostWep, 7)]
     pub bitfield2: u8,
-    #[bitflag(baseChangeCategory, 0)]
-    #[bitflag(isDragonSlayer, 1)]
-    #[bitflag(isDeposit, 2)]
-    #[bitflag(disableMultiDropShare, 3)]
-    #[bitflag(IsDiscard, 4)]
-    #[bitflag(IsDrop, 5)]
-    #[bitflag(Bool3, 6)]
-    #[bitflag(Bool4, 7)]
+    #[bitflag(isDragonSlayer, 6)]
+    #[bitflag(isDeposit, 7)]
     pub bitfield3: u8,
+    #[bitflag(disableMultiDropShare, 0)]
+    #[bitflag(IsDiscard, 1)]
+    #[bitflag(IsDrop, 2)]
+    #[bitflag(Bool3, 3)]
+    #[bitflag(Bool4, 4)]
+    #[bitflag(Bool5, 5)]
+    #[bitflag(Bool6, 6)]
+    #[bitflag(Bool7, 7)]
+    pub bitfield4: u8,
     pub unk6: u8,
     pub unk7: u8,
     pub unk8: u8,
@@ -1882,15 +1891,15 @@ pub struct EquipParamWeapon {
     pub material_val1: i16,
     pub wep_absorp_pos_id: i32,
     pub unk12: f32,
-    #[bitflag(Bool5, 0)]
-    #[bitflag(Bool6, 1)]
-    #[bitflag(Bool7, 2)]
-    #[bitflag(Unk13, 3)]
-    #[bitflag(Unk14, 4)]
-    #[bitflag(IsAutoEquip, 5)]
-    #[bitflag(Unk16, 6)]
-    #[bitflag(Unk17, 7)]
-    pub bitfield4: u8,
+    #[bitflag(Unk13, 0)]
+    #[bitflag(Unk14, 1)]
+    #[bitflag(IsAutoEquip, 2)]
+    #[bitflag(Unk16, 3)]
+    #[bitflag(Unk17, 4)]
+    #[bitflag(Unk18, 5)]
+    #[bitflag(Unk19, 6)]
+    #[bitflag(Unk20, 7)]
+    pub bitfield5: u8,
     pub unk21: u8,
     pub unk22: u8,
     pub unk23: u8,
@@ -1947,15 +1956,15 @@ pub struct EquipParamWeapon {
     pub shop_price: i32,
     pub unk62: u8,
     pub max_num: u8,
-    #[bitflag(Unk18, 0)]
-    #[bitflag(Unk19, 1)]
-    #[bitflag(Unk20, 2)]
-    #[bitflag(WepSpMask0, 3)]
-    #[bitflag(WepSpMask1, 4)]
-    #[bitflag(WepSpMask2, 5)]
-    #[bitflag(WepSpMask3, 6)]
-    #[bitflag(WepSpMask4, 7)]
-    pub bitfield5: u8,
+    #[bitflag(WepSpMask0, 0)]
+    #[bitflag(WepSpMask1, 1)]
+    #[bitflag(WepSpMask2, 2)]
+    #[bitflag(WepSpMask3, 3)]
+    #[bitflag(WepSpMask4, 4)]
+    #[bitflag(WepSpMask5, 5)]
+    #[bitflag(WepSpMask6, 6)]
+    #[bitflag(WepSpMask7, 7)]
+    pub bitfield6: u8,
     pub unk65: u8,
     pub unk66: i32,
     pub sp_eff9600: i16,
@@ -2724,6 +2733,8 @@ pub struct GemeffectParam {
 #[derive(ParamStruct, Debug)]
 #[repr(C)]
 pub struct GemGenParam {
+    #[bitflag(isUnique, 0)]
+    pub bitfield0: u8,
     pub pad: [u8; 3],
     pub field0x04: i32,
     pub gem_name_id_offset: i32,
@@ -5176,6 +5187,10 @@ pub struct Wind {
     pub common_capsule_end_dmy_id: i16,
     pub common_capsule_radius: f32,
     pub pad1: [u8; 120],
+    #[bitflag(sfxWindEnable, 0)]
+    #[bitflag(sfxIgnorePlayerSfx, 1)]
+    #[bitflag(sfxIsCollision, 2)]
+    pub bitfield0: u8,
     pub pad2: [u8; 3],
     pub sfx_dir_pitch_min: f32,
     pub sfx_dir_pitch_max: f32,
@@ -5187,6 +5202,9 @@ pub struct Wind {
     pub sfx_speed_max: f32,
     pub sfx_maximum_drag: f32,
     pub pad3: [u8; 88],
+    #[bitflag(clothWindEnable, 0)]
+    #[bitflag(clothVertexWind, 1)]
+    pub bitfield1: u8,
     pub pad4: [u8; 3],
     pub cloth_dir_pitch_min: f32,
     pub cloth_dir_pitch_max: f32,
