@@ -8,7 +8,7 @@ use practice_tool_core::controller::ControllerCombination;
 use practice_tool_core::key::Key;
 use practice_tool_core::widgets::input_viewer::InputViewer;
 use practice_tool_core::widgets::Widget;
-use practice_tool_memedit::widgets::flag_widget;
+use practice_tool_memedit::widgets::{flag_widget, multi_flag};
 use serde::Deserialize;
 
 use crate::widgets::character_stats::character_stats_edit;
@@ -40,6 +40,8 @@ pub(crate) struct Settings {
     pub(crate) hide: Option<Key>,
     #[serde(default)]
     pub(crate) show_console: bool,
+    #[serde(default)]
+    pub(crate) disable_update_prompt: bool,
     #[serde(default = "Indicator::default_set")]
     pub(crate) indicators: Vec<Indicator>,
     pub(crate) radial_menu_open: Option<ControllerCombination>,
@@ -50,6 +52,7 @@ pub(crate) enum IndicatorType {
     Igt,
     Position,
     PositionChange,
+    PositionDistance,
     GameVersion,
     ImguiDebug,
     Fps,
@@ -70,6 +73,7 @@ pub(crate) const INDICATORS: &[(&str, IndicatorType, bool)] = &[
     ("igt", IndicatorType::Igt, true),
     ("position", IndicatorType::Position, false),
     ("position_change", IndicatorType::PositionChange, false),
+    ("position_distance", IndicatorType::PositionDistance, false),
     ("animation", IndicatorType::Animation, false),
     ("fps", IndicatorType::Fps, false),
     ("framecount", IndicatorType::FrameCount, false),
@@ -114,6 +118,11 @@ enum CfgCommand {
     Flag {
         flag: FlagSpec,
         hotkey: Option<Key>,
+    },
+    MultiFlagUser {
+        flags: Vec<FlagSpec>,
+        hotkey: Option<Key>,
+        label: String,
     },
     Label {
         #[serde(rename = "label")]
@@ -178,6 +187,9 @@ impl CfgCommand {
         match self {
             CfgCommand::Flag { flag, hotkey: key } => {
                 flag_widget(&flag.label, (flag.getter)(chains), key)
+            },
+            CfgCommand::MultiFlagUser { flags, hotkey, label } => {
+                multi_flag(&label, flags.iter().map(|flag| (flag.getter)(chains)).collect(), hotkey)
             },
             CfgCommand::Label { label } => label_widget(label.as_str()),
             CfgCommand::SavefileManager { hotkey_load: key_load } => {
@@ -313,6 +325,7 @@ impl ConfigSchema for Config {
             ("display", Field::Key),
             ("hide", Field::OptKey),
             ("show_console", Field::Bool(false)),
+            ("disable_update_prompt", Field::Bool(false)),
             ("radial_menu_open", Field::OptCombo),
             ("indicators", Field::Indicators),
         ],
@@ -320,6 +333,7 @@ impl ConfigSchema for Config {
     #[rustfmt::skip]
     const WIDGETS: &'static [Kind] = &[
         Kind { name: "Flag", fields: &[("flag", Field::Flag), ("hotkey", Field::OptKey)] },
+        Kind { name: "Multi flag", fields: &[("flags", Field::Flags), ("label", Field::Text("Multi flag")), ("hotkey", Field::OptKey)] },
         Kind { name: "Label", fields: &[("label", Field::Text(""))] },
         Kind { name: "Group", fields: &[("group", Field::Text("Group")), ("commands", Field::Widgets)] },
         Kind { name: "Savefile manager", fields: &[("savefile_manager", Field::KeyOrTrue)] },
@@ -367,12 +381,38 @@ pub(crate) fn config_path() -> Option<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Config, DEFAULT_CONFIG};
+    use super::{CfgCommand, Config, DEFAULT_CONFIG};
 
     #[test]
     fn test_parse_ok() {
         println!("{:#?}", toml::from_str::<toml::Value>(DEFAULT_CONFIG));
         println!("{:#?}", Config::parse(DEFAULT_CONFIG));
+    }
+
+    #[test]
+    fn test_parse_multi_flag() {
+        let config = Config::parse(
+            r#"commands = [
+              { flags = ["gravity", "collision"], label = "No clip", hotkey = "f1" },
+              { flag = "gravity" },
+              { label = "Label" }
+            ]
+            radial-menu = []
+            [settings]
+            log_level = "DEBUG"
+            display = "0"
+            "#,
+        )
+        .unwrap();
+
+        assert!(matches!(
+            config.commands.as_slice(),
+            [
+                CfgCommand::MultiFlagUser { flags, .. },
+                CfgCommand::Flag { .. },
+                CfgCommand::Label { .. },
+            ] if flags.len() == 2
+        ));
     }
 
     #[test]
