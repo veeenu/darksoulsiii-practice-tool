@@ -1,20 +1,20 @@
 use std::path::PathBuf;
-use std::str::FromStr;
 
+use hudhook::util::get_dll_path;
 use libds3::prelude::*;
+use practice_tool_core::config::{parse_toml, LevelFilterSerde, PlaceholderOption, RadialMenu};
+use practice_tool_core::config_editor::{ConfigSchema, Field, Kind};
 use practice_tool_core::controller::ControllerCombination;
 use practice_tool_core::key::Key;
+use practice_tool_core::widgets::input_viewer::InputViewer;
 use practice_tool_core::widgets::Widget;
+use practice_tool_memedit::widgets::flag_widget;
 use serde::Deserialize;
-use tracing_subscriber::filter::LevelFilter;
 
-use crate::util;
 use crate::widgets::character_stats::character_stats_edit;
 use crate::widgets::cycle_color::cycle_color;
 use crate::widgets::cycle_speed::cycle_speed;
-use crate::widgets::flag::flag_widget;
 use crate::widgets::group::group;
-use crate::widgets::input_viewer::InputViewer;
 use crate::widgets::item_spawn::ItemSpawner;
 use crate::widgets::label::label_widget;
 use crate::widgets::nudge_pos::nudge_position;
@@ -43,19 +43,6 @@ pub(crate) struct Settings {
     #[serde(default = "Indicator::default_set")]
     pub(crate) indicators: Vec<Indicator>,
     pub(crate) radial_menu_open: Option<ControllerCombination>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub(crate) struct RadialMenu {
-    // pub index: usize,
-    pub key: Key,
-    pub label: String,
-}
-
-impl AsRef<str> for RadialMenu {
-    fn as_ref(&self) -> &str {
-        &self.label
-    }
 }
 
 #[derive(Debug, Deserialize, Clone, Copy)]
@@ -110,23 +97,6 @@ impl TryFrom<IndicatorConfig> for Indicator {
             .find(|(id, ..)| *id == indicator.indicator)
             .map(|&(_, kind, _)| Indicator { indicator: kind, enabled: indicator.enabled })
             .ok_or_else(|| format!("Unrecognized indicator: {}", indicator.indicator))
-    }
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(untagged)]
-enum PlaceholderOption<T> {
-    Data(T),
-    #[allow(dead_code)]
-    Placeholder(bool),
-}
-
-impl<T> PlaceholderOption<T> {
-    fn into_option(self) -> Option<T> {
-        match self {
-            PlaceholderOption::Data(d) => Some(d),
-            PlaceholderOption::Placeholder(_) => None,
-        }
     }
 }
 
@@ -259,30 +229,9 @@ fn default_input_viewer_seconds() -> usize {
     5
 }
 
-#[derive(Deserialize, Debug, Clone)]
-#[serde(try_from = "String")]
-pub(crate) struct LevelFilterSerde(LevelFilter);
-
-impl LevelFilterSerde {
-    pub(crate) fn inner(&self) -> LevelFilter {
-        self.0
-    }
-}
-
-impl TryFrom<String> for LevelFilterSerde {
-    type Error = String;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ok(LevelFilterSerde(
-            LevelFilter::from_str(&value)
-                .map_err(|e| format!("Couldn't parse log level filter: {}", e))?,
-        ))
-    }
-}
-
 impl Config {
     pub(crate) fn parse(cfg: &str) -> Result<Self, String> {
-        toml::from_str::<Config>(cfg).map_err(|e| format!("TOML configuration parse error: {}", e))
+        parse_toml(cfg)
     }
 
     pub(crate) fn make_commands(self, chains: &'static PointerChains) -> Vec<Box<dyn Widget>> {
@@ -354,12 +303,62 @@ impl TryFrom<String> for FlagSpec {
     }
 }
 
+impl ConfigSchema for Config {
+    type Config = Config;
+
+    const SETTINGS: Kind = Kind {
+        name: "Settings",
+        fields: &[
+            ("log_level", Field::Choice(&["DEBUG", "TRACE", "INFO", "WARN", "ERROR", "OFF"])),
+            ("display", Field::Key),
+            ("hide", Field::OptKey),
+            ("show_console", Field::Bool(false)),
+            ("radial_menu_open", Field::OptCombo),
+            ("indicators", Field::Indicators),
+        ],
+    };
+    #[rustfmt::skip]
+    const WIDGETS: &'static [Kind] = &[
+        Kind { name: "Flag", fields: &[("flag", Field::Flag), ("hotkey", Field::OptKey)] },
+        Kind { name: "Label", fields: &[("label", Field::Text(""))] },
+        Kind { name: "Group", fields: &[("group", Field::Text("Group")), ("commands", Field::Widgets)] },
+        Kind { name: "Savefile manager", fields: &[("savefile_manager", Field::KeyOrTrue)] },
+        Kind { name: "Item spawner", fields: &[("item_spawner", Field::KeyOrTrue)] },
+        Kind { name: "Character stats", fields: &[("character_stats", Field::KeyOrTrue)] },
+        Kind { name: "Position", fields: &[("position", Field::KeyOrTrue), ("save", Field::OptKey)] },
+        Kind { name: "Nudge position", fields: &[("nudge", Field::Float(1.)), ("nudge_up", Field::OptKey), ("nudge_down", Field::OptKey)] },
+        Kind { name: "Cycle speed", fields: &[("cycle_speed", Field::Floats(&[0.5, 1., 2.])), ("hotkey", Field::OptKey)] },
+        Kind { name: "Cycle color", fields: &[("cycle_color", Field::Ints(&[0, 1, 2, 3])), ("hotkey", Field::OptKey)] },
+        Kind { name: "Souls", fields: &[("souls", Field::Int(10000)), ("hotkey", Field::OptKey)] },
+        Kind { name: "Open menu", fields: &[("open_menu", Field::Choice(&["travel", "attune"])), ("hotkey", Field::OptKey)] },
+        Kind { name: "Quitout", fields: &[("quitout", Field::KeyOrTrue)] },
+        Kind { name: "Target", fields: &[("target", Field::KeyOrTrue)] },
+        Kind { name: "Input viewer", fields: &[("input_viewer", Field::KeyOrTrue), ("seconds", Field::Int(5))] },
+    ];
+
+    fn flags() -> impl Iterator<Item = (&'static str, &'static str)> {
+        FLAGS.iter().map(|&(id, label, _)| (id, label))
+    }
+
+    fn indicators() -> impl Iterator<Item = (&'static str, bool)> {
+        INDICATORS.iter().map(|&(id, _, enabled)| (id, enabled))
+    }
+
+    fn parse(content: &str) -> Result<Config, String> {
+        Config::parse(content)
+    }
+
+    fn show_cursor(show: bool) {
+        POINTER_CHAINS.cursor_show.set(show);
+    }
+}
+
 /// The bundled configuration, written next to the DLL when the file is missing.
 pub(crate) const DEFAULT_CONFIG: &str = include_str!("../../jdsd_dsiii_practice_tool.toml");
 
 /// Path of the configuration file, next to the DLL.
 pub(crate) fn config_path() -> Option<PathBuf> {
-    util::get_dll_path().map(|mut path| {
+    get_dll_path().map(|mut path| {
         path.pop();
         path.push("jdsd_dsiii_practice_tool.toml");
         path

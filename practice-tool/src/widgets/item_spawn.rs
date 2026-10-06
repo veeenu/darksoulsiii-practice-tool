@@ -8,7 +8,7 @@ use imgui::sys::{
     igSetNextWindowPos, igUnindent, ImVec2,
 };
 use imgui::{Condition, InputText, TreeNodeFlags};
-use libds3::memedit::Bitflag;
+use libds3::memedit::{Bitflag, FlagToggler};
 use once_cell::sync::Lazy;
 use practice_tool_core::crossbeam_channel::Sender;
 use practice_tool_core::key::Key;

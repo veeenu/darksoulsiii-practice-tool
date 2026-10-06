@@ -17,6 +17,7 @@ impl ParamTinkerer {
     fn new() -> Self {
         println!("Initializing");
         hudhook::alloc_console().ok();
+        check_version().expect("Unsupported game version");
 
         ParamTinkerer { shown: false, selected_param: 0, selected_param_id: 0 }
     }

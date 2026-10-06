@@ -39,6 +39,10 @@ fn initialize() {
 }
 
 fn patch() {
+    if check_version().is_err() {
+        return;
+    }
+
     POINTER_CHAINS
         .no_logo
         .write([

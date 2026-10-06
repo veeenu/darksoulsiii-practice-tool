@@ -3,7 +3,6 @@ resolver = "2"
 members = [
   "practice-tool",
   "lib/libds3",
-  "lib/macro-param",
   "lib/param-tinkerer",
   "lib/no-logo",
   "lib/param-mod",
@@ -36,9 +35,12 @@ once_cell = "1.19.0"
 parking_lot = "0.12.1"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"
-hudhook = { version = "0.9.0", features = ["dx11", "inject"], default-features = false }
+hudhook = { version = "0.9.3", features = ["dx11", "inject"], default-features = false }
+macro-param = { git = "https://github.com/veeenu/practice-tool-core", version = "0.1.0" }
 practice-tool-core = { git = "https://github.com/veeenu/practice-tool-core", version = "0.1.0" }
 practice-tool-tasks = { git = "https://github.com/veeenu/practice-tool-core", version = "0.1.0" }
+practice-tool-core-windows = { git = "https://github.com/veeenu/practice-tool-core", version = "0.1.0" }
+practice-tool-memedit = { git = "https://github.com/veeenu/practice-tool-core", version = "0.1.0" }
 
 [workspace.dependencies.windows]
 version = "0.62.0"
@@ -58,6 +60,9 @@ features = [
 # [patch.'crates-io']
 # hudhook = { path = "../hudhook" }
 
-# [patch.'https://github.com/veeenu/practice-tool-core']
-# practice-tool-core = { path = "../practice-tool-core" }
-# practice-tool-tasks = { path = "../practice-tool-core/tasks" }
+[patch.'https://github.com/veeenu/practice-tool-core']
+macro-param = { path = "../practice-tool-core/macro-param" }
+practice-tool-core = { path = "../practice-tool-core" }
+practice-tool-tasks = { path = "../practice-tool-core/tasks" }
+practice-tool-core-windows = { path = "../practice-tool-core/windows" }
+practice-tool-memedit = { path = "../practice-tool-core/memedit" }
