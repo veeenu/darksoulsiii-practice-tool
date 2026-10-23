@@ -61,8 +61,8 @@ features = [
 # hudhook = { path = "../hudhook" }
 
 [patch.'https://github.com/veeenu/practice-tool-core']
-macro-param = { path = "../practice-tool-core/macro-param" }
-practice-tool-core = { path = "../practice-tool-core" }
-practice-tool-tasks = { path = "../practice-tool-core/tasks" }
-practice-tool-core-windows = { path = "../practice-tool-core/windows" }
-practice-tool-memedit = { path = "../practice-tool-core/memedit" }
+# macro-param = { path = "../practice-tool-core/macro-param" }
+# practice-tool-core = { path = "../practice-tool-core" }
+# practice-tool-tasks = { path = "../practice-tool-core/tasks" }
+# practice-tool-core-windows = { path = "../practice-tool-core/windows" }
+# practice-tool-memedit = { path = "../practice-tool-core/memedit" }
