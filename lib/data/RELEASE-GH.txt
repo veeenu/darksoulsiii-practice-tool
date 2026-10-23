@@ -1,3 +1,28 @@
 The tool is free, and will always be free for everyone. If you enjoy it, please consider supporting me!
 https://www.patreon.com/johndisandonato
 
+## What's new
+
+### Features
+
+- **In-game configuration editor**: edit commands, indicators and settings without leaving the game (#94).
+- **Input viewer**: new indicator that displays the current keyboard/gamepad inputs (#93).
+- **Multi flag**: toggle several flags at once with a single hotkey (#99).
+- **Position distance indicator**: shows the distance from a saved position, disabled by default (#99).
+- **Update prompt**: the tool checks for new versions at startup; set `disable_update_prompt = true` in the settings to turn it off (#95, #99).
+- **New startup flow**: if you miss the right shift window, launch the tool later by double-clicking `jdsd_dsiii_practice_tool.exe` in the `Game` folder. You can also use it to try a new version without replacing the installed one (#95).
+
+### Fixes and improvements
+
+- Block spurious Steam API "is DLC installed" failures (#91).
+- Performance: avoid polling XInput every frame, guarded memory reads instead of `ReadProcessMemory`, skip redundant flag writes and remove per-frame allocations (#90).
+- Dependencies updated (#89).
+
+### Internal
+
+- Shared components (profiler, gamepad hook, memedit, input viewer, config/editor, startup flow, params codegen) moved to `practice-tool-core` (#98).
+- CI and release workflow fixes (#96, #97).
+
+### Installation
+
+Copy all the files of the release to your Dark Souls III `Game` folder, the one that contains `DarkSoulsIII.exe`. To update, copy the new files over the old ones. See the README and `TROUBLESHOOTING.md` for details.

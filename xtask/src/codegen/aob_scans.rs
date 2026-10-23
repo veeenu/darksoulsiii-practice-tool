@@ -100,7 +100,8 @@ pub fn get_base_addresses() {
         ),
         aob_indirect_twice(
             "SpawnItemFuncPtr",
-            // "E8 ?? ?? ?? ?? C7 44 24 20 00 01 00 00 4C 8D 4C 24 40 41 B8 2C 00 00 00 48 8B D3",
+            // "E8 ?? ?? ?? ?? C7 44 24 20 00 01 00 00 4C 8D 4C 24 40 41 B8 2C
+            // 00 00 00 48 8B D3",
             &["E8 ?? ?? ?? ?? C7 44 24 20 00 01 00 00 4C 8D 4C 24 40 41 B8"],
             1,
             5,
